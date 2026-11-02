@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-ToDo · 前沿部署工程师的多项目工作台</title>
+<meta name="description" content="Agent-ToDo 是面向 FDE（Forward Deployed Engineer，前沿部署工程师）的多项目工作台：接住现场需求，归位到项目，整理成脑图与待办，再导出为 Agent 可执行的任务上下文。公开小程序为演示实例，正式交付按客户独立部署。">
+<meta name="theme-color" content="#FFD02F">
+<meta property="og:title" content="Agent-ToDo · 别让任何一条项目线断在半路">
+<meta property="og:description" content="接住 · 归位 · 出方案 · 派活 · 收尾。给 FDE 的多项目工作台，每家客户独立一套。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="img/pc-01-overview.png">
+<link rel="icon" href="img/favicon.png" sizes="64x64">
+<link rel="apple-touch-icon" href="img/brand-logo-512.png">
+<script>
+/* 旧版单页手册深链继续有效 */
+(function(){function routeManual(){if(/^#m[0-9]$/.test(location.hash)){location.replace('manual.html'+location.hash);}}routeManual();window.addEventListener('hashchange',routeManual);})();
+</script>
+<style>
+:root{
+  --ink:#1C1C1E;--ink-2:#35363B;--slate:#5D616C;--stone:#858A96;
+  --line:#E2E3E7;--line-soft:#EEEFF2;--page:#F6F6F3;--card:#FFF;
+  --chip:#F0F1F3;--yellow:#FFD02F;--yellow-hover:#FFC91A;--yellow-soft:#FFF7D6;
+  --yellow-line:#EBD78B;--on-accent:#1C1C1E;--nav-h:72px;--wrap:1200px;
+  --radius:24px;--shadow:0 18px 55px rgba(28,28,30,.09);
+  --font:"Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans SC",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 24px)}
+body{margin:0;background:var(--page);color:var(--ink);font:400 16px/1.75 var(--font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body.menu-open,body.lb-open{overflow:hidden}
+a{color:inherit}img{max-width:100%;display:block}button{font:inherit}
+h1,h2,h3,h4,p,ul,ol,dl,dd,figure{margin:0}ul,ol{padding:0}
+button,a{-webkit-tap-highlight-color:transparent}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid rgba(229,164,0,.42);outline-offset:4px}
+.skip{position:fixed;left:16px;top:-80px;z-index:200;background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px}.skip:focus{top:12px}
+.wrap{width:min(var(--wrap),calc(100% - 48px));margin:0 auto}
+.section{padding:104px 0;border-top:1px solid var(--line-soft);background:var(--card)}
+.section.tint{background:var(--page)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.62fr);gap:56px;align-items:end;margin-bottom:48px}
+.sec-kicker{display:flex;align-items:center;gap:9px;margin-bottom:14px;color:#7B6100;font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.sec-kicker:before{content:"";width:22px;height:3px;border-radius:3px;background:var(--yellow)}
+.sec-h2{font-size:clamp(30px,3.2vw,44px);line-height:1.22;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
+.sec-h2 em{font-style:normal;background:linear-gradient(transparent 65%,var(--yellow) 65%,var(--yellow) 94%,transparent 94%)}
+.sec-lead{color:var(--slate);font-size:15.5px;line-height:1.85;max-width:620px}
+.sec-lead b{color:var(--ink);font-weight:650}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 22px;border:1px solid transparent;border-radius:999px;text-decoration:none;font-size:14px;font-weight:700;line-height:1.2;cursor:pointer;transition:transform .18s,background .18s,border-color .18s,box-shadow .18s}
+.btn svg{width:17px;height:17px}.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(0)}
+.btn.yellow{background:var(--yellow);color:var(--on-accent);box-shadow:0 8px 24px rgba(214,164,0,.18)}.btn.yellow:hover{background:var(--yellow-hover)}
+.btn.dark{background:var(--ink);color:#fff}.btn.dark:hover{background:#000}
+.btn.line{background:#fff;border-color:#CFD1D7;color:var(--ink)}.btn.line:hover{border-color:var(--ink)}
+.text-link{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-size:13px;font-weight:700;text-decoration:none}.text-link:hover{text-decoration:underline;text-underline-offset:4px}
+.tag,.end{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:999px;background:var(--chip);color:var(--slate);font-size:11px;font-weight:700;line-height:1.35;white-space:nowrap}
+.end.mob{background:var(--yellow-soft);color:#775E00}.end.tab{background:#EAEAF8;color:#4B4895}.end.pc{background:#E4F1F3;color:#176472}
+/* navigation */
+.nav{position:sticky;top:0;z-index:70;height:var(--nav-h);background:rgba(246,246,243,.9);border-bottom:1px solid rgba(226,227,231,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.nav-in{width:min(var(--wrap),calc(100% - 48px));height:100%;margin:auto;display:flex;align-items:center;gap:30px}
+.nav-brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:0 0 auto}.nav-logo{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 2px 5px rgba(28,28,30,.12)}
+.nav-word{display:flex;flex-direction:column;line-height:1.1}.nav-word b{font-size:16px;letter-spacing:-.02em}.nav-word small{margin-top:4px;color:var(--stone);font-size:9px;font-weight:700;letter-spacing:.12em}
+.nav-links{display:flex;align-items:center;gap:2px;margin-left:auto}.nav-links a{padding:8px 11px;border-radius:9px;color:var(--slate);font-size:13px;font-weight:550;text-decoration:none}.nav-links a:hover,.nav-links a.on{background:#fff;color:var(--ink)}
+.nav-right{display:flex;gap:9px;margin-left:8px}.nav .btn{min-height:38px;padding:0 16px;font-size:12.5px}
+.menu-btn{display:none;margin-left:auto;width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer;align-items:center;justify-content:center}.menu-btn svg{width:20px;height:20px}
+.mobile-menu{display:none}
+/* hero */
+.home-hero{position:relative;overflow:hidden;background:var(--page);padding:74px 0 58px}
+.home-hero:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(28,28,30,.075) 1px,transparent 0);background-size:28px 28px;mask-image:linear-gradient(90deg,transparent 10%,#000 75%,transparent 100%)}
+.hero-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#fff;border:1px solid var(--line);border-radius:999px;color:var(--slate);font-size:12px;font-weight:650}.hero-badge i{width:7px;height:7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px var(--yellow-soft)}
+.hero-h1{margin-top:24px;font-size:clamp(42px,4.1vw,56px);line-height:1.12;letter-spacing:-.048em;font-weight:850;text-wrap:balance}.hero-h1 em{font-style:normal;position:relative;z-index:0;white-space:nowrap}.hero-h1 em:after{content:"";position:absolute;z-index:-1;left:-3px;right:-3px;bottom:5px;height:17px;background:var(--yellow);border-radius:3px;transform:rotate(-1deg)}
+.hero-sub{margin-top:24px;color:var(--slate);font-size:16px;line-height:1.9;max-width:590px}.hero-sub b{color:var(--ink);font-weight:650}
+.hero-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}.hero-note{margin-top:18px;color:var(--stone);font-size:12px}
+.hero-visual{position:relative;min-width:0;padding:22px 0 30px}.hero-visual:before{content:"";position:absolute;width:76%;height:74%;right:-3%;bottom:0;background:var(--yellow);border-radius:34px;transform:rotate(3deg)}
+.hv-stage{position:relative;display:flex;align-items:flex-end;gap:14px}.hv-shot{padding:0;border:1px solid rgba(28,28,30,.13);background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:zoom-in}.hv-shot img{width:100%;height:auto}.hv-pc{flex:1 1 auto;min-width:0}.hv-pad{flex:0 0 28%;border-radius:10px}
+.hv-caption{position:relative;display:flex;justify-content:space-between;gap:16px;margin-top:20px;color:var(--slate);font-size:11px}.hv-caption b{color:var(--ink)}
+.fact-bar{position:relative;margin-top:58px;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.fact{display:flex;align-items:center;gap:14px;padding:20px 0}.fact+.fact{padding-left:28px;border-left:1px solid var(--line)}.fact b{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}.fact span{color:var(--slate);font-size:12.5px}
+/* audience and pain points */
+.fit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.fit{position:relative;padding:28px 26px 30px;background:var(--page);border:1px solid var(--line);border-radius:20px}.fit-no{color:#947700;font:800 11px/1 var(--mono);letter-spacing:.1em}.fit h3{margin-top:16px;font-size:19px;line-height:1.45;letter-spacing:-.02em}.fit p{margin-top:10px;color:var(--slate);font-size:14px;line-height:1.8}.fit p b{color:var(--ink)}
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.why{padding:24px 22px 26px;border-top:3px solid var(--yellow);background:#fff;border-radius:0 0 16px 16px;box-shadow:0 0 0 1px var(--line)}.why h3{font-size:16px;line-height:1.5}.why p{margin-top:10px;color:var(--slate);font-size:13.5px;line-height:1.8}
+.why-quote{margin-top:24px;padding:22px 26px;border-radius:16px;background:var(--ink);color:rgba(255,255,255,.7);font-size:15px}.why-quote b{color:#fff}.why-quote span{color:var(--yellow)}
+/* workflow */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);margin-top:8px;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#fff}.flow-item{position:relative;padding:28px 22px 26px;min-width:0}.flow-item+.flow-item{border-left:1px solid var(--line)}.flow-n{display:flex;align-items:center;justify-content:space-between;color:var(--stone);font:700 11px/1 var(--mono)}.flow-n b{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:var(--yellow);color:var(--ink);font-size:13px}.flow-item h3{margin-top:24px;font-size:18px}.flow-item p{margin-top:10px;color:var(--slate);font-size:13px;line-height:1.8}.flow-item .fl-end{margin-top:18px}
+/* scenario */
+.case-layout{display:grid;grid-template-columns:minmax(260px,.68fr) minmax(0,1.32fr);gap:72px;align-items:start}.case-layout .sec-head{display:block;position:sticky;top:calc(var(--nav-h) + 34px);margin:0}.case-layout .sec-lead{margin-top:20px}.case-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}.case-list{border-top:1px solid var(--line)}.case-row{display:grid;grid-template-columns:86px minmax(0,1fr);gap:24px;padding:25px 0;border-bottom:1px solid var(--line)}.case-when b{display:block;font:750 14px/1.4 var(--mono)}.case-when span{display:block;margin-top:5px;color:var(--stone);font-size:11px}.case-body h3{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:16px}.case-body p{margin-top:8px;color:var(--slate);font-size:13.5px;line-height:1.8}.case-tail{margin-top:24px;padding:20px 22px;border:1px solid var(--yellow-line);border-radius:14px;background:var(--yellow-soft);color:var(--slate);font-size:13.5px}.case-tail b{color:var(--ink)}
+/* tracking */
+.track-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.track-card{padding:22px 22px 24px;border:1px solid var(--line);border-radius:16px;background:#fff}.track-card .track-place{color:var(--stone);font-size:11px;font-weight:700}.track-card h3{margin-top:9px;font-size:16px}.track-card p{margin-top:7px;color:var(--slate);font-size:13px;line-height:1.75}.track-note{margin-top:22px;color:var(--stone);font-size:12.5px}
+/* modules */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.feat{display:flex;flex-direction:column;min-height:260px;padding:25px 24px 22px;background:#fff;border:1px solid var(--line);border-radius:20px;transition:transform .18s,box-shadow .18s}.feat:hover{transform:translateY(-3px);box-shadow:0 14px 35px rgba(28,28,30,.07)}.feat-top{display:flex;align-items:center;justify-content:space-between}.feat-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--yellow)}.feat-ico svg{width:20px;height:20px}.feat-num{color:#B3B5BC;font:700 11px/1 var(--mono)}.feat h3{margin-top:19px;font-size:18px}.feat p{margin-top:9px;color:var(--slate);font-size:13.5px;line-height:1.8;flex:1}.feat p b{color:var(--ink)}.feat-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:19px;padding-top:15px;border-top:1px solid var(--line-soft)}.feat-foot .text-link{margin-left:auto}
+/* device tabs */
+.ends-rows{margin-top:38px}.end-tabs{display:flex;gap:8px;padding:6px;width:max-content;max-width:100%;margin:0 auto 30px;background:#fff;border:1px solid var(--line);border-radius:999px}.end-tab{min-width:112px;padding:10px 18px;border:0;border-radius:999px;background:transparent;color:var(--slate);font-size:13px;font-weight:700;cursor:pointer}.end-tab[aria-selected="true"]{background:var(--ink);color:#fff}.end-panel{display:none;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:54px;align-items:center;padding:36px;background:#fff;border:1px solid var(--line);border-radius:24px}.end-panel.on{display:grid}.end-tag{margin-bottom:16px}.end-txt h3{font-size:26px;line-height:1.35;letter-spacing:-.025em}.end-txt>p{margin-top:15px;color:var(--slate);font-size:14px}.end-txt ul{list-style:none;display:grid;gap:10px;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}.end-txt li{position:relative;padding-left:16px;color:var(--slate);font-size:13px}.end-txt li:before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:var(--yellow)}.end-txt li b{color:var(--ink)}
+.end-shots{display:flex;align-items:center;justify-content:center;gap:14px;min-width:0;min-height:390px;padding:22px;background:var(--page);border-radius:18px}.end-shot{padding:0;border:1px solid rgba(28,28,30,.12);border-radius:10px;background:#fff;box-shadow:0 10px 25px rgba(28,28,30,.08);overflow:hidden;cursor:zoom-in}.end-shot img{width:auto;height:360px;max-width:100%;object-fit:contain}.end-panel[data-panel="pc"] .end-shot img{width:100%;height:auto}.ends-note{margin-top:20px;text-align:center;color:var(--stone);font-size:12.5px}
+/* voice and export */
+.capability-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.capability{padding:30px;background:#fff;border:1px solid var(--line);border-radius:22px}.capability .sec-kicker{margin-bottom:12px}.capability h3{font-size:26px;line-height:1.35;letter-spacing:-.025em}.capability .cap-lead{margin-top:13px;color:var(--slate);font-size:14px}.cap-list{list-style:none;display:grid;gap:12px;margin-top:22px}.cap-list li{position:relative;padding-left:18px;color:var(--slate);font-size:13px}.cap-list li:before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:2px;background:var(--yellow)}.cap-list b{color:var(--ink)}
+.voice-shots{display:flex;gap:12px;margin-top:26px}.voice-shot{flex:1;min-width:0}.voice-shot button{width:100%;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;cursor:zoom-in}.voice-shot img{width:100%;height:auto}.voice-shot figcaption{margin-top:8px;text-align:center;color:var(--stone);font-size:11px}
+.exp-card{margin-top:26px;background:var(--ink);border-radius:14px;overflow:hidden}.exp-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);font-size:11px}.exp-bar i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}.exp-bar span{margin-left:5px}.exp-copy-btn{margin-left:auto;padding:4px 10px;border:0;border-radius:999px;background:var(--yellow);color:var(--ink);font-size:10px;font-weight:800;cursor:pointer}.exp-body{margin:0;padding:16px;max-height:270px;overflow:auto;color:#E7E8EA;font:11.5px/1.8 var(--mono);white-space:pre-wrap;word-break:break-word}.md-h{color:var(--yellow)}.md-i{color:#94B8FF}.md-m{color:rgba(255,255,255,.55)}.exp-note{margin-top:12px;color:var(--stone);font-size:11.5px;line-height:1.7}
+/* delivery */
+.delivery-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.delivery-card{padding:30px;border:1px solid var(--line);border-radius:20px;background:#fff}.delivery-card.primary{background:var(--yellow-soft);border-color:var(--yellow-line)}.delivery-card h3{margin-top:14px;font-size:22px}.delivery-card p{margin-top:10px;color:var(--slate);font-size:14px}.delivery-card ul{list-style:none;display:grid;gap:9px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(133,138,150,.25)}.delivery-card li{color:var(--slate);font-size:13px}.delivery-card li:before{content:"✓";margin-right:9px;color:#7B6100;font-weight:800}
+.delivery-points{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:38px}.delivery-point{padding-top:18px;border-top:2px solid var(--yellow)}.delivery-point h3{font-size:15px}.delivery-point p{margin-top:8px;color:var(--slate);font-size:13px}
+/* roadmap, manual, FAQ */
+.next-sec{background:var(--ink);color:#fff}.next-sec .sec-kicker{color:var(--yellow)}.next-sec .sec-lead{color:rgba(255,255,255,.65)}.next-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.next{padding:28px;border:1px solid rgba(255,255,255,.14);border-radius:20px;background:rgba(255,255,255,.055)}.next-tag{color:var(--yellow);font-size:11px;font-weight:800;letter-spacing:.06em}.next h3{margin-top:14px;font-size:20px}.next p{margin-top:10px;color:rgba(255,255,255,.68);font-size:13.5px}.next ul{list-style:none;display:grid;gap:8px;margin-top:20px;padding-top:17px;border-top:1px solid rgba(255,255,255,.12)}.next li{color:rgba(255,255,255,.62);font-size:12.5px}.next li:before{content:"·";color:var(--yellow);margin-right:9px}.next-note{margin-top:22px;color:rgba(255,255,255,.48);font-size:12px}
+.manual-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:36px;align-items:center;padding:42px;background:var(--yellow);border-radius:24px}.manual-card h2{font-size:32px;line-height:1.3;letter-spacing:-.03em}.manual-card p{margin-top:12px;max-width:660px;color:rgba(28,28,30,.72);font-size:14px}.manual-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:20px}.manual-meta .tag{background:rgba(255,255,255,.55);color:var(--ink)}
+.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}.faq{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}.faq summary{list-style:none;display:flex;gap:10px;padding:18px 20px;cursor:pointer;font-size:14px;font-weight:650;line-height:1.6}.faq summary::-webkit-details-marker{display:none}.faq summary .q{color:#947700}.faq summary .plus{margin-left:auto;color:var(--stone);font-size:20px;font-weight:400;line-height:1.2}.faq[open] summary .plus{transform:rotate(45deg)}.faq .ans{padding:0 20px 19px 42px;color:var(--slate);font-size:13px;line-height:1.85}.faq .ans b{color:var(--ink)}
+/* CTA and footer */
+.cta-sec{padding:0 0 80px;background:#fff}.cta-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:42px;align-items:center;padding:46px;background:var(--ink);color:#fff;border-radius:26px;overflow:hidden;position:relative}.cta-box:after{content:"";position:absolute;width:250px;height:250px;border:48px solid rgba(255,208,47,.14);border-radius:50%;right:-90px;top:-110px;pointer-events:none}.cta-txt{position:relative;z-index:1}.cta-txt h2{font-size:34px;line-height:1.3;letter-spacing:-.035em}.cta-txt p{margin-top:14px;color:rgba(255,255,255,.65);font-size:14px;max-width:650px}.cta-txt p b{color:#fff}.cta-side{position:relative;z-index:1;display:flex;align-items:center;gap:20px}.cta-qr{display:flex;align-items:center;gap:13px;padding:10px 16px 10px 10px;background:#fff;border-radius:15px;color:var(--ink)}.cta-qr img{width:102px;height:102px}.cta-qr span{max-width:110px;color:var(--slate);font-size:11px;line-height:1.6}.cta-qr b{display:block;color:var(--ink);font-size:13px}
+.site-foot{padding:52px 0 30px;background:var(--page);border-top:1px solid var(--line)}.sf-grid{display:grid;grid-template-columns:1.25fr .65fr .65fr 1.45fr;gap:34px}.sf-brand{display:flex;gap:12px}.sf-brand img{width:38px;height:38px;border-radius:11px}.sf-brand b{font-size:15px}.sf-brand p{margin-top:8px;color:var(--slate);font-size:12px}.sf-col h4{margin-bottom:12px;color:var(--stone);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.sf-col a{display:block;padding:3px 0;color:var(--slate);font-size:12.5px;text-decoration:none}.sf-col a:hover{color:var(--ink)}.sf-col p{color:var(--slate);font-size:12px}.sf-col p+p{margin-top:9px}.sf-col p b{color:var(--ink)}.sf-meta{padding-top:12px;border-top:1px solid var(--line);color:var(--stone)!important;font-size:11px!important}
+.sf-qrbar{display:flex;align-items:center;gap:14px;margin-top:34px;padding-top:24px;border-top:1px solid var(--line)}.sf-qrbar img{width:78px;height:78px;padding:3px;background:#fff;border:1px solid var(--line);border-radius:10px}.sf-qrbar b{font-size:13px}.sf-qrbar p{margin-top:3px;color:var(--slate);font-size:12px}.sf-bottom{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:28px;padding-top:18px;border-top:1px solid var(--line);color:var(--stone);font-size:11px}.sf-bottom .right{margin-left:auto}
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(20,20,22,.88)}.lb.on{display:flex}.lb img{max-width:min(94vw,1100px);max-height:88vh;width:auto;height:auto;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.45)}.lb-close{position:absolute;top:18px;right:20px;width:42px;height:42px;border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:24px;cursor:pointer}.lb-cap{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);max-width:80vw;color:rgba(255,255,255,.7);font-size:12px;text-align:center}
+@media (max-width:1080px){
+  .nav-links{display:none}.nav-right{margin-left:auto}.hero-grid{gap:36px}.hero-h1{font-size:48px}.sec-head{gap:34px}.why-grid{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:repeat(3,1fr)}.flow-item:nth-child(4){border-left:0}.flow-item:nth-child(n+4){border-top:1px solid var(--line)}.feat-grid{grid-template-columns:repeat(2,1fr)}.end-panel{gap:30px;padding:28px}.capability-grid{grid-template-columns:1fr}.capability{display:grid;grid-template-columns:1fr 1fr;gap:28px}.capability>div:first-child{align-self:center}.sf-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:820px){
+  :root{--nav-h:64px}.wrap,.nav-in{width:min(100% - 32px,var(--wrap))}.section{padding:76px 0}.nav-right{display:none}.menu-btn{display:flex}.mobile-menu{position:fixed;z-index:65;inset:var(--nav-h) 0 auto 0;padding:14px 16px 20px;background:var(--page);border-bottom:1px solid var(--line);box-shadow:0 18px 30px rgba(28,28,30,.1)}.mobile-menu.on{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mobile-menu a{padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;text-decoration:none;font-size:13px}.mobile-menu .mobile-cta{background:var(--yellow);border-color:var(--yellow);font-weight:700}
+  .home-hero{padding:48px 0 38px}.hero-grid{grid-template-columns:1fr;gap:34px}.hero-copy{max-width:680px}.hero-h1{font-size:clamp(38px,8vw,54px)}.hero-visual{width:min(100%,650px);margin:auto}.fact-bar{margin-top:34px}.fact{gap:9px}.fact+.fact{padding-left:16px}.fact b{font-size:19px}.fact span{font-size:11px}
+  .sec-head{grid-template-columns:1fr;gap:18px;margin-bottom:34px}.fit-grid{grid-template-columns:1fr}.case-layout{grid-template-columns:1fr;gap:34px}.case-layout .sec-head{position:static}.track-grid{grid-template-columns:1fr 1fr}.end-panel.on{grid-template-columns:1fr}.end-shots{min-height:340px}.end-shot img{height:320px}.delivery-grid,.next-grid{grid-template-columns:1fr}.delivery-points{grid-template-columns:1fr;gap:18px}.manual-card{grid-template-columns:1fr;padding:32px}.manual-card .btn{justify-self:start}.faq-grid{grid-template-columns:1fr}.cta-box{grid-template-columns:1fr;padding:34px}.cta-side{flex-wrap:wrap}
+}
+@media (max-width:560px){
+  body{font-size:15px}.section{padding:62px 0}.nav-word small{display:none}.hero-badge{font-size:11px}.hero-h1{font-size:35px}.hero-h1 em:after{height:12px;bottom:4px}.hero-sub{font-size:14.5px}.hero-acts{display:grid;grid-template-columns:1fr}.hero-acts .btn{width:100%}.hero-visual{padding-top:4px}.hv-stage{gap:8px}.hv-shot{border-radius:9px}.hv-caption{font-size:10px}.fact-bar{grid-template-columns:1fr}.fact{padding:14px 0}.fact+.fact{padding-left:0;border-left:0;border-top:1px solid var(--line-soft)}.fact b{min-width:42px}.fact span{font-size:12px}
+  .sec-h2{font-size:30px}.sec-lead{font-size:14px}.why-grid,.feat-grid,.track-grid{grid-template-columns:1fr}.why{padding:21px}.flow{grid-template-columns:1fr}.flow-item+.flow-item{border-left:0;border-top:1px solid var(--line)}.flow-item{padding:23px}.flow-item h3{margin-top:17px}.case-row{grid-template-columns:66px minmax(0,1fr);gap:14px}.case-body h3{font-size:15px}.end-tabs{width:100%;border-radius:16px}.end-tab{min-width:0;flex:1;padding:10px 8px}.end-panel{padding:20px}.end-txt h3{font-size:23px}.end-shots{min-height:300px;padding:14px;gap:9px}.end-shot img{height:280px}.capability{display:block;padding:22px}.capability h3{font-size:23px}.capability>div+div{margin-top:24px}.delivery-card{padding:24px}.manual-card{padding:26px}.manual-card h2{font-size:27px}.cta-sec{padding-bottom:54px}.cta-box{padding:27px 22px}.cta-txt h2{font-size:27px}.cta-qr img{width:88px;height:88px}.sf-grid{grid-template-columns:1fr 1fr;gap:26px}.sf-brand,.sf-about{grid-column:1/-1}.sf-bottom .right{margin-left:0;width:100%}.lb{padding:14px}.lb-cap{display:none}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="nav-brand" href="#top" aria-label="Agent-ToDo 首页">
+      <span class="nav-logo"><img src="img/brand-logo-512.png" width="38" height="38" alt="Agent-ToDo"></span>
+      <span class="nav-word"><b>Agent-ToDo</b><small>FDE WORKBENCH</small></span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#fit">适用场景</a><a href="#flow">工作流程</a><a href="#features">功能模块</a><a href="#ends">三端协同</a><a href="#delivery">交付与数据</a><a href="#faq">常见问题</a>
+    </nav>
+    <div class="nav-right"><a class="btn line" href="manual.html">操作手册</a><a class="btn dark" href="#download">扫码体验</a></div>
+    <button class="menu-btn" id="menuBtn" aria-label="打开导航" aria-expanded="false" aria-controls="mobileMenu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+<nav class="mobile-menu" id="mobileMenu" aria-label="移动端导航">
+  <a href="#fit">适用场景</a><a href="#flow">工作流程</a><a href="#features">功能模块</a><a href="#ends">三端协同</a><a href="#delivery">交付与数据</a><a href="#faq">常见问题</a><a href="manual.html">操作手册</a><a class="mobile-cta" href="#download">扫码体验</a>
+</nav>
+<main id="main">
+  <section class="home-hero" id="top">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="hero-badge"><i></i>为 FDE · 前沿部署工程师而设计</span>
+          <h1 class="hero-h1">几个项目同时开着，<br>别让哪一条<em>断在半路</em></h1>
+          <p class="hero-sub">Agent-ToDo 把客户现场的需求、bug 反馈与方向研讨收在一条线上。先记下来，再归到项目、整理成方案，最后连同客户原话与脑图层级一起导出给 Agent。<b>让每次切换，都有上下文可接。</b></p>
+          <div class="hero-acts">
+            <a class="btn yellow" href="#download">微信扫码体验<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="btn line" href="#flow">看懂五步工作流</a>
+          </div>
+          <p class="hero-note">公开小程序为演示实例 · 正式交付按客户独立部署</p>
+        </div>
+        <div class="hero-visual">
+          <div class="hv-stage">
+            <button class="hv-shot hv-pc" data-zoom aria-label="放大查看 PC 端概览"><img src="img/pc-01-overview.png?v=20261028" width="1892" height="1427" alt="PC 端概览：活跃度日历、项目待办统计与 Agent 概况"></button>
+            <button class="hv-shot hv-pad" data-zoom aria-label="放大查看平板端待办详情"><img src="img/pad-11-todo-detail-linked.jpg?v=20261028" width="1600" height="2560" alt="平板端待办详情：已关联闪念胶囊与脑图，图片区块为空态"></button>
+          </div>
+          <div class="hv-caption"><span><b>PC</b> 总览多条交付线</span><span><b>平板</b> 整理单条任务上下文</span></div>
+        </div>
+      </div>
+      <div class="fact-bar" aria-label="产品概览">
+        <div class="fact"><b>5</b><span>接住到收尾的完整工作流</span></div><div class="fact"><b>6</b><span>围绕项目上下文组织的模块</span></div><div class="fact"><b>1</b><span>每家客户一套独立实例</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="fit">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">WHO IT'S FOR</div><h2 class="sec-h2">一个人跟多条业务线，<br><em>信息仍然各归其位</em></h2></div><p class="sec-lead">它服务的是 FDE（Forward Deployed Engineer，前沿部署工程师）：人在客户现场，需求来自不同角色，项目又在并行推进。Agent-ToDo 不替人做优先级判断，而是把判断需要的上下文留在原处。</p></div>
+      <div class="fit-grid">
+        <article class="fit"><span class="fit-no">01 · 目标用户</span><h3>一个人，跟几条业务线</h3><p>上午在 A 线评审，下午回 B 线改接口，晚上还要处理 C 线反馈。现场那句话可以先一句话收进来，<b>不要求当场完成归类</b>。</p></article>
+        <article class="fit"><span class="fit-no">02 · 目标场景</span><h3>输入来自各方，出口只有一个</h3><p>口头需求、一线 bug、周会方向混着到来。先把输入留在胶囊里，再由你取舍、转译，<b>把客户原话与项目背景一起交给 Agent</b>。</p></article>
+        <article class="fit"><span class="fit-no">03 · 交付形态</span><h3>每家客户，独立一套</h3><p>正式交付按客户独立布设实例与数据。多项目并行指同一客户内的多条业务线；跨客户则是不同实例与入口，<b>两件事不混在一起</b>。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tint" id="why">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">WHY A WORKBENCH</div><h2 class="sec-h2">缺的不是更多待办，<br>是<em>切换时不丢的上下文</em></h2></div><p class="sec-lead">并行度越高，越容易在切换项目时丢失“上次停在哪、为什么这样定”。Agent-ToDo 把零散输入、方案结构、执行任务和交付回看放在同一条项目线上。</p></div>
+      <div class="why-grid">
+        <article class="why"><h3>切回来，不必重建一次</h3><p>项目、待办和脑图保留各自位置，少靠聊天记录与印象还原现场。</p></article>
+        <article class="why"><h3>多路反馈，先收进同一处</h3><p>语音、文字和截图先形成胶囊，整理时再归到对应项目。</p></article>
+        <article class="why"><h3>脑中的方案，变成可见结构</h3><p>用脑图拆开需求、决策与验收口径，不靠几段散文字传递方案。</p></article>
+        <article class="why"><h3>交给 Agent，也交清背景</h3><p>待办导出同时带上方案层级、图片链接与关联的客户原话。</p></article>
+      </div>
+      <div class="why-quote"><b>核心不是“记更多”，而是让每条线的上下文都有固定位置。</b> <span>接住 → 归位 → 出方案 → 派活 → 收尾</span></div>
+    </div>
+  </section>
+
+  <section class="section" id="flow">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">THE DELIVERY LINE</div><h2 class="sec-h2">几个项目，<br>走同一套<em>五步工作流</em></h2></div><p class="sec-lead">五条业务线可以各自处在不同阶段。现场记录可以很快完成，整理则按批次进行；不必为了清零胶囊而强行归类。</p></div>
+      <div class="flow is-five">
+        <article class="flow-item"><div class="flow-n"><b>1</b><span>CAPTURE</span></div><h3>接住</h3><p>点「说」录一条，或点「写」输入文字并加截图，先不选项目。</p><span class="fl-end tag">主力：手机</span></article>
+        <article class="flow-item"><div class="flow-n"><b>2</b><span>ORGANIZE</span></div><h3>归位</h3><p>把胶囊单条转成待办，选择归属项目与紧急度；没想清楚的继续留下。</p><span class="fl-end tag">平板 / PC</span></article>
+        <article class="flow-item"><div class="flow-n"><b>3</b><span>STRUCTURE</span></div><h3>出方案</h3><p>用脑图拆开需求、技术决策与验收口径，节点可拖动也可用语音改字。</p><span class="fl-end tag">平板 / PC</span></article>
+        <article class="flow-item"><div class="flow-n"><b>4</b><span>HAND OFF</span></div><h3>派活</h3><p>把正文、脑图层级、图片链接和客户原话导出为 Markdown，复制给 Agent。</p><span class="fl-end tag">主力：PC</span></article>
+        <article class="flow-item"><div class="flow-n"><b>5</b><span>REVIEW</span></div><h3>收尾</h3><p>完成待办、推进项目阶段，再从概览回看交付节奏与当前积压。</p><span class="fl-end tag">平板 / PC</span></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tint" id="case">
+    <div class="wrap case-layout">
+      <div class="sec-head"><div><div class="sec-kicker">A TYPICAL WEDNESDAY</div><h2 class="sec-h2">一个周三，<br><em>三条线交织推进</em></h2></div><p class="sec-lead">下面是一个典型情景示例。A / B / C 指同一家客户的三条业务线，共用这一套实例，但各自保留项目上下文。</p><div class="case-legend"><span class="tag">A · 接口</span><span class="tag">B · 文案</span><span class="tag">C · 稳定性</span></div></div>
+      <div>
+        <div class="case-list">
+          <article class="case-row"><div class="case-when"><b>09:05</b><span>通勤路上</span></div><div class="case-body"><h3>两条反馈，先接进胶囊 <span class="end mob">手机</span></h3><p>B 线要改登录页文案，C 线报了一个 crash。分别录成胶囊，不在现场选项目或标紧急度。</p></div></article>
+          <article class="case-row"><div class="case-when"><b>10:20</b><span>回到工位</span></div><div class="case-body"><h3>批量整理，各归各的项目 <span class="end tab">平板</span></h3><p>把想清楚的内容逐条转成待办，挂到 A、B、C；暂时归不了的继续留在胶囊里。</p></div></article>
+          <article class="case-row"><div class="case-when"><b>11:00</b><span>方案评审</span></div><div class="case-body"><h3>结构摊在眼前，当场修改 <span class="end tab">平板</span></h3><p>在脑图里调整现状、改造点与验收口径；节点文字可以直接说，结构始终可见。</p></div></article>
+          <article class="case-row"><div class="case-when"><b>14:30</b><span>交给 Agent</span></div><div class="case-body"><h3>三条线，各带各的上下文 <span class="end pc">PC</span></h3><p>分别导出任务规格，不把三个项目的背景揉成一句“帮我改一下”。</p></div></article>
+          <article class="case-row"><div class="case-when"><b>16:10</b><span>核对返工</span></div><div class="case-body"><h3>回到原话，看漏了哪条约束</h3><p>客户原话仍关联在待办上，可以对照导出的内容补齐约束，再次交给 Agent。</p></div></article>
+          <article class="case-row"><div class="case-when"><b>18:40</b><span>收工回看</span></div><div class="case-body"><h3>看积压与节奏，安排下一天 <span class="end pc">PC</span></h3><p>从概览查看项目待办、四档紧急度和周期活跃度，决定明天先处理哪条线。</p></div></article>
+        </div>
+        <p class="case-tail"><b>管理动作尽量嵌进原本就要做的事：</b>记录、整理、画方案、写任务规格，而不是另维护一张进度表。</p>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="track">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">TRACKING</div><h2 class="sec-h2">几条线是否健康，<br><em>从现有记录里看</em></h2></div><p class="sec-lead">概览与项目页直接呈现当前存量和周期累计，不额外维护一套进度数据。存量会随完成、删除和改档变化，累计指标则用于回看周期节奏。</p></div>
+      <div class="track-grid">
+        <article class="track-card"><span class="track-place">项目卡 / 项目详情</span><h3>阶段与综合紧急度</h3><p>项目阶段回答“到哪一步”，综合紧急度把四档待办折成只读排序参考。</p></article>
+        <article class="track-card"><span class="track-place">项目卡</span><h3>待办与脑图数量</h3><p>未完成、已完成和脑图数并排呈现，先判断这条线还欠多少。</p></article>
+        <article class="track-card"><span class="track-place">概览下半屏</span><h3>四档当前积压</h3><p>跨项目查看紧急、较急、常规与暂缓，分辨“很忙”背后的具体任务。</p></article>
+        <article class="track-card"><span class="track-place">概览上半屏</span><h3>周期活跃热力</h3><p>按周与日查看胶囊、待办和脑图活动，回看这一周期的工作节奏。</p></article>
+        <article class="track-card"><span class="track-place">我的 / 项目详情</span><h3>Agent 配额与重置</h3><p>剩余额度用于判断还能调用多少，重置天数用于判断何时进入下一周期。</p></article>
+        <article class="track-card"><span class="track-place">待办详情 → 导出</span><h3>交付说明</h3><p>从已有待办与关联上下文生成可核对的 Markdown，减少重复整理。</p></article>
+      </div>
+      <p class="track-note">综合紧急度只用于排序，不会改待办；项目阶段是可编辑标签，不是自动流转的流程引擎。</p>
+    </div>
+  </section>
+
+  <section class="section tint" id="features">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">SIX MODULES</div><h2 class="sec-h2">六个模块，<br><em>各管交付线的一段</em></h2></div><p class="sec-lead">手机当前只提供闪念胶囊与左滑操作，其余模块没有手机入口；平板和 PC 是完整工作台。每个模块都可跳到独立手册查看逐屏说明。</p></div>
+      <div class="feat-grid">
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" aria-hidden="true"><rect x="3.5" y="4.5" width="7" height="7" rx="2"/><rect x="13.5" y="4.5" width="7" height="7" rx="2"/><rect x="3.5" y="14.5" width="7" height="5" rx="2"/><rect x="13.5" y="14.5" width="7" height="5" rx="2"/></svg></span><span class="feat-num">01</span></div><h3>概览</h3><p><b>看这个周期的节奏。</b>上半屏活跃热力，下半屏跨项目待办统计；用于判断先后，不直接修改任务。</p><div class="feat-foot"><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="manual.html#m1">看手册 →</a></div></article>
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/></svg></span><span class="feat-num">02</span></div><h3>闪念胶囊</h3><p><b>先收进来，再决定归属。</b>支持说、写与截图；单条可转待办，多选可删除或语义转脑图，也可关联到待办作为客户原话。</p><div class="feat-foot"><span class="tag">手机</span><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="manual.html#m2">看手册 →</a></div></article>
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 012-2h3.4l1.8 2.2h7.8a2 2 0 012 2v8.8a2 2 0 01-2 2H5.5a2 2 0 01-2-2z"/></svg></span><span class="feat-num">03</span></div><h3>项目</h3><p><b>一个项目，一条交付线。</b>同一客户的不同阶段可分别建项目；详情集中看待办、脑图、阶段与综合紧急度。</p><div class="feat-foot"><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="manual.html#m3">看手册 →</a></div></article>
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><path d="M8 12.3l2.6 2.6 5.4-5.6"/></svg></span><span class="feat-num">04</span></div><h3>待办</h3><p><b>一件要交的事。</b>只归一个项目，带四档紧急度；可关联胶囊、图片与一张脑图，再导出 Markdown 或使用信息增强。</p><div class="feat-foot"><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="manual.html#m4">看手册 →</a></div></article>
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="9.5" width="6" height="5" rx="2"/><rect x="15.5" y="3" width="6" height="5" rx="2"/><rect x="15.5" y="16" width="6" height="5" rx="2"/><path d="M8.5 12h3.2v-6.5h3.3M11.7 12v6.5h3.3"/></svg></span><span class="feat-num">05</span></div><h3>脑图</h3><p><b>把方案结构摆出来。</b>提供六种格式，支持拖拽改父子关系、键盘或语音改字、节点配图，以及从多条胶囊语义生成。</p><div class="feat-foot"><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="#voice">语音编辑</a><a class="text-link" href="manual.html#m5">手册 →</a></div></article>
+        <article class="feat"><div class="feat-top"><span class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.9"/><path d="M4.8 20.2c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg></span><span class="feat-num">06</span></div><h3>我的</h3><p><b>看清账号与 Agent 资源。</b>集中展示个人资料、Agent 套餐余额、重置时间与 Token API，模型功能可用额度以页面为准。</p><div class="feat-foot"><span class="tag">平板</span><span class="tag">PC</span><a class="text-link" href="manual.html#m6">看手册 →</a></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ends">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">THREE POSITIONS</div><h2 class="sec-h2">同一套工作台，<br><em>在三个位置做不同的事</em></h2></div><p class="sec-lead">同一实例中的三端共享数据，但界面密度不同。下面的截图用于说明布局与操作位置，不表示各端截图来自同一时间或同一组演示数据。</p></div>
+      <div class="ends-rows">
+        <div class="end-tabs" role="tablist" aria-label="选择设备">
+          <button class="end-tab" id="tab-mobile" role="tab" aria-selected="true" aria-controls="panel-mobile" data-tab="mobile">手机 · 接住</button>
+          <button class="end-tab" id="tab-pad" role="tab" aria-selected="false" aria-controls="panel-pad" data-tab="pad" tabindex="-1">平板 · 整理</button>
+          <button class="end-tab" id="tab-pc" role="tab" aria-selected="false" aria-controls="panel-pc" data-tab="pc" tabindex="-1">PC · 派活</button>
+        </div>
+        <div class="end-panel on" id="panel-mobile" data-panel="mobile" role="tabpanel" aria-labelledby="tab-mobile">
+          <div class="end-txt"><span class="end-tag end mob">手机 · 客户现场</span><h3>只做接住，减少注意力切换</h3><p>整屏是胶囊流，底部保留「说」与「写」。当前没有底栏和其他五个模块入口，记录时不必同时面对项目、进度与统计。</p><ul><li><b>核心动作：</b>语音或文字记录，可补一张截图</li><li><b>整理动作：</b>左滑进行导出、编辑或删除</li><li><b>刻意不做：</b>现场选项目、标紧急度、看进度</li></ul></div>
+          <div class="end-shots"><button class="end-shot" data-zoom aria-label="放大查看手机胶囊流"><img src="img/mobile-01-capture.jpg?v=20261028" width="1320" height="2856" loading="lazy" alt="手机端胶囊流与底部说、写入口"></button><button class="end-shot" data-zoom aria-label="放大查看手机左滑操作"><img src="img/mobile-03-swipe.jpg?v=20261028" width="1320" height="2856" loading="lazy" alt="手机胶囊左滑后露出导出、编辑、删除操作"></button></div>
+        </div>
+        <div class="end-panel" id="panel-pad" data-panel="pad" role="tabpanel" aria-labelledby="tab-pad" hidden>
+          <div class="end-txt"><span class="end-tag end tab">平板 · 路上或酒店</span><h3>列表与详情并排，适合连续整理</h3><p>列表从左侧浮出，详情留在右侧。换项目或换条目不需要反复退回列表，适合一次处理几个项目的胶囊、待办和脑图。</p><ul><li><b>核心动作：</b>胶囊归位、待办补全、脑图整理</li><li><b>全局入口：</b>右下角黄色徽标唤出胶囊抽屉</li><li><b>展示方式：</b>竖屏与横屏沿用同一套信息结构</li></ul></div>
+          <div class="end-shots"><button class="end-shot" data-zoom aria-label="放大查看平板待办列表"><img src="img/pad-08-todo-list.jpg" width="1600" height="2560" loading="lazy" alt="平板端待办列表从左侧浮出，右侧保留详情"></button><button class="end-shot" data-zoom aria-label="放大查看平板待办详情"><img src="img/pad-11-todo-detail-linked.jpg?v=20261028" width="1600" height="2560" loading="lazy" alt="平板待办详情已关联闪念胶囊与脑图，图片区块为空态"></button></div>
+        </div>
+        <div class="end-panel" id="panel-pc" data-panel="pc" role="tabpanel" aria-labelledby="tab-pc" hidden>
+          <div class="end-txt"><span class="end-tag end pc">PC · 工位</span><h3>把多条线摊开，集中整理与派活</h3><p>宽屏让项目统计和待办卡同屏呈现，适合跨项目检查积压、补全任务上下文，再逐条导出给 Agent。</p><ul><li><b>核心动作：</b>跨项目整理、结构检查、批量导出</li><li><b>展示方式：</b>更宽的卡片列与完整详情布局</li><li><b>输出结果：</b>Markdown 可复制，也可保存为文本</li></ul></div>
+          <div class="end-shots"><button class="end-shot" data-zoom aria-label="放大查看 PC 项目详情"><img src="img/pc-03-project-detail.png?v=20261028" width="1892" height="1427" loading="lazy" alt="PC 端项目详情：基础信息横排，待办卡四列展示"></button></div>
+        </div>
+      </div>
+      <p class="ends-note">手机端能力较少是当前产品边界，不代表其他模块的数据不可见；整理工作请在平板或 PC 完成。</p>
+    </div>
+  </section>
+  <section class="section tint" id="voice">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">CONTEXT IN · CONTEXT OUT</div><h2 class="sec-h2">一边把方案说清楚，<br><em>一边把上下文交出去</em></h2></div><p class="sec-lead">语音编辑与 Markdown 导出分别对应“方案形成”和“任务交接”。模型辅助功能用于整理表达，输出仍需要人核对。</p></div>
+      <div class="capability-grid">
+        <article class="capability">
+          <div><div class="sec-kicker">VOICE-FIRST EDITING</div><h3>客户在对面，少掏一次键盘</h3><p class="cap-lead">在脑图节点上直接录音，保持整棵树的结构可见；键盘编辑入口仍然保留。</p><ul class="cap-list"><li><b>节点内录音：</b>点麦克风开始，说完再点一次停止</li><li><b>60 秒上限：</b>节点显示倒计时，到时自动停止</li><li><b>识别后替换：</b>整段替换当前节点文字，错了可重新编辑</li></ul></div>
+          <div class="voice-shots"><figure class="voice-shot"><button data-zoom aria-label="放大查看键盘编辑"><img src="img/pad-17-mindmap-edit.jpg?v=20261028" width="1600" height="2560" loading="lazy" alt="平板脑图键盘编辑：底部浮条展开输入区与取消、保存"></button><figcaption>键盘编辑：浮条就地展开</figcaption></figure><figure class="voice-shot"><button data-zoom aria-label="放大查看语音编辑"><img src="img/pad-18-mindmap-voice.jpg" width="1600" height="2560" loading="lazy" alt="平板脑图语音编辑：节点遮罩中显示剩余 55 秒"></button><figcaption>语音编辑：图中剩余 55 秒</figcaption></figure></div>
+        </article>
+        <article class="capability" id="export">
+          <div><div class="sec-kicker">MARKDOWN HAND OFF</div><h3>派活时，把背景一并带上</h3><p class="cap-lead">导出内容按“待办正文 → 图片链接 → 脑图层级 → 关联胶囊”组织。信息增强用于重组表达，结果需人工核对，不写回原待办。</p><ul class="cap-list"><li><b>原文与结构：</b>保留正文和脑图标题层级</li><li><b>图片可选：</b>可勾选不含图片，分享前注意脱敏</li><li><b>客户原话：</b>关联胶囊单独成段，不混进方案标题</li></ul></div>
+          <div><div class="exp-card"><div class="exp-bar"><i></i><i></i><i></i><span>导出示例</span><button class="exp-copy-btn" id="copyDemo" type="button">复制示例</button></div><pre class="exp-body" id="exportDemo">把审批流改成按工段走，先出接口草稿
+
+<span class="md-i">![现有审批流截图](https://todo.memorymap.cn/files/…png)</span>
+
+<span class="md-h"># 审批流改造
+## 一、现状与卡点
+### 现在是一条线性审批，工段长没有节点
+## 二、改造点
+### 按工段拆并行节点，同工段内仍顺序审批</span>
+<span class="md-m">### 车间 PDA 是安卓 7，不能要求客户端升级
+
+---
+
+闪念胶囊
+
+- 审批流能不能按工段走
+- 他们车间的 PDA 还是安卓 7
+- 月底盘点那两天不能停机</span></pre></div><p class="exp-note">图片是否能在目标平台直接预览，取决于链接访问权限与平台渲染规则；对外分享前请先检查敏感信息。</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="delivery">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">DELIVERY & DATA</div><h2 class="sec-h2">先分清演示与正式交付，<br><em>再决定数据放在哪里</em></h2></div><p class="sec-lead">当前公开入口是已上架的微信小程序演示实例。正式项目按客户独立部署，终端形态与升级节奏在交付时确认；演示数据不会自动进入正式实例。</p></div>
+      <div class="delivery-grid">
+        <article class="delivery-card"><span class="tag">公开体验</span><h3>微信小程序 · 演示实例</h3><p>扫码登录即可体验当前功能，数据在自己的演示账号下。功能会持续更新，演示数据不承诺长期保存，重要内容请自行导出。</p><ul><li>当前公开可用入口</li><li>与正式客户实例互不相通</li><li>适合了解界面与操作流程</li></ul></article>
+        <article class="delivery-card primary"><span class="tag">正式项目</span><h3>每家客户 · 独立部署</h3><p>按客户建立独立实例与数据库，使用独立入口和账号。H5 或原生 App 可作为交付时的终端选项，具体形态按项目环境确认。</p><ul><li>客户之间实例与数据隔离</li><li>升级按各自项目节奏安排</li><li>项目上下文沉淀在各自实例</li></ul></article>
+      </div>
+      <div class="delivery-points">
+        <article class="delivery-point"><h3>数据边界</h3><p>独立实例用于隔离不同客户的项目、待办、脑图和现场记录；导出到其他平台后，应遵守目标平台的数据规则。</p></article>
+        <article class="delivery-point"><h3>迭代节奏</h3><p>不同客户的实例可分别安排升级，避免一个客户的定制改动直接影响另一个客户。</p></article>
+        <article class="delivery-point"><h3>上下文资产</h3><p>同一客户的项目阶段、需求变化与客户原话持续保留，后续阶段接手时有据可查。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section next-sec" id="next">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">WHAT'S NEXT</div><h2 class="sec-h2">接下来，减少两次手工搬运</h2></div><p class="sec-lead">以下方向仍在开发中，不是当前可用能力，也不承诺上线时间。当前派活仍靠导出，客户反馈仍由你记录。</p></div>
+      <div class="next-grid">
+        <article class="next"><span class="next-tag">开发中 · MCP 连接服务</span><h3>让本地 Agent 按项目读取待办</h3><p>目标是把云端待办接到本地 Agent 的任务流中，减少 Markdown 的人工复制，并探索执行状态回写。</p><ul><li>按项目与紧急度读取任务</li><li>连接本地 Agent 的执行流程</li><li>保留手工导出作为可用路径</li></ul></article>
+        <article class="next"><span class="next-tag">开发中 · 团队服务</span><h3>让客户方直接提交反馈</h3><p>目标是提供客户侧入口，把新需求与 bug 反馈汇入待整理池，再由你归到项目并交给 Agent。</p><ul><li>客户侧简化反馈入口</li><li>统一汇总后按项目分拣</li><li>减少一次口头或文字转述</li></ul></article>
+      </div>
+      <p class="next-note">后续升级以兼容现有实例与项目数据为目标，实际迁移方式随功能设计确认。</p>
+    </div>
+  </section>
+
+  <section class="section" id="manual">
+    <div class="wrap"><div class="manual-card"><div><div class="sec-kicker">OPERATION MANUAL</div><h2>36 张真实界面截图，<br>把每个按钮讲清楚</h2><p>独立手册按十个章节组织：先理解三端分工，再逐模块查看操作顺序、界面元素、跨端流程、名词与手势。图片可放大，旧版手册深链仍然有效。</p><div class="manual-meta"><span class="tag">手机 4 张</span><span class="tag">平板 27 张</span><span class="tag">PC 5 张</span><span class="tag">10 个章节</span></div></div><a class="btn dark" href="manual.html">打开完整手册<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div>
+  </section>
+  <section class="section tint" id="faq">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="sec-kicker">FAQ</div><h2 class="sec-h2">上手前，先回答九个问题</h2></div><p class="sec-lead">这里给出结论；具体操作与界面元素可在独立手册中按模块查看。</p></div>
+      <div class="faq-grid">
+        <details class="faq" open><summary><span class="q">Q</span>三个端的数据是同一份吗？<span class="plus">+</span></summary><div class="ans">在同一个实例里，三端连接同一份数据。手机上录的是<b>闪念胶囊</b>，回到平板或 PC 后先出现在胶囊列表，再由人转成待办，不会自动归到项目。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>客户的信息放进去，安全吗？<span class="plus">+</span></summary><div class="ans">正式交付按客户使用<b>独立实例与数据库</b>，不同客户不共用入口和账号。公开小程序是演示实例，与正式实例互不相通。导出到其他平台后，链接和内容由目标平台处理，分享前请脱敏。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>一个客户有第二期、第三期怎么办？<span class="plus">+</span></summary><div class="ans">分别建立项目，例如「某制造 · 一期」「某制造 · 二期」。当前采用单级项目归属，不做客户到项目的父子结构；历史项目记录保留，新项目独立整理。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>我休假了，同事能接手吗？<span class="plus">+</span></summary><div class="ans">当前是单人工作台，没有多人协作与共享账号。可通过待办导出交接 Markdown，连同方案层级与客户原话一起交给同事；团队服务仍在开发中。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>手机上为什么只有闪念胶囊？<span class="plus">+</span></summary><div class="ans">手机当前定位为现场记录入口：胶囊流加「说」「写」，没有其他五个模块入口。项目整理、脑图编辑与导出请在平板或 PC 完成。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>一条待办能归到几个项目？<span class="plus">+</span></summary><div class="ans">只能归一个项目。同一个改动如果同时服务两个项目，应分别建立待办，因为各自需要保留的客户原话与方案上下文也不同。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>多选胶囊能批量转待办吗？<span class="plus">+</span></summary><div class="ans">不能。多选开放<b>删除</b>与<b>语义转脑图</b>；转待办只针对单条，因为还要补项目和紧急度。取消表单后，原胶囊仍然保留。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>导出给 Agent 的文本包含什么？<span class="plus">+</span></summary><div class="ans">依次包含<b>待办正文、图片链接、脑图标题层级、关联胶囊</b>。不想带图可选择「不含图片」；信息增强会重组表达，但结果需要人工核对。</div></details>
+        <details class="faq"><summary><span class="q">Q</span>MCP 连接服务和团队服务现在能用吗？<span class="plus">+</span></summary><div class="ans">还不能，两个方向都在开发中，不承诺具体时间。当前派活使用 Markdown 导出，客户反馈由你通过胶囊记录。</div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-sec" id="download">
+    <div class="wrap"><div class="cta-box"><div class="cta-txt"><h2>下一次被打断时，<br>先把它记下来</h2><p>微信小程序已上架，扫码即可体验。<b>这是演示实例</b>，功能持续更新，数据不承诺长期保存；正式项目按客户独立部署。想先看清操作，也可以从完整手册开始。</p></div><div class="cta-side"><div class="cta-qr"><img src="img/miniprogram-code.jpg" width="344" height="344" loading="lazy" alt="Agent-ToDo 微信小程序码"><span><b>微信扫码打开</b>演示小程序，登录即可体验</span></div><a class="btn yellow" href="manual.html">先看手册</a></div></div></div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="sf-grid">
+      <div class="sf-brand"><img src="img/brand-logo-512.png" width="38" height="38" alt=""><div><b>Agent-ToDo</b><p>给 FDE 的多项目工作台<br>每家客户独立一套<br>接住 → 归位 → 出方案 → 派活 → 收尾</p></div></div>
+      <div class="sf-col"><h4>产品</h4><a href="#fit">适用场景</a><a href="#flow">五步工作流</a><a href="#case">并行的一天</a><a href="#features">六个模块</a><a href="#delivery">交付与数据</a></div>
+      <div class="sf-col"><h4>手册</h4><a href="manual.html#m1">概览</a><a href="manual.html#m2">闪念胶囊</a><a href="manual.html#m4">待办与导出</a><a href="manual.html#m5">脑图</a><a href="manual.html">完整手册</a></div>
+      <div class="sf-col sf-about"><h4>关于</h4><p><b>演示实例</b>：公开小程序，数据在演示账号下，不承诺长期保存</p><p><b>正式交付</b>：每家客户独立实例与数据，升级按客户节奏</p><p class="sf-meta">v3.0 · 2026-10-30<br>手册基于 36 张界面截图编写，界面以实际版本为准</p></div>
+    </div>
+    <div class="sf-qrbar"><img src="img/official-account-qr.jpg" width="430" height="430" loading="lazy" alt="公众号二维码"><div><b>关注公众号</b><p>扫码关注，更新都发在这里<br>有具体问题，关注后直接私信我</p></div></div>
+    <div class="sf-bottom"><span>© 2026 Agent-ToDo</span><span>微信小程序 · 手机 / 平板 / PC</span><span class="right">截图为演示数据，仅作界面说明，不含客户信息</span></div>
+  </div>
+</footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="放大查看截图" aria-hidden="true">
+  <button class="lb-close" id="lbClose" aria-label="关闭图片">×</button><img id="lbImg" alt=""><div class="lb-cap" id="lbCap"></div>
+</div>
+<script>
+(function(){
+  var menuBtn=document.getElementById('menuBtn'),mobileMenu=document.getElementById('mobileMenu');
+  function closeMenu(){mobileMenu.classList.remove('on');menuBtn.setAttribute('aria-expanded','false');menuBtn.setAttribute('aria-label','打开导航');document.body.classList.remove('menu-open');}
+  menuBtn.addEventListener('click',function(){var open=!mobileMenu.classList.contains('on');mobileMenu.classList.toggle('on',open);menuBtn.setAttribute('aria-expanded',String(open));menuBtn.setAttribute('aria-label',open?'关闭导航':'打开导航');document.body.classList.toggle('menu-open',open);});
+  mobileMenu.querySelectorAll('a').forEach(function(a){a.addEventListener('click',closeMenu);});
+  window.addEventListener('resize',function(){if(window.innerWidth>820)closeMenu();});
+
+  var tabs=Array.prototype.slice.call(document.querySelectorAll('.end-tab'));
+  function selectTab(tab,focus){tabs.forEach(function(t){var active=t===tab,panel=document.getElementById(t.getAttribute('aria-controls'));t.setAttribute('aria-selected',String(active));t.tabIndex=active?0:-1;panel.classList.toggle('on',active);panel.hidden=!active;});if(focus)tab.focus();}
+  tabs.forEach(function(tab,i){tab.addEventListener('click',function(){selectTab(tab,false);});tab.addEventListener('keydown',function(e){var n;if(e.key==='ArrowRight')n=(i+1)%tabs.length;else if(e.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();selectTab(tabs[n],true);});});
+
+  var lb=document.getElementById('lb'),lbImg=document.getElementById('lbImg'),lbCap=document.getElementById('lbCap'),lbClose=document.getElementById('lbClose'),lastTrigger=null;
+  function openLb(trigger){var img=trigger.querySelector('img');if(!img)return;lastTrigger=trigger;lbImg.src=img.currentSrc||img.src;lbImg.alt=img.alt||'';lbCap.textContent=img.alt||'';lb.classList.add('on');lb.setAttribute('aria-hidden','false');document.body.classList.add('lb-open');lbClose.focus();}
+  function closeLb(){if(!lb.classList.contains('on'))return;lb.classList.remove('on');lb.setAttribute('aria-hidden','true');document.body.classList.remove('lb-open');lbImg.removeAttribute('src');if(lastTrigger)lastTrigger.focus();}
+  document.querySelectorAll('[data-zoom]').forEach(function(btn){btn.addEventListener('click',function(){openLb(btn);});});
+  lbClose.addEventListener('click',closeLb);lb.addEventListener('click',function(e){if(e.target===lb)closeLb();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeLb();closeMenu();}if(e.key==='Tab'&&lb.classList.contains('on')){e.preventDefault();lbClose.focus();}});
+
+  var copyBtn=document.getElementById('copyDemo'),demo=document.getElementById('exportDemo');
+  copyBtn.addEventListener('click',function(){var text=demo.innerText;function done(){copyBtn.textContent='已复制';setTimeout(function(){copyBtn.textContent='复制示例';},1800);}function fallback(){var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){copyBtn.textContent='请手动复制';}ta.remove();}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(done).catch(fallback);}else fallback();});
+
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('.nav-links a[href^="#"]'));
+  var navItems=navLinks.map(function(a){return{a:a,el:document.querySelector(a.getAttribute('href'))};}).filter(function(x){return x.el;});
+  function spy(){var line=window.scrollY+150,current=null;navItems.forEach(function(x){if(x.el.offsetTop<=line)current=x.a;});navLinks.forEach(function(a){var on=a===current;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');});}
+  var ticking=false;window.addEventListener('scroll',function(){if(!ticking){ticking=true;requestAnimationFrame(function(){spy();ticking=false;});}},{passive:true});spy();
+
+  // ★ 深链落点修正：截图是懒加载，浏览器在"图高 0"时就跳过锚点，图陆续到位会把版面撑高，
+  //   直接打开 /#ends 这类链接会落偏 ⇒ 锚点跟着版面反复重校。
+  //   坑：不能靠临时改 `scroll-behavior:auto` 提速 —— 样式一恢复，那次跳转会被重排成平滑动画，
+  //   追不上就停在半路。这里显式用 behavior:'instant'，并以"落点真的对上"作为退出条件。
+  if(location.hash&&location.hash.length>1){
+    (function(){
+      var tgt=document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if(!tgt)return;
+      var root=document.documentElement,locked=true,hit=0;
+      function padPx(){return parseFloat(getComputedStyle(root).scrollPaddingTop)||0;}
+      function jump(y){try{window.scrollTo({top:y,behavior:'instant'});}catch(e){window.scrollTo(0,y);}}
+      function anchor(){
+        if(!locked)return;
+        var p=padPx(),top=tgt.getBoundingClientRect().top;
+        if(Math.abs(top-p)<=2){hit++;return;}
+        jump(Math.max(0,top+window.pageYOffset-p));
+        hit=(Math.abs(tgt.getBoundingClientRect().top-p)<=2)?hit+1:0;
+      }
+      function release(){locked=false;}
+      ['wheel','touchstart','keydown','pointerdown'].forEach(function(t){window.addEventListener(t,release,{once:true,passive:true});});
+      var timer=setInterval(function(){
+        if(!locked){clearInterval(timer);return;}
+        anchor();
+        if(hit>=6)clearInterval(timer);
+        spy();
+      },220);
+      window.addEventListener('load',anchor);
+      anchor();
+      spy();
+      setTimeout(function(){clearInterval(timer);},4000);
+    })();
+  }
+})();
+</script>
+
+</body>
+</html>

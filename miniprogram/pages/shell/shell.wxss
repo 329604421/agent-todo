@@ -1,0 +1,14 @@
+/* 壳页 —— 只补骨架之外的「模块挂载位」。
+   stage-wrap / stage / app / main / titlebar / workarea / fab 等骨架样式都在 app.wxss。 */
+
+/* 模块挂载位：替代原来 .main 在 .app 里的位置（nav-rail 72 之后的剩余宽度）。
+   ⚠️ 显隐一律走行内 style 的 display:none（行内优先级最高，不会与这里的 flex 打架），
+      不用 hidden 属性、也不用 wx:if —— wx:if 会重建组件，白屏就回来了。
+   组件宿主自身的高度由各模块 wxss 里的 :host 撑满（跟 bottom-nav / nav-rail 同一套做法）。 */
+.modwrap {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

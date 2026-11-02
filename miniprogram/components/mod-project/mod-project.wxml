@@ -1,0 +1,385 @@
+<!-- 模块组件（09-21 起）：只渲染 <main>。
+     骨架 stage-wrap / stage / app、左导轨、底部导航、悬浮 Logo 全部搬到了壳页 pages/shell；
+     这里保留 .main 这一层，是为了让 .app.port .xxx 这类骨架选择器继续命中。
+     本模块的抽屉 / 表单抽屉 / 查看层仍在组件内（绝对定位，参照物是壳页的 .app）。 -->
+<view class="main {{landscape ? '' : 'mod-port'}}">
+
+    <!-- 主工作区 776（内容 756；★ 09-22 走查·十一：横屏无品牌栏、首块之前不留 padding）／ 竖屏
+         09-21 三次走查：三张卡的标题全部移到卡外上一行（.sec-head），该区块的操作按钮放同一行右侧。
+         ★ 09-23 第五十三轮（项目页专项）：横屏原来的「左待办 ＋ 右 456 侧栏」split **撤掉** ——
+           待办 3–4 列、脑图 5–6 列的网格在 456 宽里排不下，且侧栏只剩一张脑图卡时下方全白。
+           现在三块**整宽竖向堆叠**，横竖同一份 DOM，只有网格列数在 .mod-port 里换一档。
+         ★★ 168 轮：脑图网格 6/3 列 → **4/2 列**（卡里多了一张格式简图，见下面 ③ 那段）。 -->
+    <view class="workarea p-area">
+    <!-- ★★ 204 轮：让位段（状态栏 ＋ 品牌行）—— 滚动内容的**第一段**，随内容滚走。
+         ★★ 207 轮：横屏**又渲染了**（206 试过整段撤掉、内容贴顶太紧已回退）。
+         横屏这段是**空盒子**，只贡献 `LAND_HEAD`(6) 的高度、不画 logo
+         （brand-head.wxml 内部还有一层 `wx:if="{{!landscape}}"` 挡着）。 -->
+    <brand-head landscape="{{landscape}}" />
+      <block wx:if="{{project}}">
+      <!-- ① 基础信息 —— ★ 第五十五轮重排（用户口径：去掉「···」与「管理 agent」小字，
+           数字区参照「我的」页 agent 卡的「概览三数」灰块）。
+           ★ 第五十六轮：子标题「项目基础信息」→「基础信息」（这一页整个就是"某个项目"，
+             "项目"两个字在每个标题里重复三次是噪音）。
+           ★★ 第一百六十二轮：卡内 ③④ 两块**拆成两个带小标题的组**（用户口径见下）。
+           结构 ＝ ① 色点 · 名称 · 节点徽章 ／ 卡内右端一颗按钮；
+                   ② **备注**（★ 57 轮补，空态「未填写备注」）；
+                   ③ **「项目概要」组** ＝ 小标题 ＋ 灰块三格：
+                       **未完成待办 · 已完成待办 · 项目脑图**；
+                   ④ **「所属 agent」组** ＝ 小标题 ＋ agent 名（整行可点 →「我的」）
+                       ＋ 灰块两格：当前剩余 · 距离重置。
+           ★★ 162 轮原话：「项目详情中的基础信息卡片，这块显示的不太好，应该把所属 agent 的一些
+              基本信息和这个项目的一些概要信息进行区分掉……比个举个例子 项目的概要信息里面
+              它里面有多少已完成的待办 未完成的待办 还有多少个脑图，那这个其实进行单独统计会比较合适一些」。
+              ⇒ 根因是**两种来源不同的数挤在同一排**（左两格＝那个 agent 的额度、右两格＝这个项目的数量），
+                 一排四格没有分组标题 ⇒ 被读成"同一件事的四个面"。
+              ★★ 163 轮（用户口径）：卡内最后那两个组**并排成一行** ——
+                 左「所属 agent」、右「项目概要」；并撤掉「当前剩余」。
+                 读序 ＝ 这是谁（名称）→ 我是什么（备注）→ **我归谁 · 我干了多少**（同排）。
+              ★★ 164 轮（用户口径）：左栏那块**再收一次** —— agent 名从灰块**外面**挪进灰块里、
+                 并撤掉「每月套餐」（用户原话：「就不能把 agent 的名称挪进展示卡片中吗？
+                 每月套餐不用显示了，就显示 agent 名称和距离重置天数」）。
+                 ⇒ 左栏 ＝ 一块灰底，里面只有「名字（可点）｜ 距离重置」两件；
+                    顶上那行小标题就是名字那一格的标签，格内不再重复写一遍。
+              ⚠️ **「当前剩余」已撤（163 轮）** —— 162 轮那句"区分不是撤"被用户新口径取代
+                 （用户：「概览页早就没有当前余额这个信息了……和概览保持一致」）。
+              ⚠️ 项目概要三数**都不含已删除**：`store.todosOfProject()` 自 160 轮起已滤掉软删的
+                 （"这个项目有多少活"里不该算已经被删掉的）。
+           ⚠️「···」撤掉之后归档不能没有入口（FR-2.9）：活跃态把「归档项目」放进**编辑抽屉**
+              底部（与 agent / token 的「删除」同一个位置、同一套壳）；归档态卡内按钮变
+              「取消归档」—— 两个方向的入口都还在，卡面只剩一颗按钮。 -->
+      <view class="sec sec-basic sec-first">
+        <view class="sec-head">
+          <icon name="info-b" size="16" />
+          <text class="sec-t">基础信息</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="card basic">
+          <view class="bs-row1">
+            <view class="pdot-lg" style="background:{{pcolor}}"></view>
+            <text class="bs-name">{{project.name}}</text>
+            <view class="badge badge-node" wx:if="{{!archived}}">{{project.node}}</view>
+            <view class="badge badge-arch" wx:else>已归档</view>
+            <view class="sec-flex"></view>
+            <view class="tb-btn bs-act" bindtap="onBasicAct" hover-class="tb-btn-hv">
+              <icon name="{{archived ? 'undo' : 'edit'}}" size="13" />
+              <text>{{archived ? '取消归档' : '编辑'}}</text>
+            </view>
+          </view>
+
+          <!-- 备注（★ 57 轮补）—— 创建项目时填的那句话原来在详情页**没有任何落点**，
+               只有再点「编辑」进抽屉才看得见。这一行是它的落点。
+               空态给一句灰字「未填写备注」（与下面「未关联 agent」同一读法：
+               把"这一格是空的"如实说出来，而不是整行消失让人以为没有这个字段）。
+               长文本夹两行省略 —— 完整内容在编辑抽屉里，卡片不负责全文。 -->
+          <view class="bs-remark">
+            <text class="bs-remark-t" wx:if="{{project.remark}}">{{project.remark}}</text>
+            <text class="bs-remark-none" wx:else>未填写备注</text>
+          </view>
+
+          <!-- ★★ 163 轮（用户口径）：下面两个组**并排成一行** ——
+               左「所属 agent」、右「项目概要」。
+               用户原话：「你看看"概览"页中 agent 的展示卡片，现在早就没有当前余额这个信息了；
+               是否 agent 的展示卡片还和概览保持一致，右侧展示项目摘要，将这两个卡片做到一行中」。
+               ⇒ 162 轮是"上下两组"，本轮只改**谁和谁同排**：组内结构（小标题 ＋ 那块灰底）
+                 一个字没动，`.bs-group` / `.bs-pair` / `.bs-cell` / `.bs-lab` / `.bs-val` 全照旧。
+               ⚠️ 并排后**组序也换了**：agent 在左、项目摘要在右（162 轮是概要在上）。
+               ⚠️ 窄屏（手机竖屏卡片内宽 ~315px）由 `.bs-cols { flex-wrap }` **自动折回上下两组**
+                  —— 折回去与 162 轮同形。**不要**在这里写"只有横屏才包 `.bs-cols`"的分支：
+                  那种写法要在两页各来一份，横竖屏切换点（`.mod-port`）又只在组件内部。
+               ⚠️ 皮肤住 **app.wxss**（组件 wxss 互相看不见，两页共用一份只能放全局）。 -->
+          <view class="bs-cols">
+
+            <!-- 「所属 agent」组（162 轮立组 · 163 轮搬到左栏 · 164 轮**收进灰块**）——
+                 **灰块里**两件：agent 名（整行可点 →「我的」的 agent 区）｜ 距离重置。
+                 ★★ 165 轮，两处：
+                   ① 名字右边那枚 `chevron-right` **摘掉** —— 用户口径「agent 名称右边好像
+                      多了个"向右"的图标」。与 83 轮摘掉脑图卡那枚是**同一条口径**：
+                      那个箭头也是"查看"的暗示，而这一格本身就是入口 ⇒ 同一件事不必在一张卡里说两遍。
+                      ⚠️ `bindtap="onGoAgent"` 与 `hover-class="bs-agent-hv"` **都保留** ——
+                         可点性改由**按下反馈**承担，不再靠箭头暗示。（"撤箭头"≠"撤入口"。）
+                   ② 名字的字号字重升一档（15/500 → **16/600**，见 app.wxss `.bs-agent-n`）——
+                      用户口径「agent 名称显示要加粗一些，字体也加大一些」。
+                 ★★ 164 轮：名字原来悬在灰块**上方**，与右栏那块并排之后，左边被名字顶低一行、
+                    名字看着像一行孤零零的字（用户原话：「就不能把 agent 的名称挪进展示卡片中吗？
+                    每月套餐不用显示了，就显示 agent 名称和距离重置天数」）⇒ 挪进灰块、撤「每月套餐」。
+                 ⚠️ 名字与它的数**必须在同一块里**：162 轮之前名字孤零零顶在备注上面、
+                    它的额度却在四格灰块里 —— 中间隔着一行备注，读不出"这两格是那个 agent 的"。
+                 ⚠️ 名那一格**不写标签**（`.bs-lab`）：它的"标签"就是上面那行小标题「所属 agent」——
+                    格内再写一遍会读成"所属 agent / 所属 agent / workbuddy"。
+                    ⚠️ 也因此它是 `.bs-agent` 而**不是** `.bs-cell`：那一格是"值单独占一格"，
+                       内部没有 label＋value 两行。
+                 ⚠️ **没关联 agent 时整组只剩这一句灰字**（左栏一行字，右栏照常）——
+                    不再画一块全是「—」的空灰块：一句「未关联 agent」已经把空缺说清了
+                    （"未填"与"0"的区别由**不画**来表达 —— 与 55 轮"不说成『管理 agent：无』"同一读法）。 -->
+            <view class="bs-group">
+              <text class="bs-group-t">所属 agent</text>
+              <block wx:if="{{agent}}">
+                <view class="bs-pair">
+                  <view class="bs-agent" bindtap="onGoAgent" hover-class="bs-agent-hv">
+                    <text class="bs-agent-n">{{agent.name}}</text>
+                  </view>
+                  <view class="bs-sep"></view>
+                  <view class="bs-cell">
+                    <text class="bs-lab">距离重置</text>
+                    <text class="bs-val num">{{agent.resetIn}}</text>
+                  </view>
+                </view>
+              </block>
+              <view class="bs-agent" wx:else hover-class="none">
+                <text class="bs-agent-none">未关联 agent</text>
+              </view>
+            </view>
+
+            <!-- 「项目概要」组（162 轮立组 · 163 轮搬到右栏）——
+                 只报**这个项目自己的**三个数：未完成待办 / 已完成待办 / 项目脑图。
+                 ⚠️ 三个数**都不含已删除**：`store.todosOfProject()` 自 160 轮起已滤掉软删的 ——
+                    "这个项目有多少活"里不该算已经被删掉的。
+                 ⚠️ `openCount` = 未完成、`doneCount` = 已完成，两者之和 = 这个项目**活着的待办总数**
+                    （＝ 归档确认弹窗里那个 `totalCount`，同源不同用）。
+                 标签带「待办」二字：这一排左边是"未完成 / 已完成"（状态）、右边是"脑图"（对象），
+                 不写全就会读成"未完成 5、已完成 3、脑图 2"三者并列。 -->
+            <view class="bs-group">
+              <text class="bs-group-t">项目概要</text>
+              <view class="bs-pair">
+                <view class="bs-cell">
+                  <text class="bs-lab">未完成待办</text>
+                  <text class="bs-val num">{{openCount}} 条</text>
+                </view>
+                <view class="bs-sep"></view>
+                <view class="bs-cell">
+                  <text class="bs-lab">已完成待办</text>
+                  <text class="bs-val num">{{doneCount}} 条</text>
+                </view>
+                <view class="bs-sep"></view>
+                <view class="bs-cell">
+                  <text class="bs-lab">项目脑图</text>
+                  <text class="bs-val num">{{mindmapCount}} 张</text>
+                </view>
+              </view>
+            </view>
+
+          </view>
+        </view>
+      </view>
+
+      <!-- ② 项目待办 —— 网格小卡（参照待办列表抽屉那张卡），只铺**未完成**的。
+           ★ 第五十六轮：区块头右侧的「记一条」撤掉（用户口径）。
+           ★ 第八十二轮：创建入口改到**底部那颗按钮进去的列表**底部
+             （「＋ 创建待办」，项目字段按作用域预填）——
+             原来指的那颗悬浮 Logo 快捷键已经不再触发创建了（用户口径）。
+           ★ 第一百五十六轮：那颗按钮由「查看全部」（全量列表）改成
+             「已完成待办」（只列已完成的那一档，见 `utils/drawers.js`）。
+           ★★ 第一百六十轮：那一档的写法从 `scope.done:true` 改成 `scope.status:'done'`
+             （待办状态统一成三档一套词），点进来的仍是同一张列表。
+             ⚠️ 创建入口**仍然**在那张抽屉的底部（`createLabel: '创建待办'`）——
+                这是本项目里"带着项目预填写一条待办"的唯一落点，改名时不许顺带摘掉。 -->
+      <view class="sec sec-todo">
+        <view class="sec-head">
+          <icon name="todo-b" size="16" />
+          <text class="sec-t">项目待办</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="card blk-card">
+          <!-- ★ 156 轮：四档**从"只读计数"改成"可点的筛选键"**（用户口径）——
+               点某一档 ⇒ 下面网格只留该档的**未完成**待办；再点同一档 ⇒ 取消、回到全部。
+               ⚠️ 计数与筛选**同源**：`store.statOfProject` 本来就只数 `!done`（FR-5.2），
+                  而网格喂的也是未完成集合 ⇒ 不会出现"格子里写 3、点开却是 0 条"。
+               形态沿用「筛选副弹窗」的选项胶囊（`.tf-chip`：白底 ＋ 描边 ＋ 胶囊圆角）；
+               但选中态**不套黑色 `.on`** —— 四档各自的颜色就是它们的身份，
+               选中改用该档浅底 ＋ 深字（`--u-*-bg` / `--u-*-t`，与 `.badge-node` 同一取法）。
+               ⚠️ 名字与条数都由 `urgChips` 下发（来自 `store.urgencyList()`）——
+                  不在这里手抄"紧急/中等/不紧急/留置"四个中文名（手抄的那份迟早漂）。
+               ⚠️ 右端的「综合紧急度」是**只读**读数，不参与筛选，仍是四档的加权分。 -->
+          <view class="stat-row">
+            <view class="uf-row">
+              <view
+                class="uf uf-{{c.key}} {{urgFilter === c.key ? 'on' : ''}}"
+                wx:for="{{urgChips}}"
+                wx:for-item="c"
+                wx:key="key"
+                data-key="{{c.key}}"
+                bindtap="onUrgFilter"
+                hover-class="uf-hv"
+              >
+                <text class="uf-t">{{c.name}}</text>
+                <text class="uf-n num">{{c.n}}</text>
+              </view>
+            </view>
+            <view class="stat-flex"></view>
+            <text class="sb score">综合紧急度 {{score}} 分</text>
+          </view>
+
+          <!-- ★ 151 轮：网格容器**不再自己滚**（高由内容决定，横竖屏同一条口径）——
+               工作区 `.workarea.p-area` 已改成可滚 ⇒ 待办多了整页滚，不会在卡内出滚动条。
+               `scroll-y` / `enhanced` / `show-scrollbar` 三个属性**保留**：它们是"万一某一帧
+               内容比容器高"时的兜底（滚动条另有 CSS 收口），摘掉反而会在极端情况下丢内容。 -->
+          <scroll-view class="grid-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+            <!-- ★ 156 轮：空态文案改由 js 现算（`gridEmpty`）—— 现在有**两种**空：
+                 ① 筛到某一档、那一档恰好没有未完成 ⇒「紧急档暂时没有未完成的待办」；
+                 ② 这个项目一条未完成都没有 ⇒「这个项目没有未完成的待办」。
+                 ⚠️ 上一版这里写的是"点右下角「查看全部」进去创建一条" ——
+                    右下角那颗已经改名成「已完成待办」（156 轮）⇒ 那句话会指向一个
+                    语义不对的去处，所以整句撤掉，只如实说"没有"（创建入口仍在
+                    那张抽屉底部，见 `drawers.build` 的 `createLabel`）。 -->
+            <view class="blank-box" wx:if="{{!shownCount}}">{{gridEmpty}}</view>
+            <view class="tg" wx:else>
+              <view class="tg-cell" wx:for="{{openTodos}}" wx:key="id">
+                <!-- ★ 54 轮：挂 `tg-card` 类 —— 宿主宽度必须由外部**明确**给（`flex:1 1 auto`，
+                     见 wxss），只靠标签选择器不稳；同时这个类让几何量测能读到宿主本体。 -->
+                <todo-card
+                  class="tg-card"
+                  todo="{{item}}"
+                  hide-project="{{true}}"
+                  compact="{{true}}"
+                  bind:open="onTodoOpen"
+                  bind:toggle="onTodoToggle"
+                />
+              </view>
+            </view>
+          </scroll-view>
+
+          <!-- ★ 156 轮：底行两颗都动了 ——
+               ① 左：文案改由 js 现算（`footStat`）—— 有档位筛选时改报
+                  「紧急 2 条（未完成共 5 条）」，否则仍是「未完成 N 条 · 已完成 M 条」；
+                  否则筛选生效时左边还报全量，读起来像"卡片丢了"。
+               ② 右：「查看全部」→ **「已完成待办」**（用户口径）—— 点开的是
+                  「已完成」那一档的列表抽屉（`scope.status:'done'`，见 `utils/drawers.js`）。 -->
+          <view class="list-foot">
+            <text class="foot-stat">{{footStat}}</text>
+            <view class="tb-btn" bindtap="onViewDoneTodos" hover-class="tb-btn-hv">
+              <icon name="list" size="13" opacity="0.65" />
+              <text>已完成待办</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- ③ 项目脑图 —— 网格小卡，默认只铺三行（取最近更新的那几张）。
+           ★ 第五十六轮：区块头右侧的「新建脑图」撤掉（用户口径）—— 脑图列表主弹窗的
+             底部本来就有「＋ 新建脑图」，空态 ⇒ 点右下角「查看全部」进去新建。
+           ★★ 第一百六十八轮（用户口径）：脑图卡「显示得太简单」——
+             「最好在卡片左侧显示一个它的格式简图（就是思维导图、逻辑图、组织结构图的那个
+              格式简图）……然后里面的一些节点数 层数 更新时间也一起优化一下排版」。
+             ⇒ ① 卡**横向**排：左＝格式简图，右＝三行文字；
+                ② 简图取 `store.mindmapCardView().formatThumb`（★ `utils/formats.js` 里那六张
+                   现算的 SVG 结构图，与「脑图表单 · 格式字段」**同一张**；
+                   原来行首那枚 13px 的 `mindmap` 小图标撤掉 —— 简图本身已经在说"我是哪种格式"，
+                   再挂一枚同义图标是噪音）；
+                ③ 三件信息**分行**（原来是挤在一行的一串"3 节点 · 2 层 · 10-12"）：
+                   名称 ／ 规模（N 节点 · M 层）／ 时间，后两行按**深浅两级灰**分主次。
+           ★★ 第一百六十九轮（用户口径 · 还是这张卡）：「简图高度稍微加大一下，因为右侧是
+             三行文字，目前高度有点小了」＋「'更新于10-09' 太不正式了，需要改为
+             '更新于2026年10月9日'」。
+             ⇒ ① 简图 **48×34 → 56×40**（尺寸只改 wxss 的 `.mm-thumb` 一处 —— 模板一个字没动，
+                  还是那张 `{{item.thumb}}`）；
+                ② 第三行文案改走 `store.cnDate()` ＝ `2026年10月9日`（模板仍是
+                  `更新于 {{item.date}}`，只换 js 喂进来的值）。 -->
+      <view class="sec sec-mm">
+        <view class="sec-head">
+          <icon name="mindmap-b" size="16" />
+          <text class="sec-t">项目脑图</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="card blk-card mm-box">
+          <view class="mm-body">
+            <view class="blank-box" wx:if="{{!mindmapCount}}">还没有脑图 —— 点右下角「查看全部」进去新建一张</view>
+            <view class="mg" wx:else>
+              <view
+                class="mm-tile" hover-class="mm-tile-hv"
+                wx:for="{{mindmapTiles}}"
+                wx:key="id"
+                data-id="{{item.id}}"
+                bindtap="onMindmapOpen"
+              >
+                <image class="mm-thumb" src="{{item.thumb}}" mode="aspectFit" />
+                <view class="mm-tile-b">
+                  <text class="mm-name">{{item.name}}</text>
+                  <text class="mm-stat">{{item.nodes}} 节点 · {{item.depth}} 层</text>
+                  <text class="mm-time">更新于 {{item.date}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view class="list-foot">
+            <text class="foot-stat">脑图总数 {{mindmapCount}}</text>
+            <view class="tb-btn" bindtap="onViewAllMindmaps" hover-class="tb-btn-hv">
+              <icon name="list" size="13" opacity="0.65" />
+              <text>查看全部</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      </block>
+
+      <!-- 空态（★ 本轮三处统一骨架：标识 44 → 标题 → 解释 → 主键。样式与结构说明见
+           app.wxss 的 `.blank` 那一段，组件内不再留副本） -->
+      <view class="blank" wx:else>
+        <view class="blank-ico"><icon name="project" size="44" /></view>
+        <text class="blank-t">还没有打开过任何项目</text>
+        <text class="blank-s">项目是你自己建的分类，不依赖任何同步</text>
+        <view class="blank-btn" bindtap="onDrawerCreate" hover-class="blank-btn-hv">
+          <icon name="w-plus" size="15" />
+          <text>新建一个项目</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <drawer
+    open="{{drawer.open}}"
+    kind="{{drawer.kind}}"
+    title="{{drawer.title}}"
+    action="{{drawer.action}}"
+    create-label="{{drawer.createLabel}}"
+    active-id="{{drawer.activeId}}"
+    empty="{{drawer.empty}}"
+    groups="{{drawer.groups}}"
+    page-size="{{drawer.pageSize}}"
+    filter-label="{{drawer.filterLabel}}"
+    filter-active="{{drawer.filterActive}}"
+    tf="{{drawer.tf}}"
+    filter-open="{{drawerFilterOpen}}"
+    port="{{!landscape}}"
+    turned="{{drawerTurned}}"
+    bind:close="onDrawerClose"
+    bind:pick="onDrawerPick"
+    bind:create="onDrawerCreate"
+    bind:openfilter="onDrawerOpenFilter"
+    bind:closefilter="onDrawerCloseFilter"
+    bind:filterchange="onDrawerFilterChange"
+    bind:filterreset="onDrawerFilterReset"
+  />
+
+  <form-drawer
+    id="project-form"
+    open="{{form.open}}"
+    mode="{{form.mode}}"
+    offset="{{form.offset}}"
+    edit-id="{{form.id}}"
+    title="{{form.title}}"
+    submit-label="{{form.submitLabel}}"
+    require-all="{{form.requireAll}}"
+    no-danger="{{form.noDanger}}"
+    hint="{{form.hint}}"
+    values="{{form.values}}"
+    urgencies="{{form.urgencies}}"
+    projects="{{form.projects}}"
+    mindmaps="{{form.mindmaps}}"
+    nodes="{{form.nodes}}"
+    agents="{{form.agents}}"
+    colors="{{form.colors}}"
+    formats="{{form.formats}}"
+    danger-label="归档项目"
+    port="{{!landscape}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:delete="onFormArchive"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+  />
+<!-- /mod-project -->

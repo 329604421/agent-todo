@@ -1,0 +1,33 @@
+# 行尾统一交给 git 管理：仓库内一律 LF，工作区按需转换
+* text=auto eol=lf
+
+# 明确文本类型（避免 Windows 上被当成二进制）
+*.js    text eol=lf
+*.json  text eol=lf
+*.wxml  text eol=lf
+*.wxss  text eol=lf
+*.wxs   text eol=lf
+*.ts    text eol=lf
+*.md    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.conf  text eol=lf
+*.sql   text eol=lf
+*.prisma text eol=lf
+
+# 二进制：不参与行尾转换与文本 diff
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.svg   text eol=lf
+*.pdf   binary
+*.mp3   binary
+*.mp4   binary
+
+# GitHub 语言统计：文档与静态站不计入
+docs/**       linguist-documentation
+site/**       linguist-vendored
+*.md          linguist-documentation

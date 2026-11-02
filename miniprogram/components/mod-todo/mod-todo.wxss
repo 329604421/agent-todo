@@ -1,0 +1,897 @@
+/* ★★ 171 轮：共用脑图画布**内容层**的皮肤（连线 `.links` / 节点 `.mm-node` 与 `.lv0-3` /
+   折叠徽标 `.mm-fold`）—— 「关联脑图」卡里那张**只读整图**要与脑图详情**同一种画法**，
+   而组件 wxss 互相看不见 ⇒ 两边 @import 同一份，不存在"抄一份、日后各自漂"。
+   ⚠️ @import 必须排在文件最前（WXSS 与 CSS 同规矩）。 */
+@import "../mod-mindmap/mm-canvas.wxss";
+
+/* ==========================================================================
+   模块组件 —— 只渲染 <main>，骨架与外框归壳页 pages/shell。
+   样式隔离设为 apply-shared，app.wxss 的设计令牌与骨架类对组件同样生效；
+   选择器里保留 .mod-port 的写法，因为 .app 就在壳页的祖先链上。
+
+   待办模块（V8）· 详情页 —— ★ 09-22 第四十六轮：
+     **一条 760 宽（竖屏 768）的左对齐单栏**，两向结构一致：
+       所属项目 → 操作 → 待办信息 → 图片 → 关联脑图
+         （★ 82 轮调过一次顺序；★★ 230 轮**操作栏从页底搬到第二块**，见下）
+     46 轮之前横屏是两栏（左主区 700 ＋ 右栏 456）：内容少时读作"左上散一堆 ＋ 右下几颗按钮"，
+     用户判为「排版错乱」⇒ 改成单栏靠左、右侧留白（`sec-first` 只留在首块）。
+     45 轮：四十四轮那两张卡（详情头 ＋ 原文卡）信息重复 ⇒ 合并成一张；
+     页内的「适配 agent 文本」整块搬进**导出抽屉**（form-drawer 的 mode=export）。
+     ★ 82 轮：① 五个区块直接挂 `.split`（`.col-main` / `.col-side` 两层空壳撤掉）；
+              ② 顺序改成 待办信息 → 所属项目 → 图片 → 关联脑图 → 操作；
+              ③ 「所属项目」长成项目详情那张「基础信息」卡 —— 皮肤在 **app.wxss**
+                 （`.basic` / `.bs-*` / `.pdot-lg` / `.badge-arch`），本文件不再手抄一份；
+              ④ 「关联脑图」常显 ＋ 「关联 / 查看」两颗键。
+     ★ 83 轮：① 上面那两颗键从 `.op` 换成全局 `.tb-btn`（与「查看项目」同款）——
+                 本页按钮分层收敛成「跳转键 `.tb-btn` ／ 操作键 `.op`」两条
+                 （★ 231 轮：操作键改名 `.op-main` ／ `.op-q`；★ 232 轮再改成
+                   `.op-cell` 四段等分坐进 `--chip` 托盘 —— 见「操作」那一段）；
+              ② 脑图卡右侧那枚 `chevron-right` 删掉（与「查看」重复）；
+     ★ 84 轮：脑图卡那两颗键**靠右**（`justify-content: flex-end`），右缘与项目卡的
+              「查看项目」落在同一条垂线（两张卡同宽、内边距同为 14 ⇒ 卡右缘 − 14）；
+              空态说明随之改为左对齐（卡内文字一律左起）。
+   去掉的：紧急程度四档可点选择器、所有子标题右侧灰字、卡内解释说明、
+           操作栏的「新建」「复制」、顶栏卡里的「待办列表」按钮、
+           无关联时的「关联脑图」空壳区块（★ 82 轮已恢复常显）、页内的「适配 agent 文本」区块。
+
+   ★★ 230 轮（用户口径 · 3 条）：
+     ① 「图片」区块**常显**，卡里能直接加图 —— 卡面从 `.blk-card` 换成 `.side-card`
+        （与「关联脑图」卡同一条内边线），`.imgs` 内边距随之收 0（几何逐值不变）；
+        空态 `.img-empty` 与 `.mm-foot.is-empty` **写在同一个声明块里**，`.img-acts`
+        与 `.link-acts` 也共用一条 —— "参照脑图样式"落成"同一份实现"，不是抄数值。
+     ② 操作栏上移（`.sec-ops` 的规则一个字没动，只换了 DOM 位置）。
+     ③ **深浅两态**：新增的每一条都只用令牌（`--card` / `--chip` / `--hairline` /
+        `--empty-line` / `--slate` / `--primary`），**本文件新增段落零字面 hex**
+        ⇒ 深色档由 `.theme-dark` 那套令牌自动接管，不需要第二份覆盖。
+        ⚠️ 唯一"非令牌"的视觉是 `.img-add` 的**边界靠底色差表达**（`--card` vs 图片格的
+           `--chip`）：两态下这两个令牌都自带一档差异（浅 #FFF vs #F1F2F5 / 深 #202123 vs #2D2F32），
+           所以不用额外加虚线或阴影去"补可见度"。
+   ========================================================================== */
+
+/* 组件宿主：占满壳页的挂载位 .modwrap */
+:host {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ★ 94 轮：底/字收进成功档令牌（值未变）。⚠️ 这一支的绿与状态点那支 `--success`
+   不同源（它是"深字＋浅底"对），去 §15.75 看是否并成一支。 */
+.badge-done { background: var(--success-bg, #E6F7EF); color: var(--success-t, #1B7A4B); }
+
+.t-area { gap: 12px; }
+
+/* ==========================================================================
+   ① 待办信息（FR-3.8）＝ 一张卡：紧急程度行 ＋ 正文
+   —— 详情头是这一页的"身份"（第三十五轮把详情名从标题栏摘掉之后，只剩它了）。
+      ★ 45 轮：原来是「详情头」＋「原文卡」两张，而详情头的标题就是原文首行
+      ⇒ 同一段话在同一屏出现两遍。合并成一张后，正文直接住在详情头里。
+   ========================================================================== */
+.hero-card {
+  /* ⚠️ 不是 flex:1 —— 那会把卡撑满整栏，短正文底下留一大片空白。
+     `flex: 0 1 auto` ＝ 高度跟着正文走。★ 46 轮起两向的 .sec-info 都是 `flex: 0 0 auto`，
+     所以卡永远是内容高（正文再长也不在卡内滚），超出屏高的部分跟竖屏一样交给
+     `.workarea` 滚 —— 同一套行为，少一处特例。 */
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hero-top {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px 0;
+}
+/* 当前紧急程度：4px 色条 ＋ 档名（色条用那一档的主色） */
+.hero-flag { width: 4px; height: 16px; border-radius: 2px; flex: 0 0 4px; }
+.hero-urg { font-size: 13px; font-weight: 600; flex: 0 0 auto; }
+.hero-flex { flex: 1; min-width: 0; }
+.hero-at { flex: 0 0 auto; }
+
+/* ==========================================================================
+   ★ 46 轮：横屏详情改成**单栏靠左**（原来是 左主区 700 ＋ 右栏 456 并排）
+   —— 用户口径「待办详情横版后排版错乱 …… 直接就在屏幕展示区靠左侧显示即可，
+      右侧可以先空着，这样起码不会乱」。
+   两栏的问题是它只对"内容填满"成立：这条待办正文一两行、图片一张时，
+   左栏顶端一小堆、右栏只剩「关联脑图 / 所属项目」两行和一颗钉在栏底的操作条，
+   中间一大片空 —— 读起来就是"散了"。
+   现在是一条 **760 宽、左对齐**的竖列，阅读顺序＝
+     待办信息 → 图片 → 关联脑图 → 所属项目 → 操作，
+   右侧 408px 全部留白；顺手和竖屏统一成同一套结构（竖屏本来就是单栏）。
+   ⚠️ 高度不再吃满：`.split` 用 `flex: 0 0 auto` 跟内容高，超出 756 时由 `.workarea` 滚
+      （见文件末尾那条 `overflow-y: auto`）—— 不要退回 `flex:1`，那会把操作条拉到底、
+        中间又空出一块（44 轮竖屏踩过同一个坑）。
+   ========================================================================== */
+.split {
+  flex: 0 0 auto;
+  width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ★ 82 轮：`.col-main` / `.col-side` **两个包裹层撤掉** ——
+   46 轮把两栏改单栏之后，它们各自已经是"整宽 ＋ 竖向 gap 12"的空壳，
+   与 `.split` 的 gap 完全同值（多一层除了多两处要同步的样式，没有任何作用）。
+   现在五个区块直接做 `.split` 的孩子，DOM 顺序 ＝ 阅读顺序。 */
+
+/* 单栏里每一块都是"内容高"，谁也不吃余高（正文超长时才在卡内滚） */
+.sec-info { flex: 0 0 auto; }
+.sec-img { flex: 0 0 auto; }
+/* ★★ 248 轮：「闪念胶囊」与上面两块同一条 —— 不吃余高、不互相挤压 */
+.sec-cap { flex: 0 0 auto; }
+
+/* 单栏之后底下再没有"栏底"可钉 —— 保留 margin-top:auto 会把操作条推到屏幕最下、
+   中间空一大块，正好是这次要消掉的毛病。 */
+.sec-mind, .sec-proj { flex: 0 0 auto; }
+.sec-ops { flex: 0 0 auto; margin-top: 0; }
+
+/* ---------- 通用卡片（组件内只用白底 ＋ 中性描边这一种） ----------
+   ★★ 230 轮：`.blk-card`（本组件那份"白底 ＋ `--hairline` ＋ 14 圆角"的副本）**删掉** ——
+   它最后一个调用点是「图片」卡，而那一块为了与「关联脑图」卡共用空态几何改成了
+   `.side-card`（内边距 12×14 就在那张卡上）⇒ 规则与调用点一起走。
+   ⚠️ **不要**改成引 `app.wxss` 的 `.blk-card`：那一份是 `flex: 1; min-height: 0;
+      border-top-left-radius: 0`（"贴在区块头下面吃余高"的另一种卡），语义完全不同。
+   本页剩下的卡只有两类：`.side-card`（区块卡，组件内定义）／`.hero-card`（详情头）。 */
+.img-card { flex: 0 0 auto; }
+
+/* ---------- 正文（只读，长按可选中） ---------- */
+.t-scroll { flex: 0 1 auto; min-height: 0; padding: 10px 16px 14px; box-sizing: border-box; }
+.t-text {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--primary, #1C1C1E);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------- 图片 ---------- */
+.imgs { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+/* ★★ 230 轮：卡面从 `.blk-card`（无内边距 ＋ 网格自垫 12×14）换成 `.side-card`
+   （自身 12×14）—— 两者**逐值相同**，所以这里只把网格的内边距收成 0，
+   有图态的几何与改前**一个像素都不差**；空态则与「关联脑图」那张卡同一条内边线。
+   ⚠️ 别把 `.imgs` 的 `padding` 改回 12×14 而不动容器 —— 那会变成 24×28。 */
+.img-card .imgs { padding: 0; }
+.img {
+  width: 160px;
+  height: 112px;
+  border-radius: 10px;
+  background: var(--chip, #F1F2F5);
+  border: 1px solid var(--hairline, #E0E2E8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  box-sizing: border-box;
+}
+.img-t {
+  font-size: 12px;
+  color: var(--slate, #555A6A);
+  max-width: 140px;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.img-no {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+}
+/* ★ 审查-02 S1（2026-10-15）：图片格按下反馈。
+   ⚠️ 用 `opacity` 不用改底 —— 格里常铺着绝对定位的真图（`.img-photo`），改底会被盖住。 */
+.img-hv { opacity: 0.86; }
+
+/* ---------- ★★ 247 轮：图片格右上角那颗「✕」（逐张移除） ----------
+   用户口径：「目前添加完图片之后没法取消……这两个流程要整理一下」。
+   皮肤与 `form-drawer` 的 `.sd-img-del` **同一套**（深色实心圆 ＋ 反白叉）——同一件事
+   在旧入口用过很多轮，用户认得出这是"删这一张"。
+
+   几何三处与表单那颗**有意不同**（别照着抄回来）：
+     · `right/top: 6px`（贴格内）而不是 `-6px`：详情页的格子间距 10，外凸会压到相邻格
+       的图上，读起来像"删隔壁那张"；
+     · `z-index: 2`：格子里铺着绝对定位的 `.img-photo`，不显式抬一层就要靠 DOM 顺序
+       （现在是靠后的，但顺序一变就没了 —— 而这里的顺序没有任何约定）；
+     · 热区从 32 提到 **36**：本页的格子 160×112 比表单那颗（原来 142×96）大，指头落点更松，
+       32 会让人"看着点中了、其实擦边"。⚠️ 仍然**不许**用 `padding` 撑（那会连视觉
+       圆点一起放大），只能用透明伪元素 —— 审查-02 A-3 在旧那颗上已经踩过这个坑
+       （病根是"视觉 24×24 而真机按缝位点不中"，解药是透明伪元素外扩、几何一字不动）。
+   ⚠️ 视觉 24×24、叉 12 —— 与胶囊卡那颗逐值相同（同一种"角标"就该一样大）。
+   ★★ 2026-10-23（247 轮追加）：叉从**文字字形**换成 `<icon name="w-close" size="12">`
+      ⇒ 这里**不再有 `font-size` / `line-height` / `color` 三行**：
+        字形居中靠的是这几个值 ＋ flex，而 `✕` 自带边距与基线，PingFang 与 Noto
+         的墨迹落点差一档 —— 用户看到的就是"叉没在圆里居中"，且两个平台歪得不一样。
+         `w-close.svg` 在 24 网格里从 5.05 到 18.96（中心正好 12）⇒ 圆 24、叉 12 时
+         四个方向各让 6，**天然居中**；留着的 flex 三行只负责把这张图摆到圆心。 */
+.img-del {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--solid, #1C1C1E);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-del::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+/* 深色实心圆点键 ⇒ 压 `opacity`（与 `.sd-img-del-hv` / `.sd-del-hv` 同族同值） */
+.img-del-hv { opacity: 0.7; }
+/* ★★ 230 轮：图片格末尾那块「＋ 添加图片」（**只在有图时**出现）。
+   尺寸 / 圆角 / 居中 / gap 全部继承 `.img`（模板里两个类一起挂：`class="img img-add"`），
+   这里**只改"底与边"**：`--chip`（图片格的灰底）→ `--card`（白/炭底）＋ 同一条 `--hairline`，
+   读起来就是"这里还能再放一格"，而不是"又一张图"。
+   皮肤与 `form-drawer` 的 `.sd-img-add` 同族（那边也是 `--card` ＋ `--hairline` ＋ 灰字）——
+   两处都在"加一张图"这件事上，不该长成两种样子。
+   ⚠️ 按下反馈复用 `.img-hv`（改透明度）：这个格子里没有 `<image>`，改底其实也可以，
+      但**同族用同一条**更省心（将来若给它加了缩略预览，反馈不会突然失效）。 */
+.img-add {
+  background: var(--card);
+}
+/* ★ 2026-09-30：格子里与放大层里的**真图** —— 都铺满各自的框。
+   · 格子（160×112）用 `aspectFill` 裁切填满，配右下角「n / N」角标；
+   · 放大层（高 320）用 `aspectFit` 看全，不裁。
+   两者都绝对定位：这两个框是 flex 居中的容器，不这样会被"居中成一张小图"。 */
+.img-photo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+.viewer-photo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* ---------- 侧栏卡（标题已外提；卡内可以是一行内容，也可以是"一行内容 ＋ 两颗键"） ---------- */
+.side-card {
+  flex: 0 0 auto;
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+/* ★ 82 轮：「关联脑图」这张卡里不止一行内容（内容 ＋ 键）⇒
+   卡内改成纵向 flex ＋ gap，免得键贴在内容行上。
+   ★★ 170 轮：卡里的东西变成"**图** ＋ 文字 ＋ 键"三件，纵向 flex 照旧够用。 */
+.sec-mind .side-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- ★★ 171 轮：整张脑图的**只读**视图（`.ro-canvas` / `.ro-vp`） ----------
+   用户口径（171 轮）：「不用再进行 svg 转换，就是将思维导图显示在里面就可以了，和脑图
+   详情的区别是这个窗口看脑图**无法移动脑图位置、无法编辑、也不能缩放**，就是单纯的看」。
+
+   ⇒ 撤掉 170 轮那张"另画的简化 SVG"，改成**直接把脑图画布的内容层搬进来**：
+     `.ro-vp`（变换层）里就是 `.links` ＋ 一排 `.mm-node` / `.mm-fold` ——
+     与脑图详情**逐值同源**（度量 / 排版 / 连线全在 `utils/mindmap-core.js`，
+     皮肤由文件头那条 `@import` 共用）。"同一种画法"因此不是"照着描得像"，
+     而是**同一份代码**。
+
+   · **只读不是靠守卫拦出来的**：这里一个 touch / wheel / mouse 处理器都没挂
+     （脑图模块的 `.mm-card` 上那一串 `bindtouchstart` / `bindwheel` 等全都没有），
+     节点上的 `sel` 恒为空串 ⇒ 没有可操作的东西，也就没有能绕过的口子。
+   · 高度恒 `240px`（`RO_H`，与 `mod-todo.js` 成对）：卡内宽度按**设计宽**算后再
+     "整幅装进卡内"（`readOnlyView` 的 `fitBoxInto`）—— 横屏 `728` / 竖屏 `736` 两档
+     （算式与口径见 `mod-todo.js` 的 `RO_W_FALLBACK`），不用写第二套尺寸。
+     ⚠️ 这两处**必须一直成对**：这里写 `240`、JS 写 `RO_H`，改一个不换另一个，
+        图就会被裁或留白（判据 `check_round187.py` 的 B 组盯着）。
+   · ★★ 187 轮：本块**恒占位**（模板里 `wx:if` 已经下移到 `.ro-vp`）——
+     高度不能跟着"图有没有算出来"变，否则切一次模块抖一次（用户 187 轮报的就是这个）。
+   · 底色是**白**（＋ `--hairline` 描边），与脑图详情那张 `.mm-card` 同一个面 ——
+     节点的 `--chip` 灰底本来就是"在白画布上"设计的；换成 170 轮那块 `--surface` 浅底，
+     节点几乎融进背景里。★ 186 轮起"白"走 `var(--card)`，深色下自动换成炭灰。
+   · ⚠️ `overflow: hidden` 是必须的：排版允许节点落在卡外（画布坐标是绝对定位），
+     没有它就会溢出到"操作"区上面去。 */
+.ro-canvas {
+  width: 100%;
+  height: 240px;
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+/* 按下态：与 `.tb-btn-hv` / 170 轮的 `.mm-prev-hv` 同一族口径
+   （★ 231 轮起操作键不再共用 `.op-hv`：主键改底、辅键浮底，见「操作」那段） */
+.ro-canvas-hv { opacity: 0.86; }
+
+/* 变换层 —— 与脑图模块的 `.mm-viewport` **同一条规矩**：尺寸＝渲染盒、`transform` 由 JS
+   写在行内（先平移、后缩放，原点锁左上角，见 `stageStyleOf`）。
+   ⚠️ 尺寸与 transform 一律走行内 style，这里只给"没下发时要能立住"的定位属性。 */
+.ro-vp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+/* ---------- ★★ 172 轮：图下面那一行 —— 文字块（左）与那颗键（右）**同一行** ----------
+   用户口径（172 轮）：「那个替换按钮的位置，是否可以让其和左侧的文字在同一行」。
+   原来这一行是"文字一块、键一块"上下摞着；现在合成一行：
+
+     · **有图** ⇒ 横向两栏：左 `.mm-info`（名称 / 元信息）、右 `.link-acts`（替换键）。
+       对齐口径与项目卡的 `.bs-row1`（名称 ＋ 「查看项目」）**逐条相同** ——
+       横向 flex ＋ `align-items: center` ＋ `gap: 8px` ＋ `min-width: 0`。
+       83/84 两轮要的"两张卡互相呼应"，落到这里就是"同一行、同一个右缘"。
+       ⚠️ 右缘是**算出来的、不是配出来的**：靠 `.link-acts` 上的 `flex: 0 0 auto` 把它推到最右，
+          卡右缘 − 14 与上面「所属项目」卡那颗「查看项目」在同一条垂线上 ——
+          **不许**补 `padding-right` / `margin-right` 去凑（一凑就与项目卡错开）。
+     · **空态**（`.is-empty`）⇒ 退回纵向两行：一句解释自占一行，那颗键照旧**整宽**落下一行
+       （170 轮口径，没丢）。空态时卡里只有"一句解释 ＋ 一颗键"，让键挤在解释旁边反而更碎。
+       `gap` 取 10 ＝ 原来 `.side-card` 的卡内间距，空态因此**逐像素不变**。 */
+.mm-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mm-foot.is-empty,
+/* ★★ 230 轮：「图片」卡的空态**与它共用同一条规则** —— 用户口径是「整个样式需要参照
+   脑图的无关联状态样式」，落到实现上不是"照抄一遍数值"，而是**同一份声明**：
+   改这里两处一起动，永远不可能漂。`.img-empty` 只额外补一条 `display: flex`
+   （它不像 `.mm-foot` 那样自带 flex）—— 见下面 `.img-empty` 那条。
+   ★★ 248 轮：「闪念胶囊」卡的空态**第三次挂进这一条**（同一句话，第三次复用）。
+      三个区块的空态是同一件事："这里还没有内容 ＋ 下面一颗整宽键"。
+      ⚠️ 别再为它单独写一份 —— 那正是 230 轮明确否掉的写法。
+      ⚠️ 追加新成员时**不要动 `.img-empty` 那一行**：230 判据 B1 就是靠
+         "`.mm-foot.is-empty` 与 `.img-empty` 在同一个选择器列表里"来钉"共用一份实现"的
+         （248 轮第一版把它挤掉过一次，当场被 B1 打红）。 */
+.img-empty,
+.cap-empty {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+/* 图下面那两行：名称（15/500 主墨）＋ 元信息（12 muted）—— 分级与 168 轮项目页
+   脑图卡同一条：说"内容有多少"的那一档重、只说"什么时候动过"的那一档轻。
+   ★ 172 轮：它现在是 `.mm-foot` 里**吃剩余宽度的那一栏** ⇒ `flex: 1 1 auto` ＋ `min-width: 0`
+     两个都要写：只写 `flex` 不写 `min-width: 0` 的话，flex 子项默认的 `min-width: auto`
+     会把它撑到内容宽 ⇒ `.link-name` 的省略号（`overflow:hidden` ＋ `text-overflow:ellipsis`）
+     永不生效、长名字顶着那颗键。 */
+.mm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ★★ 230 轮：「图片」卡空态的外层（一句 `.blank-line` ＋ 一颗整宽键）。
+   ⚠️ 只补 `display: flex` —— 方向 / 拉伸 / gap 10 全在上面那条**与 `.mm-foot.is-empty`
+      共用的规则**里，这里不许再写一遍（写两处就等于把"参照脑图样式"退化成"抄了一遍"）。
+   纵向两行的道理与脑图空态一致：空态时卡里只有"一句解释 ＋ 一颗键"，
+   让键挤在说明旁边反而更碎。 */
+.img-empty { display: flex; }
+/* ★★ 248 轮：胶囊卡空态同理 —— 方向 / 拉伸 / gap 全在上面那条共用规则里 */
+.cap-empty { display: flex; }
+
+/* 没有关联时的说明（★ 82 轮）—— 44 轮这条留白的做法是"整块不渲染"，
+   但这一轮用户要求区块常显（它带着「关联」这个动作），所以空态要给一句解释，
+   不能让卡里只剩一颗孤零零的按钮。
+   ★ 84 轮：**改成左对齐**（原来是 `text-align: center`）。两颗键靠右之后，
+   "居中灰字 ＋ 右下按钮"会读成两截；而卡内文字本来就一律左起
+   （`.link-name` / `.link-meta`，以及项目卡的 `.bs-agent-none` / `.bs-remark-none`），
+   这里没有理由单独居中 —— 左对齐后空态与有内容态的左基线是同一条。 */
+/* ★★ 本轮：`.link-empty` 撤掉 —— 「关联脑图」卡里那句"还没有关联"改挂
+   `app.wxss` 的 `.blank-line`（L3 · 左对齐单行 · 有框）。
+   原来 `padding 6 2` 无框、13/`--muted` —— 它下面紧跟着一颗整宽的「关联」按钮，
+   无框时读起来像按钮的说明文字；加框后"这是一处空位"与"这是动作键"才分得开。 */
+
+/* 关联 / 查看两颗键 —— ★ 83 轮改用**全局 `.tb-btn`**（白底描边 · 28 高 · 13/500 · `--slate`），
+   与上面「所属项目」卡里那颗「查看项目」**严格同款**。
+   ⚠️ 82 轮这里挂的是 `.op`（44 高 · 等宽 · 与下面「操作」区四颗同款）—— 那是错的：
+      `.op` 是**操作键**（完成 / 导出 / 编辑 / 删除，点了会改数据），
+      而「查看 / 关联 / 查看项目」是**跳转键**（只换一处视线）。
+      两族混用，会让一颗"去看看那张图"的键长得和"删掉这条待办"一样重。
+   用户口径（83 轮）：「项目卡片的查看项目按钮是一种样式，关联脑图中的关联和查看又是另一种样式，
+   这两个都是非操作类的按钮啊」。
+   现在本页的分层只有两条，不许再长第三条：
+     · `.tb-btn`  ＝ 跳转键（28 高 · 白底描边 · 灰字）
+     · `.op-cell` ＝ 操作键（38 高 · 四段等分坐在 `--chip` 托盘里 · 主键实心品牌黄；
+       ★ 231 轮先从 `.ops/.op` 改名成 `.op-main`／`.op-q`，★ 232 轮再改成通栏托盘
+         —— 当年那句"等宽 · 黑底/红底/黑描边三个变体"正是这两轮要拆掉的东西，
+         见下面「操作」那一段的头注释）
+   ★ 84 轮：这组键**靠右**。用户口径「脑图卡片上的查看关联按钮靠右侧展示，
+     这样和上方的项目卡片按钮呼应」—— 光"换同一套皮肤"只做到长得一样，
+     位置还得站在一起：项目卡的「查看项目」在 `.bs-row1` 末尾（`flex:0 0 auto` 推到底），
+     这两颗原来却是左起排 ⇒ 同一套皮肤散在两处，呼应就只做到一半。
+     ⚠️ 右缘是**算出来的、不是配出来的**：`.basic` 与 `.side-card` 宽度相同、
+        左右内边距同为 14 ⇒ 两处右端都在「卡右缘 − 14」这条线上，
+        所以这里只写 `flex-end`，**不许**再补 `padding-right` / `margin-right` 去凑数
+        （一凑就会与项目卡错开，两处还会各自漂）。
+   ★★ 170 轮：这行里现在只有**一颗**键（关联 / 替换）——「查看」已整颗撤掉（图本身就是入口）。
+     尺寸从"卡内小键 28"升到**「卡内大键 40」**（＝ app.wxss 的 `.tb-btn.lg`），
+     用户口径「这个关联按钮太小了」。
+     ⚠️ 40 这一档**只登记在 app.wxss 一处**，本文件不许自己抄一份尺寸覆盖：
+        同名单类规则跨文件的层叠顺序没有保证，抄两份迟早不一致。
+   ★ 172 轮：它现在是 `.mm-foot` 那一行的**右栏** ⇒ 补 `flex: 0 0 auto`
+     （不吃不缩、按内容宽站定）—— 这样 `.mm-info` 才会去承担剩下的宽度。
+     ★ 与 167 轮"容器有 `flex-wrap` 时子项该 `0 0 auto`"是同一条思路的邻面：
+       那边防的是"键被挤到折行"，这边防的是"键被文字挤扁"。 */
+/* ★★ 230 轮：`.img-acts` 是「图片」卡空态里那一行 —— 与 `.link-acts` **同一条规则**
+   （右对齐 · 不缩 · gap 8），只是名字各叫各的：一个在脑图卡、一个在图片卡。
+   空态里它只装一颗整宽键，`justify-content` 其实用不上，但共用一条规则才能保证
+   "哪天脑图那边改了间距，两边一起跟上"。 */
+.link-acts, .img-acts, .cap-acts { display: flex; flex-direction: row; gap: 8px; justify-content: flex-end; flex: 0 0 auto; }
+
+/* 空态那颗键**整宽**（`.grow` 由 wxml 按"有没有关联"现挂）——
+   没关联时它是这张卡里唯一的动作，触控目标给满，比"缩在右下角一小颗"合理得多
+   （用户这轮抱怨的正是那个形态）。
+   ⚠️ 选择器**必须写到 `.link-acts .tb-btn.grow`**（特异性 0,3,0）：只写 `.grow` 的话，
+     它的 `padding` 与 app.wxss 的 `.tb-btn.lg { padding: 0 18px }` **同级**
+     （都是 0,2,0），而两个文件的层叠顺序没有保证 ⇒ 会随机输给那一句，
+     症状是"整宽键里文字/图标整体偏右 18px"。——与 151 / 166 那两条
+     「覆盖同名单类规则必须严格大于」是同一个坑。 */
+.link-acts .tb-btn.grow,
+.img-acts .tb-btn.grow,
+.cap-acts .tb-btn.grow { flex: 1 1 auto; justify-content: center; padding: 0; }
+
+/* ★ 82 轮：`.link-dot` 与 `.arch-tag` **删除** ——
+   「所属项目」改成项目详情那张「基础信息」卡之后，项目色点用 `.pdot-lg`、
+   归档角标用 `.badge.badge-arch`（两者都在 app.wxss），这两条不再有调用点。
+   （对齐问题一并消失：那张卡里名称左端是 `.bs-row1` 的 gap，不再需要凑 32。）
+   ★★ 170 轮：`.link-row` / `.link-icon` / `.link-txt` **三条也一起删** ——
+   它们的调用点是"32 方形图标块 ＋ 名称/元信息"那版卡面；本轮换成
+   "整张图 ＋ `.mm-info`" 之后，这三条一条调用点都没有了。
+   ★ 与 161 轮同一条纪律：**规则与调用点一起走**。留着死规则比没有更坏 ——
+   下一个人会以为它还长在页面上，照着它去改一个根本不生效的值。
+   （`.link-name` / `.link-meta` 留着：它们在新卡面里继续用。） */
+.link-name {
+  font-size: 15px; font-weight: 500; color: var(--primary, #1C1C1E);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.link-meta { font-size: 12px; color: var(--muted, #A5A8B5); }
+
+/* ==========================================================================
+   ★★ 248 轮 · 「闪念胶囊」区块（关联到这条待办上的那几枚）
+   ==========================================================================
+   用户口径（2026-10-23）：「关联后，胶囊卡片就在待办详情页以卡片形式显示，
+   **一行可以展示多个卡片**，卡片信息只能查看不能编辑，可以取消关联」。
+
+   ── 网格（与「图片」那一块同一套骨架，只换数字）────────────────────────
+   `.caps` 是 `flex-wrap` ＋ 10 间隙，格子**定宽 220**：
+     · 卡内宽 728（横）／736（竖）− 卡内边距 28 ⇒ 700 / 708；
+     · 3 × 220 ＋ 2 × 10 ＝ 680 ≤ 700 ⇒ **一行三张**，右端留 20 的余量。
+   ⚠️ 用 `0 0 220px` 不用 `1 1 220px`：后者会让"最后一行只有一张"时被拉到整行宽，
+      同一种卡在屏上出现两种宽度（图片格那边靠固定 160 规避的就是这件事）。
+   ⚠️ 高度**`min-height: 96`**（277 轮从"定死 96"改过来）：没有图的卡仍然是 96，
+      有图的卡往下长；同一行由 flex 的 `stretch` 拉齐，网格上沿不会参差。
+      ⚠️ 277 轮之前这里写的是"定死 96（不是 min-height）"，理由正是"短文本卡会矮一截"——
+        那条理由**在只有文字的年代成立**；一旦卡里可能有一张图，"定死"就变成"图被裁"。
+        换成 `min-height` 之后"矮一截"由 stretch 接管，两条要求同时成立。
+
+   ── 卡面 ──────────────────────────────────────────────────────────────
+   · 底色用 `--chip`（与图片格同一档）：这里是"内容格"，不是"区块卡"；
+   · 正文 13/1.5 主墨、封 3 行；时间 11 `--font-num` muted、贴底（`margin-top: auto`）；
+   · **没有编辑入口**（用户口径）：卡上只有"点开看全文"与右上那颗「✕ 取消关联」。
+   · 取消关联那颗与图片格那颗（`.img-del`）**同款同尺寸**：24 实心圆 ＋ 反白叉 ＋
+     36 透明热区。⚠️ 别用 padding 撑热区（会把视觉圆点一起放大，审查-02 A-3 的坑）。 */
+.caps { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.cap {
+  flex: 0 0 220px;
+  width: 220px;
+  /* ★★★ 277 轮：**`height: 96px` → `min-height: 96px`**（用户口径 2026-10-27 第 3 条
+     「待办详情中的胶囊卡片中也要能显示挂载图片」）。
+     ── 为什么原来的定高必须让路 ────────────────────────────────────────────
+        220×96 的格子里已经装了"三行正文 ＋ 时间 ＋ ✕"，实在塞不进一张能看的图；
+        硬塞只能做成 40px 的缩略图，而这条胶囊的图在全文层里是能看清的，
+        格子里给一张看不清的小方块只是噪声。
+     ── 为什么不是"改成 auto"就完事 ────────────────────────────────────────
+        `.caps` 是 **flex 行 ＋ `flex-wrap`**，`align-items` 默认 `stretch`。
+        只要 `.cap` 的高度**不再是定值**（`min-height` 不算定值），同一行里的卡
+        就会被拉伸到这一行最高的那张 ⇒ "一行三张齐平"，不会参差。
+        没有图的卡仍然是 96（`min-height` 顶着），多出来的高度落在
+        `.cap-time` 之上（它挂着 `margin-top: auto`，永远贴底）。
+     ⚠️ 别把 `min-height` 换回 `height` —— 换回去的当天，图就会被裁掉半截
+        （`height` 定死之后子元素只会溢出，而 `.cap` 没有 `overflow: hidden`，
+        症状是图和下一行的卡叠在一起）。
+     ⚠️ `.cap-add`（末尾那格「＋ 选择胶囊」）跟着一起 stretch，内容是
+        `align-items:center` ＋ `justify-content:center` ⇒ 长高的那格是"加号居中"，正常。 */
+  min-height: 96px;
+  border-radius: 10px;
+  background: var(--chip, #F1F2F5);
+  border: 1px solid var(--hairline, #E0E2E8);
+  padding: 9px 10px 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.cap-t {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--primary, #1C1C1E);
+  word-break: break-word;
+  /* 右侧让位给「✕ 取消关联」——**必须让**，不让就压字（248 视觉对照页首跑实锤：
+     第一行正文的后半截被那颗 24 的实心圆盖住，读成"扫码入口先不●接"）。
+     算式：卡 220 宽、边框 1、内边距 10 ⇒ 正文右界 x=209；✕ 是 `right:6` +
+     24 宽（定位基准是**padding box**，宽 218）⇒ 圆心区域 x∈[189,213]。
+     重叠 209−189 ＝ 20，故这里给 22（多 2 的余量，免得不同机型字宽把最后一字顶进来）。
+     ⚠️ 代价是第 2、3 行也一起收窄 22（wxss 做不到"只让第一行"）—— 认这 22px，
+        换来的是"任何文本都不与 ✕ 打架"；图片格那边没有正文，所以 `.img-del` 不用让。 */
+  padding-right: 22px;
+  /* 三行封顶 —— 与选择抽屉里那张卡同一档（`drawer.wxss` 的 `.dw-cap-t`）。
+     两处必须同档：用户在抽屉里看到 3 行，回到详情页还是 3 行，才读得出"是同一条"。 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* ★★ 277 轮：胶囊卡里那张图（正文之下、时间之上）。
+   皮肤照闪念胶囊列表的 `.cp-pic`（圆角 9 → 这里 8：卡本身圆角 10、内边距 10，
+   8 让它与卡的内沿保持 2 的呼吸位；9 会读成"图跟卡一样圆"）。
+   ── 为什么高 88 而不是列表那边的 148 ───────────────────────────────────
+      这一格宽 198（卡 220 − 内边距 20 − 边框 2），148 高会变成一根竖条，
+      两张卡就占半屏；88 给出的比例约 2.25:1，是"一眼看出有图、且认得出是什么"的下限。
+      要看清楚就点卡片进全文层（那里 220 宽原样、能点开 `wx.previewImage`）。
+   ⚠️ `padding-right: 22`（给 ✕ 让位）**不加在图这层**：✕ 只在最上面 24px 那一带，
+      图从正文之后开始，两者不会相遇（正文一行时图顶也已在 y≈36 > ✕ 底 30）。
+   ⚠️ 卡片底色是 `--chip`，图加载中要先铺一层同样偏浅的底，否则是一块白。 */
+.cap-pic {
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--hairline, #E0E2E8);
+}
+.cap-pic-img {
+  display: block;
+  width: 100%;
+  height: 88px;
+  /* `mode="aspectFill"` 已由 `<image>` 自己裁；这两行是给老基础库的兜底 */
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* 时间贴底：正文长度不一（277 起还可能多一条图带），`margin-top: auto` 让这一行
+   永远落在同一条基线上。
+   ★★ 277 轮：卡高从"固定 96"改成"`min-height: 96` ＋ 行内 stretch"之后，
+      这一条**更要留着** —— 同一行里被拉到一样高的那几张卡，多出来的空白全部
+      落在图与时间之间，时间仍然贴底。把它删掉，空白就会堆到卡的最下方（时间上浮）。 */
+.cap-time {
+  margin-top: auto;
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+}
+
+/* 按下反馈：与 `.img-hv` 同族（改透明度，不改底 —— 卡片底色是内容区的一档） */
+.cap-hv { opacity: 0.86; }
+
+/* ✕ 取消关联 —— 与 `.img-del` **逐值同款**（24 视觉 / 36 热区 / 深色实心圆 ＋ 反白叉）。
+   ⚠️ 为什么不用红：红在详情页只留给「删除」那一档动作（`.op-cell.danger`）；
+      这颗是就地的小操作，红点会把每张卡都变成"危险区"（247 轮在图片上定过同一条）。
+   ★★ 247 轮追加：叉同样是 `<icon name="w-close">`，`font-size/line-height/color` 三行一并撤 ——
+      两处必须同一版，理由见 `.img-del` 上方那段（字形居中在两个平台不可靠）。 */
+.cap-del {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--solid, #1C1C1E);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cap-del::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+.cap-del-hv { opacity: 0.7; }
+
+/* 网格末尾那块「选择胶囊」：与内容格同尺寸 ⇒ 落在同一条网格线上。
+   只改"底与边"（`--chip` → `--card`），尺寸 / 圆角 / 居中全部继承 `.cap`
+   —— 与图片那块 `.img-add` **同一条做法**（模板里两个类一起挂）。 */
+.cap-add {
+  background: var(--card);
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.cap-t.add {
+  -webkit-line-clamp: 1;
+  font-size: 12px;
+  color: var(--slate, #555A6A);
+  text-align: center;
+  /* 末尾那格没有 ✕ ⇒ 把让位收回来，否则居中会整体左偏 11px（22 的一半） */
+  padding-right: 0;
+}
+
+/* ---------- 胶囊全文查看层（复用 `.viewer` 外壳，只换内容区） ---------- */
+.cap-view {
+  margin: 0 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+.cap-view-t {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--primary, #1C1C1E);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* ★★ 263 轮（清单 C4/H4）· 全文里那张图 —— 正文之下、时间之上。
+   ⚠️ `mode="widthFix"` 而不是给它一个定高：这一层是"看这一条的全部"，图该按原比例
+      整张露出来（列表卡那边用 148 的 `aspectFill` 是为了**压住行高**，两个场景不同）。
+   ⚠️ 按下态挂在**外层 `view`** 上（`hover-class` 对 `<image>` 无效，见 wxml 那段） */
+.cap-view-pic {
+  margin-top: 12px;
+  border-radius: 9px;
+  overflow: hidden;
+}
+/* 按下反馈：只压一点透明度（与 `.cap-hv` / `.cp-pic-hv` 同一档） */
+.cap-view-pic-hv { opacity: 0.86; }
+.cap-view-img {
+  display: block;
+  width: 100%;
+}
+.cap-view-foot { padding: 12px 16px 16px; display: flex; justify-content: flex-end; }
+.cap-view-time { font-family: var(--font-num); font-size: 12px; color: var(--muted, #A5A8B5); }
+
+/* ---------- 操作：完成 / 导出 / 编辑 / 删除 ----------
+   ★★ 232 轮（用户拍板「这么看还是C好看，改成通栏动作条模式」）
+   改前的病（231 落地的 `op-main` ＋ `op-quiets`）：
+     · 主键写的是 `flex:1 1 auto` —— 在手机 336 里只是"宽一点的键"，搬进平板/横屏那条
+       **730 的卡**却是 **537 宽的一根黄条**，横贯半张卡，比改前更难看；
+     · 辅键三颗无框挤在右边，与那根黄条之间没有任何关系，读成"一根黄条 ＋ 三个词"。
+   ⇒ 改成一整条**通栏动作条**：一个 `--chip` 底托盘把四段包成一件事，
+     主键占**第一段**（实心黄、墨字），其余三段透明。
+   ★★ 用户口径「主按键的宽度也要有限度，别占据太大」的落点：
+     四段 `flex: 1 1 0` **严格等分**（730 卡里各 179）⇒ 主键永远不超整条的 1/4，
+     **不存在任何"被剩余空间拉长"的路径**。这是本方案相对 231 最硬的一条差别。
+   ⚠️ 等分的代价（用户已接受）：四段同宽 ⇒ 主键与「删除」面积一样，只靠黄底分级。
+      所以黄底 ＋ `font-weight 600` ＋ 一点点投影一起上，别把重心压在宽度上。
+   ⚠️ 已删除那档只剩「还原」：**托盘整个让开**（`.ops.solo` 撤底、撤内边距），
+      一颗按内容宽的黄药丸**居中** —— 若仍按四段那套 `flex:1`，它就会变成整条 730 的黄条，
+      正是这轮要消掉的东西。托盘是"分段容器"，只剩一段时它就没有语义了。
+   ⚠️ 图标两套 tone：主键落在**恒亮的品牌黄**上 ⇒ `<icon tone="ink">` 恒墨；
+      辅键落在随主题变暗的托盘上 ⇒ 走默认 tone（深色自动换 `d-*` 版），压 `opacity 0.72`。
+   ⚠️ 别再按 231 的稿子把 `.op-main` / `.op-q` / `.op-sep` 请回来：那三组是本轮要替换的对象。
+   ⚠️ 也别把 1px 描边加回四段：一排四个框正是 231 之前被嫌弃的样子。 */
+.ops-card { padding: 12px 14px; }
+
+/* 托盘：一条通栏动作条。`--chip` 底 ＋ 3 内边距 ＋ 2 间隙，
+   卡内 730 ⇒ 四段各 (730 - 6 - 6) / 4 ＝ 179 */
+.ops {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 13px;
+  background: var(--chip);
+}
+
+/* 段：四段严格等分，谁也别想吃剩余空间 */
+.op-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--slate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+/* 按下态：托盘里的透明段没有底色可压 ⇒ 浮一层 `--hairline-soft`，字转正色 */
+.op-cell-hv { background: var(--hairline-soft); color: var(--primary); }
+/* 危险只靠字色说话，不跟主位抢面积（也刻意不跟着按下态转正色） */
+.op-cell.danger { color: var(--danger); }
+
+/* 主键段 —— 唯一实心块。宽度由四段等分决定（卡内 730 时 179，上限就是整条的 1/4），
+   这里**不写任何 flex-grow 的例外** ⇒ 不存在"被剩余空间拉长"的路径。
+   ★★★ 修饰类叫 `is-main`，**绝不能叫 `main`** —— app.wxss 里有一条应用级
+     `.main { display:flex; flex-direction:column; flex:1; … }`（五个模块的容器，
+     本文件第 102 行自己也在用），它对组件内节点同样生效，且与 `.op-cell` 同权重（各 1 个类）
+     ⇒ 后加载的那条说了算。232 落地时写成 `class="op-cell main"`，这一格当场被掰成竖排：
+     图标在上、文字在下、两者各自水平居中（`align-items:center` 在 column 下管横向）。
+     编译不报错、判据读源码也全绿 —— 因为**没有任何一条规则"错"了**，是两个互相不相干的
+     单类选择器撞在了同一个节点上。
+     ⚠️ 问法：**这个类名是不是一个通用词？** `main` / `body` / `box` / `item` / `row`
+     这类词先在 app.wxss 里 grep 一遍再用（本项目已被占用的：`.main`）。 */
+.op-cell.is-main {
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.10);
+}
+
+/* 单键态（已删除）：托盘整个让开 —— 只剩一段时"分段容器"这个语义已经不存在了，
+   再留着那条 730 宽的灰底就只是一条空壳。黄药丸按内容宽居中。 */
+.ops.solo {
+  background: transparent;
+  padding: 0;
+  justify-content: center;
+}
+.ops.solo .op-cell.is-main {
+  flex: 0 0 auto;
+  padding: 0 30px;
+}
+
+/* 主键按下态：与 `.tb-btn.yellow.tb-btn-hv` 同法（黄键压深一档）。
+   ⚠️ **不要压 opacity**：黄底压到 0.7 会朝页底方向发白，读作"变灰了"而不是"按下了"。
+   ⚠️ 权重必须到 3 类（`.op-cell.is-main` 是 2 类）且放在最后，否则压不过上面那条实心黄。 */
+.op-cell.is-main.op-cell-main-hv { background: var(--yellow-press); }
+
+/* ---------- 空态 ----------
+   ★ 本轮：`.blank` / `.blank-t` / `.blank-s` 三组定义**整段搬去了 app.wxss**
+     —— 项目 / 待办 / 脑图三处共用一份真源（原来项目与待办同源、脑图另一套）。
+     `.blank-btn` 早在 94 轮就搬上去了（原来是两处手抄同值），本页不再留任何副本。 */
+
+/* ---------- 图片查看层 ---------- */
+.viewer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 120; display: flex; align-items: center; justify-content: center; }
+.viewer-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: var(--mask-strong); }
+.viewer-box {
+  position: relative;
+  width: 560px;
+  /* ★★★ 2026-10-27（全量检查 F10）· **查看层也要有可视高度上限**。
+     ── 病根：头 48 ＋ 图 320/380 ＋ 翻页区 ≈ 432 起，1280×400 的 PC 矮窗
+        （画布高被现算成 400）里整块连关闭键都露在屏外，用户只能靠 Esc/返回。
+     ── 现在：盒子按画布高封顶（上下各留 16），并且**改成纵向 flex**，
+        让图区自己缩（见 `.viewer-img` 的 `flex-shrink`）—— 头与翻页键是固定件，不参与缩。
+     ⚠️ canvas-h 800 时 768 > 432 ⇒ 完全不起作用，设计稿与平板逐像素不变。 */
+  max-height: calc(var(--canvas-h, 800px) - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--elevated);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(5, 0, 56, 0.28);
+}
+.viewer-top {
+  height: 48px; padding: 0 16px;
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.viewer-t { font-size: 14px; font-weight: 500; color: var(--primary, #1C1C1E); }
+.viewer-x { font-size: 17px; color: var(--slate, #555A6A); padding: 4px 6px; }
+/* ★ 审查-02 S1（2026-10-15）：放大层的关闭 ✕ 按下反馈。
+   与 `.tf-close-hv`（筛选弹窗那颗同职的 ✕）**同源**：纯文字键走改底 `--chip`。
+   ⚠️ 原 `.viewer-x` 没有圆角 ⇒ 按下会露出一块方角灰块；这里补 6px 圆角，
+     圆角**不参与布局**（不改变热区与行高），属按下态自身的形状，不影响几何。 */
+.viewer-x-hv { background: var(--chip, #F1F2F5); border-radius: 6px; }
+.viewer-img {
+  height: 320px; margin: 0 16px;
+  /* ★ 2026-10-27（F10）：允许被父盒压矮（矮窗里优先牺牲图高，头与翻页键不动）。
+     `flex-shrink:1` ＋ `min-height` 是"缩到还看得见"的下限，再矮就交给内部滚动。 */
+  flex: 0 1 auto;
+  min-height: 120px;
+  border-radius: 12px; background: var(--chip, #F1F2F5);
+  border: 1px solid var(--hairline, #E0E2E8);
+  /* ★ 2026-09-30：给里面的 `.viewer-photo` 当定位包含块（原来没有这一行 ⇒
+     绝对定位的图会跑到整层左上角去）。用 padding-box 定位 ⇒ 刚好压在描边内沿。 */
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+}
+.viewer-cap { font-size: 13px; color: var(--slate, #555A6A); }
+.viewer-nav { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 16px 16px; flex: 0 0 auto; }
+/* 图片查看层的翻页键 —— ★ 94 轮：颜色/字重收进"浅色次级键"那一档
+   （白底 ＋ `--hairline` 描边 ＋ **`--slate` 13/500 那一族的字号档是 14**），
+   原来写的是 `--primary` ＋ 400：同一层里它比正文还黑，读起来像主操作。
+   高度 34 保留 —— 它是**模态层**里的键，比卡内小键（28）大一档是有理由的分档，
+   不是"没对齐"（分档口径见 app.wxss 的「按键场景色语义」那一节）。 */
+.vbtn {
+  height: 34px; padding: 0 16px; border-radius: 10px;
+  background: var(--card); border: 1px solid var(--hairline, #E0E2E8);
+  font-size: 14px; font-weight: 500; color: var(--slate, #555A6A);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+/* ★ 审查-02 S1（2026-10-15）：翻页两颗键的按下反馈。
+   `.vbtn` 是白底描边的次级键 ⇒ 与 `.tb-btn-hv` 同族（改底 `--chip`）。 */
+.vbtn-hv { background: var(--chip, #F1F2F5); }
+
+/* ==========================================================================
+   ★ 46 轮：横屏也要能滚 —— 单栏靠左之后内容是自然高，图片多 / 正文长时会超 756。
+   `.workarea` 默认 `overflow: hidden`（app.wxss），这里把纵轴放开。
+   ⚠️ 权重 3 类 > app.wxss 的 1 类，稳过；竖屏那条同名规则在下面（还多带 padding-bottom）。
+   ========================================================================== */
+.main .workarea.t-area { overflow-y: auto; }
+
+/* ★ 49 轮：本页不显示滚动条（能滚就够）—— `.t-area` 是详情整页
+   （`overflow-y: auto` 的 view，IDE 里会挂一条灰条）。
+   ★ 审查-02 C-1（2026-10-15）：**把 `.t-scroll` 从"滚动容器"这个说法里摘出来** ——
+   它上一版和下面 511 行那句「卡内正文不再自己滚」是**互相矛盾**的（一处当它能滚、
+   一处说它不滚），而事实是后者：`.hero-card` / `.sec-info` 都是内容高
+   ⇒ 内容 ≡ 容器，`scroll-y` 无从触发。它进这份选择器名单，是**为将来留的**
+   （哪一轮真给 `.hero-card` 定高，它立刻要能滚且不显示滚动条）。
+   ⚠️ 所以这条 CSS 留着不是"给一个会滚的东西收滚动条"，而是"预先备好" —— 别按旧说法删。 */
+.t-area::-webkit-scrollbar,
+.t-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; color: transparent; }
+
+/* ==========================================================================
+   竖屏：全部竖排，整块滚动
+   ========================================================================== */
+/* ⚠️ padding / gap 不在这里写：`.app.port .workarea`（2 类）已经把
+      `padding: 0 16px 16px; gap: 16px` 定死了，`.mod-port .t-area`（2 类）
+      压不过它 —— 写了也是死代码（44 轮实测发现，之前那句 `gap:14px` 从来没生效过）。
+      这里只留真正需要覆盖的那一条：**底部留白**（★ 209 轮起它改挂在 `.on-detail` 上，
+      见下一条 —— 空态没有那排按钮，不该吃这段留白）。
+   为什么底部要 96 而不是 16：竖屏悬浮 Logo（`.fab` 56 见方 · 距底栏顶 24）占着右下角，
+   而整页最后一张卡的下沿正好压在那块上 —— 留白不够时滚到底会被 Logo 压住。
+   96 ≈ 24 ＋ 56（fab）＋ 16（余量）。
+   ★★ 230 轮补记：操作栏上移之后**末块变成了「关联脑图」**（那张卡右下角是「替换」键），
+   这笔留白照样要留 —— 它护的从来不是"某一排按钮"，而是"最后一张卡的下沿"。
+   ⇒ 数值与落点都不动，只把这句理由改准。 */
+.main.mod-port .workarea.t-area { overflow-y: auto; }
+/* ★★ 209 轮：96 收进 `on-detail`。
+   `padding-bottom: 96` 的来历见上一条注释 —— 它服务的是**详情态**那张末卡（230 轮起是
+   「关联脑图」）。空态（`!detail`）没有末卡，但这条 padding 照样生效 ⇒ `.blank` 的居中点被上推
+   (96 − 16) / 2 ＝ **40px**，而项目／脑图两页只有 16 ⇒ 三页空态对不齐（用户 10-18 报的）。
+   ⚠️ 必须走**条件类**而不是把 96 从 `.t-area` 上删掉：详情态的 96 一点都不能少
+      （否则滚到底时末卡右缘被悬浮 Logo 压住 —— 44 轮实测过的老账）。
+   ⚠️ 也别写成 `.t-area:has(.split)`：本工程一律不靠结构性伪类定位（见 app.wxss `.sec-first` 那条）。 */
+.main.mod-port .workarea.t-area.on-detail { padding-bottom: 96px; }
+/* ⚠️ 竖屏必须把 .split 从 flex:1 改成 auto：横屏它是"两栏吃满余高"，
+   竖屏改成 flex:1 后它只拿到「1128 − 后面那些区块」那点高度，而 col-main/col-side
+   是 flex:0 0 auto 的内容高 ⇒ 多出来的部分**溢出到 .split 的盒子外面**，
+   既不进 .t-area 的滚动高度、又会被后面的区块盖住（44 轮实测：「操作」按钮整块被压掉）。 */
+.mod-port .split { flex: 0 0 auto; flex-direction: column; width: 100%; }
+/* ★ 82 轮：`.mod-port .col-main / .col-side` 两条随包裹层一起删掉（见上） */
+/* 竖屏由外层滚动，卡内正文不再自己滚 —— 否则 flex:1 在 auto 高父级里会塌成 0 */
+.mod-port .sec-info { flex: 0 0 auto; }
+.mod-port .hero-card { flex: 0 0 auto; }
+.mod-port .t-scroll { flex: 0 0 auto; padding: 10px 16px 14px; }
+/* ★★ 230 轮：`.mod-port .blk-card` 随那条规则一起删（本组件已无 `blk-card`）。 */
+.mod-port .t-text { font-size: 16px; }
+/* 竖屏右栏本来就是竖排的自然流，操作区不该被 margin-top:auto 拉开 */
+.mod-port .sec-ops { margin-top: 0; }
+.mod-port .blank { min-height: 400px; }
+.mod-port .viewer-box { width: 688px; }
+.mod-port .viewer-img { height: 380px; }

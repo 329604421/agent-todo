@@ -1,0 +1,1090 @@
+/* ==========================================================================
+   表单抽屉 · L1 位（横 84,16 ／ 竖 16, 工作区顶边）· L2 位 = 右移 270（横 354,16 ／ 竖 286,…）
+   ★ 63 轮：竖屏顶边不再居中于遮罩（会把顶边送进系统状态栏），改成顶着品牌栏下沿；
+     底边不动 ⇒ 高度收短到 --work-h-port − 18（设计稿 1110 ／ 真机 1073）。横屏 16 / 768 不动。
+   ★ 48 轮：
+     · 横屏顶 24 → **16**（遮罩 800 − 768 ＝ 32 ⇒ 上下各 16）；竖屏那半条已被 63 轮取代。
+     · 标题带（.sd-head / .sd3-head）补成灰底 ＋ 底分隔线，四处抽屉头同一套。
+       （★ 194 轮：底从 `--surface` 改认 `--head-bg`，本条的"四处"现在是**五处**。）
+     · 标题栏动作键（.sd-cancel）改成 28 高描边胶囊，与列表抽屉的「筛选」同一颗。
+   ========================================================================== */
+
+/* ---------- 遮罩（★ 09-22 第四十二轮）----------
+   与列表抽屉 .dw-mask 同款几何与颜色，只压展示区、不盖左侧 navRail；
+   竖屏只到「底栏顶边」（设计稿 y1192；★ 184 轮起 ＝ --mask-h），底部导航 88 露在外面。
+   ⚠️ z-index 88 夹在中间：在 .dw-mask(80) 之上、.dw(90) 与 .sd(92) 之下 ——
+      所以「表单压着侧转的列表抽屉」时，两级都还是亮的。 */
+.sd-mask {
+  position: fixed;
+  /* ★ 审查-02 B-4（2026-10-15）：`72px` → `var(--rail-w, 72px)`（值一字未变，纯收口）。
+     与 `drawer.wxss` 的 `.dw-mask` / `capsule.wxss` 的 `.cp-mask` 同源。 */
+  left: var(--rail-w, 72px);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--mask);
+  z-index: 88;
+}
+.sd-mask.port {
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  /* ★★ 184 轮：与 `.cp-mask.port` / `.dw-mask.port` **逐字同源** —— 遮罩铺到
+     **底栏顶边**（画布高 − 88），由 fit() 现算写进 `--mask-h`。
+     ⚠️ 三处遮罩必须同值，否则同屏两个弹窗的暗区会差一截（设计稿 1192）。 */
+  height: var(--mask-h, 1192px);
+}
+
+.sd {
+  position: fixed;
+  left: 84px;
+  /* ★ 48 轮：与 .dw 同一条口径 —— 垂直居中于遮罩 ⇒ (800 − 768) / 2 = 16（原 24）。
+     表单抽屉与列表抽屉是同一级、同高的主弹窗，两者的顶必须齐。
+     ★ 审查-02 P1-18：高度改**现算**（同 `.dw` / `.cp`）—— 写死 768 在 PC fill 模式
+     （画布高 ≠ 800）下会贴顶不居中；三个同级主弹窗必须共用同一个算式。 */
+  top: 16px;
+  width: 320px;
+  height: calc(var(--canvas-h, 800px) - 32px);
+  background: var(--elevated);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 16px;
+  /* ★ 审查-02 A-2（2026-10-15）：接令牌 `--sh-drawer-l2`（值与原行内**逐字相同** ⇒ 零视觉变化）。
+     ⚠️ 左偏 `-10px` 是**刻意的**（表单抽屉从左边来）—— 收敛轮次也别把它抹平。 */
+  box-shadow: var(--sh-drawer-l2);
+  display: flex;
+  flex-direction: column;
+  z-index: 92;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.sd.o1 { left: 354px; }
+/* ★ 45 轮：三级位 —— 再右移 270。
+   只有横屏会用：竖屏 800 宽放不下三级并排（见 forms.js `openNestedProject` 的兜底）。 */
+.sd.o2 { left: 624px; }
+
+/* 标题带 —— ★ 48 轮：与列表抽屉 .dw-head 同规格（灰底 ＋ 底分隔线 ＋ 52 高）。
+   原来表单抽屉是白底、无分隔线，而它经常和列表抽屉同屏（互相压着 / 并排），
+   两张抽屉的头不是一套（用户口径「无论是主弹窗还是副弹窗，都需要有抽屉标题栏」）。
+   ★★ 194 轮：底/收边改认 `--head-bg` / `--head-line`（原因见 app.wxss 令牌段）。
+   ⚠️ .dw-head / .tf-head / .sd-head / .sd3-head / .ep-head **五处共用同一套值**
+      —— 改一处要同步其余四处。 */
+.sd-head {
+  height: 52px;
+  flex: 0 0 52px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--head-bg, #F7F8FA);
+  border-bottom: 1px solid var(--head-line, #E0E2E8);
+  box-sizing: border-box;
+}
+.sd-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* ★ 48 轮：标题栏动作键统一成**抽屉按钮**（28 高描边胶囊）—— 与列表抽屉标题带的
+   「筛选」同一颗。.sd 与 .sd3 共用这一类。
+   ⚠️ wxml 里必须是 view（不是 text）：inline-flex 的居中在 text 上不保证生效。
+   ★★ 194 轮：常态底 `--card` → `--elevated`（栏头退到 `--head-bg` 之后，键回到抽屉体那一档）。 */
+.sd-cancel {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--elevated, #FFFFFF);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.sd-cancel-hv { background: var(--chip, #F1F2F5); }
+
+.sd-body {
+  flex: 1;
+  min-height: 0;
+  /* ★ 48 轮：顶部 0 → 12（与 .dw-list / .tf-body / .sd3-body 同一道呼吸位）。 */
+  padding: 12px 14px 0;
+  box-sizing: border-box;
+}
+
+/* ★ 49 轮：抽屉里的滚动容器一律**不显示滚动条**（能滚就够）。
+   ★★ 145 轮：144 轮把 `.sd-body` 的 `enhanced` / `show-scrollbar` 摘掉了（理由是"官方说鸿蒙
+     不支持 enhanced"），**本轮装回来** —— 那一轮真机结果更差，而它**对鸿蒙是空转、
+     对 WebView 是实打实管事的**（`show-scrollbar` 只在开 enhanced 时生效）⇒
+     摘它＝"好的平台撤一处设置、坏的平台什么都没换"，**只有风险没有收益**。
+     口径：**没有证据表明它有害之前，不动它。**
+   ⚠️ 这条 CSS（`::-webkit-scrollbar` ＋ `appearance:none`）**照旧保留** —— 它是 WebView 侧的兜底
+     （46 轮在 `.tf-body` 上踩过：只写一个选择器，另一个照样挂一条灰条），
+     且在鸿蒙上（enhanced 空转）它可能正是**唯一**收得住滚动条的那一道。
+     内容里的 `appearance: none` 是社区实测补出来的：只写 width/height 在部分安卓/鸿蒙机型上
+     仍会露一条，加上 `appearance:none`（并给 color 一个 `!important`）才收得住。
+   ⚠️ 本组件有**三个**滚动容器：`.sd-body` / `.sd3-body`（scroll-view，还另有
+     `enhanced` ＋ `show-scrollbar={{false}}`）与 **`.sd-area-in`（原生 textarea）**。
+   ⚠️ 但对**原生控件**它到不了 —— 见下面 150 轮那段（`.sd-area-in` 的滚动条是原生自己画的）。
+   ★★ 第一百五十轮：**把 `.sd-area-in`（待办正文那个 textarea）也收进名单** ——
+     ⚠️⚠️ 但**真机复核否掉了"它能把这个问题解掉"**：用户口径「持续输入文字时，如果换行会突然
+     显示一下滚动条，然后输入框高度增加以后这个滚动条就没了」，补上这两条 CSS 之后复核仍是
+     「**依旧还是会闪现一下滚动条**」⇒ **那条滚动条是原生控件自己画的**，不吃我们这套 CSS
+     （与"原生不认我们的 CSS 高度"同源 —— 两回都是"CSS 到不了原生层"）。
+     ⇒ 真正的解在**尺寸**那一侧：让"内容 > 控件"这一瞬**根本不发生**（见 js 的 `AREA_SAFE` 注释）。
+     ── 为什么会闪（数都是真机口径，平板 `s ≈ 0.84`）──
+       一个屏幕行盒 ＝ 21 × 0.84 ≈ **17.6px**；而旧余量 `AREA_SAFE = 8` 只有 ≈ **6.7px**
+       ⇒ **换行那一下，内容比控件高 ~11px** ⇒ 原生先画一条滚动条。
+       `bindinput` → setData → 框长高 17.6px 只需**一帧**，但那一帧的溢出**已经画出来了**。
+     ⚠️ 与 `.sd-area`（项目备注，固定 68px）**故意不同**：那个框的滚动条是**常驻、有信息量**的
+       （提示"还有内容没露出来"），这个框的滚动条是**换行瞬间的噪音** ⇒ 只动坏掉的那一环。
+     ⚠️ 这两条 CSS **保留**（对 WebView / PC 侧照样管事，也是 49 轮的老口径），
+       **但别再把它们当成"换行那一下闪滚动条"的解** —— 解在尺寸上。 */
+.sd-body::-webkit-scrollbar,
+.sd3-body::-webkit-scrollbar,
+.sd-area-in::-webkit-scrollbar {
+  appearance: none;
+  width: 0;
+  height: 0;
+  display: none;
+  color: transparent !important;
+}
+
+.sd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.sd-field.sd-f8 { gap: 8px; }
+
+.sd-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+}
+.sd-req, .sd-opt {
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+}
+/* ★ 审查-02 P1-15（2026-10-14）：**「必填」不再借用紧急红** ──────────────────
+   原来 `.sd-req` 直接拿内容紧急度色（`--u-urgent-bg/t`）当 UI 状态色 ⇒
+   表单里那颗红色「必填」与下方「紧急程度」字段的紧急档**同色同语法**，
+   用户会把"这项必填"读成"这项很急"。
+   app.wxss 对 `--danger` 立过"动作破坏性 ≠ 内容紧急度"的拆分纪律，
+   `--u-*` 被徽章反向借用这条同样收口 ⇒ `--u-*` 只表示"这条待办有多急"。
+   「必填」与「选填」从此共用同一条**中性档**：含义由文字承担，不由颜色承担。 */
+.sd-req, .sd-opt { background: var(--chip, #F1F2F5); color: var(--muted, #A5A8B5); }
+
+.sd-input {
+  height: 38px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--primary, #1C1C1E);
+  background: var(--card);
+  box-sizing: border-box;
+}
+.sd-ph { color: var(--muted, #A5A8B5); font-size: 13px; }
+
+/* ★★ 2026-10-12：Token 表单里「当前：sk-****4f2a」那一行。
+   成因见 form-drawer.wxml 的 token 段：服务端只回掩码、不回明文 ⇒ 编辑态输入框必然是空的，
+   不给这行用户会以为"我的 key 丢了"，然后白重贴一遍。
+   ⚠️ 11px ＋ muted：它是**辅助信息**，不能长得像"第二个输入框"（那会让人以为要在这儿填东西）。 */
+.sd-keymask {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+}
+
+/* ---------- 额度重置日：**一行「日」步进器**（★ 133 轮：月份那一行已删）----------
+   一行 ＝「− 值 ＋」三件，34 高。按钮 34 见方：不是主操作，不需要 P-6 的 44 热区；
+   DPR2 下 ＝ 68 物理 px，够点。
+   ⚠️ 42 轮那代的 `.sd-step-k`（左侧 40 宽的行内标签「月份 / 日期」）随第二行一起删 ——
+      只剩一行时它是冗余的：字段名已写明「额度重置日」，值的后缀也还有「日」。 */
+.sd-step {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.sd-step-ops {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.sd-step-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  /* ★ 49 轮：--chip 灰底 → 白底（与中间那个 .sd-step-v 同款）。
+     一行三件 [−][值][＋] 现在是同一套白底描边，读作一个整体的步进器。 */
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  color: var(--primary, #1C1C1E);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.sd-step-btn-hv { background: var(--chip, #F1F2F5); }
+/* ★★ 2026-10-24（复审 P2-17）：34 → 44 的命中区（视觉仍 34）。
+   步进器三件 `[−][值][＋]` 间距只有 6，横向**不补**（补了就互相压），只补上下各 5。
+   ⚠️ 与 `.sd-step-v` 同高、同基线，视觉上完全看不出这层透明热区。 */
+.sd-step-btn { position: relative; }
+.sd-step-btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -5px;
+  bottom: -5px;
+  border-radius: 12px;
+}
+
+.sd-step-v {
+  min-width: 78px;
+  height: 34px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.sd-step-n {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary, #1C1C1E);
+}
+.sd-step-u {
+  font-size: 12px;
+  color: var(--muted, #A5A8B5);
+}
+
+/* ---------- 选择行（一行一个）· ★ 43 轮（★ 57 轮扩到 5 个字段）----------
+   归属项目 / 所属项目都改成一行一个：最多 8 个活跃项目，铺成胶囊会挤成两三行，
+   既认不出「当前选的是哪个」，也不好看。选中行 ＝ 品牌黄浅底 ＋ 黄描边 ＋ 右侧打勾。
+   ★ 57 轮：这套形态又扩了两个字段 —— 项目的「关联 agent」与「项目色」
+     （色表 8 行 ＋ 首行「不关联」共 9 行 ⇒ `.sd-body` 会滚，能滚就够）。
+     新增的第三个状态 `off`（被别家占用的颜色）见下面的 `.sd-row.off`。 */
+.sd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sd-row {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.sd-row-hv { background: var(--chip, #F1F2F5); }
+.sd-row.on {
+  background: var(--yellow-soft, #FFF8DC);
+  border-color: var(--yellow, #FFD02F);
+}
+.sd-row.on .sd-row-t { font-weight: 500; }
+/* 「＋ 新建项目」/「＋ 新建脑图」行（★ 46 轮：虚线 → 实线细边 ＋ 浅灰底）
+   ⚠️ 原来是 `border-style: dashed`：1px 虚线在真机 DPR / 核验图缩放（0.825）下，
+      底边那条会整条糊掉甚至完全不画 —— 46 轮像素级实测，同一行顶边 218 个暗像素、
+      底边只剩 6 个，用户看到的正是「底边没显示全」。虚线在 1px 尺度上没有稳定的渲染保证，
+      所以这里不再靠虚线表达"新增"，改用实线细边 ＋ 灰字来承载"这是一个动作"的语义。
+   ★ 49 轮：底色由 `--surface` 灰改成**纯白**（与同一个抽屉里的 .sd-row 选项行同款）——
+      抽屉里的"面"只允许两档（白 / 标题带灰），这一行原来是唯一一块灰面。
+      「新建」这个语义继续由左端 ＋ 图标 ＋ 灰字承担，不靠底色。 */
+.sd-row.add {
+  background: var(--card);
+  border-color: var(--hairline, #E0E2E8);
+  color: var(--slate, #555A6A);
+}
+/* ⚠️ 必须补这一条：上面把底色调成 #FFFFFF（0,2,0）、且位置在 `.sd-row:active` 之后，
+   不补的话按下去那一下的反馈会被它压掉（同一个灰，看着像点不动）。 */
+.sd-row.add.sd-row-hv { background: var(--chip, #F1F2F5); }
+/* 「关联脑图」的选择行：点开三级抽屉（§5 —— 选择行 40，左端带身份标记） */
+.sd-row.pick { color: var(--primary, #1C1C1E); }
+
+/* ★ 本轮：「格式」那一行（行首多一张结构缩略图，所以行高要抬一档）。
+   40 是"一行文字"的高度，而这里要在行首放一张 48×34 的图 —— 留在 40 里只剩 3px 上下留白，
+   描边会像把图切掉了一条。46 = 34 ＋ 上下各 6。
+   ⚠️ 缩略图**不能**沿用 `.sd-cdot` 的 16：那颗的口径是"色点与文字一样高"（57 轮定的），
+      这里是一个有内部结构的图形，读的是"结构长什么样"。 */
+.sd-row.fmt { height: 46px; }
+.sd-fthumb {
+  width: 48px;
+  height: 34px;
+  flex: 0 0 48px;
+  border-radius: 6px;
+  background: var(--chip, #F1F2F5);
+}
+.sd-row-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  /* ★ 57 轮立、★ 审查-02 P2-16 订正：显式行高 **17**（色点仍 16）——
+     色点与文字**视觉中心对齐**。原注释写"行高 16"是笔误：`.sd-cdot` 的 16 与
+     这一行的 17 差 1px，1px 在 16/17 之间肉眼不可辨，故**只订正注释、不动值**。 */
+  line-height: 17px;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sd-row.add .sd-row-t { color: var(--slate, #555A6A); }
+/* ★ 46 轮：选择行的**占位态** —— 没选时显示「请选择」并转灰，
+   与输入框的 placeholder 同一读法（.sd-ph 也是 --muted）。 */
+.sd-row-t.ph { color: var(--muted, #A5A8B5); }
+
+/* ---------- 行尾的占用提示（★ 57 轮）—— 「已被「XX」占用」 ----------
+   只有被别家占用的**项目色**行会用到。11px / --muted：它是一句解释，
+   不是这一行的主体（主体是左边的颜色名）。
+   ⚠️ 三段拼成一句、**只让中间的项目名省略**（`_n`），首尾的「已被「」「」占用」固定不缩：
+      整条一起 ellipsis 的话，长名字会把尾巴的「占用」吃掉，
+      屏幕上只剩「已被「rockchip 工具链…」——恰好丢掉了"不可选"这个关键信息。
+   ⚠️ `gap: 0`：三段是标点前后的连续文本，留缝会读成三个词。
+   ⚠️ `max-width: 156`：不封顶的话长项目名会把左边的颜色名压到只剩几个像素。 */
+.sd-row-note {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 156px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted, #A5A8B5);
+}
+.sd-row-note-k { flex: 0 0 auto; }
+.sd-row-note-n {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 被别家占用的行：**不可选**（★ 57 轮）——
+   面转灰、文字转浅、色点压到 35% ⇒ 一眼读作"这一项是停用的"。
+   ⚠️ 必须压掉按下反馈：一个按下去会变色的"不可选"行，比不变色更让人困惑。
+      ★ 118 轮：按下态改用 `hover-class="sd-row-hv"`（特异性 0,1,0）之后，
+      `.sd-row.off`（0,2,0）天然压过它 ⇒ 原来那半条 `:active` 选择器可以整条删掉，语义不变。
+   ⚠️ 真正的闸门在 `form-drawer.js` 的 `onPickColor`（WXML 没法只给部分行摘掉 catchtap）。 */
+.sd-row.off {
+  background: var(--surface, #F7F8FA);
+  border-color: var(--hairline, #E0E2E8);
+}
+.sd-row.off .sd-row-t { color: var(--muted, #A5A8B5); }
+.sd-row.off .sd-cdot { opacity: 0.35; }
+
+/* ---------- 头像（profile）---------- */
+.sd-avatar-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.sd-avatar-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  /* ★ 49 轮：--chip 灰底 → 白底（"面"只允许白 / 标题带灰两档） */
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.sd-avatar-img { width: 56px; height: 56px; }
+.sd-avatar-acts {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   待办正文的输入框（★ 第一百四十七轮定案：**高度的权威在普通 view 上**）
+   ★★ 147 轮拿到**第一份真机读数**（长按「待办内容」标签）：
+      **ohos / OpenHarmonyOS 7.0.0 ｜ areaH 104 ｜ 外框 87 ｜ 输入区 71** ——
+      `areaH` 是对的，可**屏幕上没有任何东西是 104**；而内层下发的 `min-height:84px`
+      实测只有 **71** ⇒ **鸿蒙上原生 textarea 根本不认我们的 CSS 高度。**
+      ⇒ 144 / 145 那句"把高度交回原生（`auto-height`）"是个**错方向**：一开它，原生就自己
+        说了算（我们的 `min-height` / `max-height` 全废，它自己算的高还比实际渲染的内容矮
+        一行）；145 又把外框高度整个撤掉 ⇒ 框从 104 掉到 87 ＝ 用户说的「越改越差」。
+      结论：**唯一在所有平台都吃 CSS 的载体是普通 `<view>`** ⇒ 高度由它承担（模板下发
+        inline `min-height:{{areaH}}px`，只托住、不夹住），原生 textarea 只负责"填满"
+        （inline 绝对 px ＋ `flex:1 1 auto`，两道独立来源）。⚠️ 别再打开 `auto-height`。
+   ── 六轮复核记录（**全部已作废**，留作"别再走回头路"的清单）────────────────────
+   —— 用户真机连续六轮复核"框不长高、字在框里滚"（创建待办 / 编辑待办 / 闪念胶囊转待办）：
+      第四轮给出平台判定「IDE 没问题、PC 没问题，**只有鸿蒙平板**有问题」；
+      第五轮「平板端依旧是边框不长高，内部出现滚动条」；
+      ★ 第六轮「**依旧不行，越改越差了，有滚动条且都不能滚动了**」。
+   ── ★★ "越改越差"是最有价值的一条证据 ──
+     144 轮**改变了真机行为**（143 是"能滚"、144 变"不能滚"）⇒ 说明 144 轮动的那条机制
+     **在鸿蒙上确实是生效的** —— 就是 `auto-height`（原生自己算高）；
+     反过来也印证 130–143 那种"推 px 给 DOM"**连行为都改变不了**，所以五轮全败。
+   ── 144 错在哪：**它在 `auto-height` 外面又压了一条 `max-height`** ──
+     `auto-height` 的语义是"控件高 = 内容高 ⇒ 我永远不需要滚动"；外面压一条 `max-height`，
+     原生层并不知道 ⇒ **控件被夹住、它自己的滚动条却没被启用** ⇒ "有滚动条且滚不动"。
+   ── 144 / 145 那版结构（**已作废**：高度只有一个出口 ＝ 里面那个原生控件自己）──
+     · `.sd-area-box` ＝ 纯外壳（边框 / 圆角 / 底色 / 内边距），**没有任何高度**；
+     · `.sd-area-in`  ＝ 里面的 textarea，交给 `auto-height` 自己算高 —— ✗ 真机实测它**算得
+       比它自己渲染的内容还矮一行**（71 < 4 行 × 21 ＝ 84）⇒ 字被裁、框比字矮。
+   ⚠️ **不要再给 `.sd-area-box` 写 `height` / `overflow: hidden`** ——
+      它一旦有了自己的高度，就又变回"我们推高度"，回到 130–143 的死路。
+   ⚠️ **内层写 `height` 现在是正当的**（147 轮：`auto-height` 已撤，`height` 才有意义）——
+      但**必须由模板下发 inline `height:{{areaH - 20}}px`**，本文件里仍不许写死 `height`／
+      `max-height`（写死＝又变回"我们随手给一个数"，与 `areaH` 脱钩）。
+   ⚠️ **`auto-height` 不许再出现在模板里** —— 它一开，原生接管高度，上面一切的数全废。
+   ⚠️ 模板里内层的 `{{areaH - 11}}` 与本文件 `.sd-area-box` 的
+      `上 padding 9 ＋ **下 padding 0** ＋ border 1×2 ＝ 11` 是**同一口径** ——
+      `工具/check_area_autogrow.js` 会**现读本文件**复算并比对。动这几个数先跑那个脚本。
+   ⚠️ 下限 104 必须与 js 的 `AREA_MIN_H` 同值；上限 208（`AREA_MAX_H`）由 js 封，
+      到顶之后由 textarea 在框内自己滚（用户口径"最高 2 倍"的字面实现）。
+   ⚠️ 可用文字宽（268）由**外框**的 padding / border 决定 —— 脚本也是从本文件现算的。
+   ========================================================================== */
+.sd-area-box {
+  /* ★ 147 轮：**高度的权威在这一层**（普通 view —— 它在所有平台都吃 CSS）。
+     高度由模板下发 inline `min-height:{{areaH}}px`：**只托住、不夹住**（永远不写 `height`）。
+     `flex: 0 0 auto` 是防御：它躺在 `.sd-field`（column flex）里，不许被弹性布局压短。
+     `display:flex; flex-direction:column` 是给内层准备的**第二条高度来源** —— 见 `.sd-area-in`
+     的 `flex: 1 1 auto`：万一某个平台不认内层那条 inline px，弹性拉伸还能把它撑到这一层高。 */
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  /* ★★ 150 轮：**下内边距 9 → 0** —— 那 9px 让给了控件底部"一个行盒的余量"（见 js 的 `AREA_SAFE`）。
+     余量只能长在控件底部（文字从控件顶部往下排），所以框的下方本来就会比上方空一档；
+     把下内边距让出去，是为了让框只长高 ~12px 而不是 ~21px。
+     ⚠️ 这两笔账**必须成对动**：改它就得同步 js 的 `AREA_CHROME`（11）与模板的 `{{areaH - 11}}`
+     （判据现读本文件复算 chrome，再与模板里那个数逐位比对）。
+     ⚠️ **左右仍是 10**（可用文字宽 268 靠它），别跟着改。 */
+  padding: 9px 10px 0;
+  background: var(--card);
+  color: var(--primary, #1C1C1E);
+  box-sizing: border-box;
+  width: 100%;
+}
+.sd-area-box.ph { color: var(--muted, #A5A8B5); }
+/* 内层：**只负责显示文字** —— 不要给它边框 / 底色（那些在外框上）。
+   ★★ 第一百四十七轮：**它只负责"填满外框"** —— 两道高度来源，都从 js 的 `areaH` 推出来：
+     · 模板 inline `height:{{areaH - 11}}px`（**绝对 px** —— 这就是 42 轮那套"给死高度"的
+       成功写法，只是现在由 js 算出来、跟着文字长；★ 150 轮 20 → 11）／
+     · `flex: 1 1 auto`（弹性拉伸到外框的内容高）—— 哪个平台认哪道就用哪道；
+     · 本文件这一条 `min-height: 93px` ＝ 104 − 11，是**CSS 平台的兜底地板**，不再是主驱动。
+   ── 144 / 145 那版（**已作废**）──────────────────────────────────────────────
+     ★ 144 轮：把高度交给模板上的 `auto-height`（"原生自己算高"）—— 真机读数否掉了它：
+       原生**不认**我们下发的 `min-height`（下发 84、实测 71），它自己算的高还比它实际渲染的
+       内容矮一行 ⇒ 框比字矮、字被裁。
+     ★ 145 轮：删掉 144 那条 `max-height: 188px`（它在外面夹住 `auto-height` ⇒ "有滚动条且
+       滚不动"）。方向没错，但"交回原生"这个前提本身是错的 ⇒ 147 轮整条推翻。
+   ⚠️ `padding: 0` / `margin: 0` 是**防御性清零**：`disable-default-padding` 官方写明
+      只作用于 iOS，鸿蒙等平台仍可能自占一圈默认内边距 ⇒ 每行少装几个字
+      ⇒ 真实行数 > 估算行数 ⇒ 框矮一截、又出滚动条（147 轮另在 js 里加了 `AREA_SAFE`
+      兜这一圈 —— 光靠清零在鸿蒙上够不到原生层）。
+      ★★ 150 轮：`AREA_SAFE` 从 8 提到 **`AREA_LH + 8 = 29`**（一个行盒 ＋ 这 8px）——
+        一个行盒那份是拿来挡"换行那一瞬间"的滚动条的（详见上面 `.sd-body::-webkit-scrollbar`
+        那段与 js 里 `AREA_SAFE` 的注释），因为**那条滚动条是原生画的、收不掉，只能让它不出现**。
+   ⚠️ `line-height: 21px` 保留（设计口径 = 14 × 1.5）；`areaH` 也是按 21px 行盒算的
+      ⇒ 我们給的高度与文字实际占的高度同源，不会互相打架。
+   ⚠️ `display: block` 消掉 inline 元素基线带出来的几 px 缝隙。 */
+.sd-area-in {
+  width: 100%;
+  flex: 1 1 auto;                     /* ★ 147 轮：弹性拉伸 —— 第二条高度来源（第一道是模板的 px） */
+  min-height: 93px;                   /* 兜底地板（＝ 104 − 11）；主驱动是模板的 `height:{{areaH - 11}}px` */
+  /* ★★ 147 轮：`auto-height` 已从模板撤掉（它是"原生接管高度、我们的数全废"那个开关）；
+     `max-height` 仍不许写 —— 上限由 js 的 `areaH` 封（208），到顶后由 textarea 在框内自己滚。 */
+  padding: 0;                         /* 防御性清零（见上） */
+  margin: 0;
+  /* ★★ 147 轮（下半场）：这两条**只是 s = 1 的兜底** —— 真正的值由模板 inline 下发
+     （`font-size:{{areaFs}}px;line-height:{{areaLh}}px` ＝ 设计 px × 平台缩放 s）。
+     原因：**原生 textarea 的字不吃祖先 `transform: scale(s)`**（见 js 的 `stageScale()`），
+     不乘 s 就是"字比框大一圈" ⇒ 末行被裁（真机：一行只排 16 个汉字，应为 19 个）。
+     ⚠️ **普通 `<view>` 千万别跟着乘**（它本来就缩，乘两次会变小）。 */
+  font-size: 14px;
+  line-height: 21px;
+  color: inherit;
+  background: transparent;
+  box-sizing: border-box;
+  display: block;
+  /* ★★ 第一百五十轮：**自己的滚动条也收一把**（标准写法，不依赖 `-webkit-` 前缀）——
+     这个框会随文字长高 ⇒ 滚动条只在"换行那一瞬间"冒一下（内容先溢出、我们的高度下一帧才跟上）。
+     ⚠️⚠️ **真机已否掉"CSS 能收掉它"** —— 用户复核「**依旧还是会闪现一下滚动条**」⇒ 那条滚动条
+       是**原生控件自己画的**（和"原生不认我们的 CSS 高度"同源）。**解在尺寸上**：
+       `AREA_SAFE` 提到"一个行盒 ＋ 8"，让那一瞬不存在（见 js 的 `AREA_SAFE` 注释）。
+     ⚠️ 本句与上面那条 `.sd-area-in::-webkit-scrollbar` 仍**保留**（对 WebView / PC 侧管用），
+       **但别再把它们当成"换行闪一下"的解**。 */
+  scrollbar-width: none;
+}
+
+/* ---------- 其余多行文本框（现在只有「项目备注」）—— **固定 68，不参与长高** ----------
+   用户只点名「待办内容」，项目备注保持原样。
+   ★ 141 轮：104 / 208 那套已经搬去 `.sd-area-box`，这里就是一份老老实实的固定高度，
+     不再有"被 `.sd-area` 的 min-height 顶大"那个连带坑（140 轮那条 `.short` 补丁随之删除）。 */
+.sd-area {
+  height: 68px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--primary, #1C1C1E);
+  background: var(--card);
+  box-sizing: border-box;
+  width: 100%;
+}
+.sd-area.ph { color: var(--muted, #A5A8B5); }
+
+/* ---------- 选项 chips ---------- */
+.sd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  font-size: 13px;
+  color: var(--slate, #555A6A);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* ★ 审查-02 S1（2026-10-15）：胶囊键按下反馈 —— 与 `.tf-chip-hv`（筛选弹窗同形键）**同族**：改底 `--chip`。
+   ⚠️ `.sd-chip.on`（0,2,0）特异性压过本条（0,1,0）⇒ 已选中的那颗按下不变色。
+     这正是要的：已经选中的键不需要"再选一次"的反馈；未选中态（白底）按下才亮。 */
+.sd-chip-hv { background: var(--chip, #F1F2F5); }
+.sd-chip.on {
+  /* ★★ 201 轮（用户 2026-10-16 报「深色下选项目节点看不清」）：选中面从 `--solid`
+     改走 `--sel-chip-*` —— 深色 `--solid`(#36383B) 压在抽屉底(#292B2E)上只有 1.20:1，
+     与未选中的、与容器糊成一片；这两支深色落回**黄族**，与本表单下面
+     `.sd-row.on`（关联 agent 那种"行"选中）长得一样 ⇒ 一屏只剩一套选中语言。
+     ⚠️ 浅色值与原 `--solid` 逐值相同 ⇒ 浅色零像素变化。
+     ⚠️ 本类同时是「项目节点 / 待办紧急度 / 导出选项」等**所有表单胶囊**的选中态，一处改多处生效。 */
+  background: var(--sel-chip-bg, #1C1C1E);
+  border-color: var(--sel-chip-line, #1C1C1E);
+  color: var(--on-solid);
+  font-weight: 500;
+}
+/* ⚠️ 这里原先有一条 `.sd-chip.add`（`border-style: dashed`）—— **已删**（审查-02 P2-5）：
+   全工程零引用（`form-drawer.wxml` 里只有 `sd-chip` 与 `sd-chip on` 两种），
+   且 1px 虚线在 DPR / 核验图缩放下会整条不画（46 轮真机结论，同 `.sd-row.add` 那条注释）。
+   将来真要复用，照 `.sd-row.add` 的**实线细边**写法，别再上虚线。 */
+.sd-chip-sub { font-size: 11px; opacity: 0.6; }
+
+/* ---------- 选择行左端的**项目色点**（★ 57 轮：7 → 16）----------
+   口径与 `.pdot-lg` / `.dw-pdot` 同一条：**色点的高度跟同一行文字的行高走**，
+   不是"比字号略小"。这一行文字是 14px、行高 **17**，色点取 **16**（差 1px ＝ 视觉中心对齐；
+   ★ 审查-02 P2-16：原注释写"13px / 行高 16 / 见 `.sd-row-t` 的 line-height: 16px"三处均笔误）。
+   为什么值得放大：7px 的色点在 292 宽的行里几乎是一个脏点，
+   而它是这一行**唯一的颜色载体**（项目身份就靠它认）。
+   ⚠️ 三处选择行共用（待办的「归属项目」／脑图的「所属项目」／项目的「项目色」），
+      所以这一处改动同时解决了「新建脑图抽屉里色点太小」。 */
+.sd-cdot { width: 16px; height: 16px; border-radius: 999px; flex: 0 0 16px; }
+/* ⚠️ 「不关联」那一行**不写 `.empty` 变体**：色是行内 `style="background:…"` 打上去的，
+   行内样式一定压过类样式 ⇒ 写一个 `.sd-cdot.empty { background: transparent }` 是死代码。
+   这一格就给 `#8E91A0` 那个**中性灰点**，正是全工程「项目没有颜色」时的统一画法
+   （项目列表卡的 `packProjectCard`、待办卡的项目气泡都取这个灰）——
+   用户在这里看到灰点，出门在列表上看到的是同一个灰点，两处能对上。 */
+
+/* ---------- 折叠行（选填项不抢注意力 · FR-3.6）—— 43 轮已被选择行取代，样式删除 ---------- */
+
+/* ---------- ★★ 247 轮：图片区整段删除（用户口径见 wxml 文件头）----------
+   这里原来住着 `.sd-imgs / .sd-img / .sd-img-t / .sd-img-photo* / .sd-img-del* /
+   .sd-img-add*` 七组规则（43 轮"两个一行"那套 142×96 的格子）。
+   待办表单不再有图片区 ⇒ **规则与调用点一起走**（与 161 轮、170 轮删 `.link-row` 那批同一条纪律）：
+   留着的死规则比没有更坏 —— 下一个人会照着它去改一个根本不生效的数。
+
+   ⚠️ 里面有三条结论**没有失效，已经搬到详情页那颗「✕」上**（`mod-todo.wxss` 的 `.img-del`），
+      别以为删掉就丢了：
+        · 视觉 24×24 ＋ 字 12（"角标"就该这么大）；
+        · 热区要 32 以上，且**只能用透明伪元素外扩**（`padding` 会把视觉圆点一起放大）；
+        · 深色实心圆点键的按下态压 `opacity`（不改底 —— 它常压在一张图上）。 */
+
+
+/* ---------- 说明文字（.sd-help / .sd-hint / .sd-em）★ 43 轮整组删除 ----------
+   抽屉里只留字段：字段本身已经说清自己是什么，再补一句「只列活跃项目（FR-2.9）」
+   属于把评审语言搬上屏。需要解释的地方改由 placeholder 承担。 */
+
+.sd-foot {
+  height: 56px;
+  flex: 0 0 56px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+/* 编辑态左侧的「删除」—— 卡片上只留「编辑」，删除收进抽屉（agent / token）
+   ★★ 161 轮：描边由 `--hairline`（灰）改 `--danger`、字色由**裸写的 `#E5484D`**
+   （＝ `--u-urgent` 的值但没走令牌）改 `--danger` —— 与 `.op.danger` / `.cp-btn.danger`
+   三处收成同一把尺：「白底 ＋ `--danger` 描边 ＋ `--danger` 字」。
+   改前这一处其实是"白底 ＋ **灰**边 ＋ 红字"，与那两处的"粉底 ＋ 粉边 ＋ 暗红字"
+   是**两种长相**（94 轮那张表把它们写在同一格里，但值早就不一样了）。 */
+.sd-del {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--danger, #C63B2E);
+  background: var(--card);
+  color: var(--danger, #C63B2E);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+/* ★★ 161 轮：按下态由「底变 `--u-urgent-bg` 粉」改成 **`opacity`** ——
+   与 `.op-hv`（待办详情四颗键）同值同法。理由：危险键已经**没有底色**了，
+   "底色加深一档"这条路整个不存在；三处危险键的按下反馈统一成一种，
+   也顺手把 `--u-urgent-bg` 从按键族里清干净（它只留给"小面积"语义用）。 */
+.sd-del-hv { opacity: 0.7; }
+
+/* ==========================================================================
+   提示词增强（★ 278 轮）
+   —— 三样东西：底部次键 `.sd-alt`、生成中动效 `.enh-*`、回填提示 `.enh-note`。
+   ⚠️ 位置与宽高**一律不在这里写** —— 抽屉落在哪一档由 `.sd` / `.sd.o1` 决定（判据 E9）。
+      这里出现 `left:` / `width:` 就等于开了第三条几何口径。
+   ========================================================================== */
+
+/* 「增强」—— **品牌动作位**：黄底墨字，与 `.tb-btn.yellow` / `.sec-btn.yellow` 同一口径
+   （app.wxss 令牌段那句：`--yellow` 只落在"选中"与"品牌动作"上）。
+   ★★ 279 轮改色：由「白底 ＋ 灰描边 ＋ 灰字」改成主题色实心 —— 用户口径
+      「这个功能算是特色功能，最好按键配色可以用主题色」。上一版是**次键**长相，
+      而这颗键其实是这条抽屉里唯一"能把文本变得更好"的动作，压成灰色等于劝退。
+   ⚠️ 黄面 ⇒ 字与图标**必须恒墨** `--on-accent`（两套令牌同值 #1C1C1E）：
+      不是风格选择，是硬约束 —— `--primary` 深色档是柔白，压黄面只有 1.6:1。
+      范式不是新造的：`.sd-submit.ok`（亮绿底）走的也是「亮底 ＋ 墨字」。
+   ⚠️ 边框跟底**同色**：留一圈 `--hairline-strong` 灰边会在黄面上读成脏边
+      （与 `.tb-btn.yellow` 的 `border-color: var(--yellow)` 同一条）。
+   ⚠️ 宽度由内容定（`flex:0 0 auto`），主键 `.sd-submit` 仍吃 `flex:1` ⇒ 主键自动变窄，
+      不用给两颗键写死 px（写死就是第二条宽口径，换个文案就崩）。
+   ⚠️ 位置与宽高**一律不在这里写** —— 抽屉落在哪一档由 `.sd` / `.sd.o1` 决定（判据 E9）。
+      这里出现 `left:` / `width:` 就等于开了第三条几何口径。 */
+.sd-alt {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--yellow, #FFD02F);
+  background: var(--yellow, #FFD02F);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-accent, #1C1C1E);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+/* 按下：黄键是"**加深一档**"，不是整键变淡 —— 与 `.tb-btn.yellow.tb-btn-hv` /
+   `.sec-btn.yellow.sec-btn-hv` 同值（`--yellow-press`）。亮底键用 `opacity` 在深色下
+   会读成"被关掉"，而这颗键任何时候都不该看起来像禁用。 */
+.sd-alt-hv {
+  background: var(--yellow-press, #FCB900);
+  border-color: var(--yellow-press, #FCB900);
+}
+/* 禁用：整键降透明度 —— 与 `.sd-submit.off` / `.tb-btn.off` 同值同法（全工程唯一的"禁用"读法） */
+.sd-alt.off { opacity: 0.45; }
+
+/* 生成中 —— 环与 capsule-attach 的 `.at-spin` 同一套（同 0.68s 线性、同 2px 描边）。
+   ⚠️ 环色走 `--yellow-deep`：深色下它另有一档值，写死品牌黄会在暗底上发灰。 */
+.enh-load {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 0 40px;
+}
+.enh-spin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--yellow-deep);
+  animation: enhSpin 0.68s linear infinite;
+}
+@keyframes enhSpin { to { transform: rotate(360deg); } }
+.enh-load-t { font-size: 14px; font-weight: 500; color: var(--primary, #1C1C1E); }
+.enh-load-s { font-size: 12px; color: var(--muted, #A5A8B5); }
+
+/* 失败 —— 与正文区分：它是一块**有边框的说明**，不是"另一份内容" */
+.enh-err {
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  padding: 14px 12px;
+  background: var(--card);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.enh-err-t { font-size: 13px; line-height: 1.7; color: var(--slate, #555A6A); }
+.enh-retry {
+  align-self: flex-start;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--elevated);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+}
+.enh-retry-hv { background: var(--chip, #F1F2F5); }
+
+/* 回填提示 —— 无边框 ＋ 左竖线 ＋ 12px 次要色。
+   ⚠️ 刻意不套 `.ex-box` 的边框：它**不是另一块内容**，是一句"关于内容"的说明。
+   ⚠️ 底走 `--chip` 而不是写死浅灰（写死会在暗底上浮成一块白）。 */
+.enh-note {
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border-left: 2px solid var(--yellow-deep);
+  background: var(--chip, #F1F2F5);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--slate, #555A6A);
+  box-sizing: border-box;
+}
+
+.sd-submit {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--solid, #1C1C1E);
+  color: var(--on-solid);
+  /* ★ 94 轮：15 → 14 —— 与「同一个位置、同一套壳」的列表抽屉底部主键 `.dw-foot-btn`
+     对齐（两颗都是"抽屉底部黑底主键"，字号差 1px 是纯漂移，不是分档）。 */
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 文字前有反白图标（`w-check` 保存 / `w-copy` 复制到剪贴板） */
+  gap: 6px;
+}
+/* ★ 2026-10-13（改造清单 R22）：禁用态由「浅灰底 ＋ 白字白图标」改成 **整键降不透明度**。
+   旧写法把底换成 `--hairline-strong`(#C7CAD5)，而 `.sd-submit` 的字与图标是**白的**
+   ⇒ 白字压 #C7CAD5 只有 **1.64:1**，标签基本看不见（读成一颗没有字的灰药丸）。
+   改成 `opacity: 0.45` —— 与 `.tb-btn.off` / `.sec-btn.off` **同值同法**（全工程"禁用键"的唯一读法），
+   白字白图标一起变淡 ⇒ 字与图标仍同色、且一眼读作"此刻没有效果"。
+   ★ 顺带：`.sd-submit.off`（0,2,0）特异性压过 `.sd-submit-hv`（0,1,0）⇒
+     这颗键补了按下反馈（R22 同轮）之后，禁用态也不会再跟着变暗。 */
+.sd-submit.off { opacity: 0.45; }
+
+/* ★★ 173 轮：导出抽屉「复制到剪贴板」的**成功态**。
+   —— 反馈落在按钮自己身上（黑底 → 绿底 ＋ 勾 ＋「已复制」），
+      不再只靠一句一闪而过的 toast（用户口径：「总觉得没有起作用」）。
+   ★★ 173 轮**当日返工**：底色由 `--success-t`(#1B7A4B) 改成 `--success`(#2E9E64)。
+      用户口径：「这个绿色，是不是和应用的已有配色体系有点偏差啊」—— 定性**准确**，
+      根因是**挑错了档**，不是"绿本身不对"：
+        · `--success-t` 是这套绿里的**深字档**，全工程只喂 `.badge-done` 那颗 13px 字，
+          从没当过面；用它铺满 36 高实心键 ＝ 一块**发暗发浊的墨绿**。
+        · 用户心里那个绿是它的**基色** `--success` —— 也就是`.tc-st.on` / `.dw-st.on`
+          那两个「已完成」小圆圈的绿，是他在待办网格里天天见的那个绿。
+      ⚠️ **换基色必须连带换字色**（这不是折中，是硬约束）：
+        `--success`(#2E9E64) 上的**白字对比只有 3.39**（它原来只喂过
+        「完成小圆圈里那个 12px 的勾」，**图形**，3:1 就够）；
+        这颗键是 **14px 正文**，要 4.5 ⇒ 字与勾一起转**墨色** `--primary`(#1C1C1E)，
+        对比 **5.02 ✅**。范式不是新造的：**品牌黄键就是"亮底 ＋ 墨字"**（`.btn-primary`）。
+      ⚠️⚠️ **别试图折中**：两支之间的中间档（如 #2A8E5A）白字 4.11 / 墨字 4.14，
+        **两头都不达标** —— 这支绿只有"白字配沉档""墨字配基色"两种合法组合。
+      ⚠️ 图标跟着**字色**换：`w-check`(白) → `check`(墨) ——
+        167 轮定下的"图标与它那颗键的**字**同色"；`check.svg` 的 fill 正是 #1C1C1E，
+        与 `--primary` **同值**，天然对齐。
+   ⚠️ 特异性 (0,2,0) ＞ `.sd-submit` (0,1,0)，层叠顺序无关
+      （铁律：组件 wxss 与 app.wxss 的顺序没有保证 ⇒ 覆盖必须靠特异性压住）。 */
+.sd-submit.ok {
+  background: var(--success, #2E9E64);
+  color: var(--on-accent, #1C1C1E);
+}
+/* ★★ 173 轮：**这颗键原来一个按下态都没有**（全工程「底部实心主键」里唯一一颗裸的）——
+   "点了没反应"有一半是从这里读出来的。现在补齐：与 `.sd-del-hv` / `.op-hv` 同值同法。
+   ⚠️ 成功态下也保留它 —— 复制过的键还能再点（剪贴板可能已被别的内容覆盖），
+      按下就该有即时反馈。 */
+.sd-submit-hv { opacity: 0.7; }
+
+/* ==========================================================================
+   竖屏：顶边 ＝ 工作区顶边（品牌栏下沿）· 高 ＝ --work-h-port − 18
+        L2 位右移 270 ⇒ x286
+   ========================================================================== */
+.sd.port {
+  left: 16px;
+  /* ★ 63 轮：与列表抽屉 .dw.port 同一条口径 —— 48 轮那版"遮罩内垂直居中"（上 18／下 18）
+     会让顶边钻进系统状态栏（真机 y18 ＜ 状态栏 57），与系统信息叠在一起。
+     现在顶边下移到品牌栏下沿，底边不动（y1174）⇒ 高度收短：
+       设计稿 1128 − 18 ＝ 1110（原 1156）· 真机 1091 − 18 ＝ 1073。
+     ⚠️ 横屏（.sd 基类）不渲染品牌栏 ⇒ 16 / 768 不动。
+     ⚠️ calc 必须写在这里（使用处）：自定义属性在声明它的元素上就会展开，
+        写成 page{} 里的组合变量会永远算出设计稿值。 */
+  top: var(--head-h);
+  width: 320px;
+  height: calc(var(--work-h-port) - 18px);
+}
+.sd.port.o1 { left: 286px; }
+
+/* ★ 45 轮：一级「侧转」（与列表抽屉 .dw.turned 同款）——
+   本层上面还压着另一个**同宽**的抽屉时用（现在是「待办表单 → 新建项目」）：
+   绕左缘 rotateY 25°、视距 1100 ⇒ 右缘 342，与 L2(x354) 之间正好留 12px 缝。
+   `pointer-events:none` 让"点不动"本身就是层级提示；z-index 降到 91（二级 92），
+   靠遮挡关系而不是投影来表达谁在上。 */
+.sd.turned {
+  transform-origin: left center;
+  transform: perspective(1100px) rotateY(25deg);
+  pointer-events: none;
+  z-index: 91;
+}
+
+/* ==========================================================================
+   导出（mode = export · ★ 45 轮）
+   —— 详情页的「适配 agent 文本」整块收进这里：只读预览 ＋「不含图片」开关 ＋ 复制。
+      预览不自己滚（抽屉的 .sd-body 就是滚动容器），避免嵌套滚动。
+   ========================================================================== */
+.ex-box {
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+  box-sizing: border-box;
+}
+.ex-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--slate, #555A6A);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 复选框 44 高（P-6 触控目标）—— 它整行都是热区 */
+.ex-sw {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  margin-top: 2px;
+}
+/* ★ 审查-02 S1（2026-10-15）：整行可点的开关 ⇒ 本身透明无底，按下给一块 `--chip` ＋ 圆角。
+   ⚠️ 补圆角是因为它会撑成一块 44px 高的色块（方角太生硬）；圆角不参与布局 ⇒ 几何零变化。
+   ⚠️ **不加 `padding`** —— 那会连内容位置一起动。 */
+.ex-sw-hv { background: var(--chip, #F1F2F5); border-radius: 10px; }
+.ex-sw-box {
+  width: 16px; height: 16px; border-radius: 5px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+}
+.ex-sw.on .ex-sw-box { background: var(--solid, #1C1C1E); border-color: var(--solid, #1C1C1E); }
+.ex-sw-ck { font-size: 12px; line-height: 1; color: var(--on-solid); }
+.ex-sw-t { font-size: 13px; color: var(--slate, #555A6A); }
+.ex-sw.on .ex-sw-t { color: var(--primary, #1C1C1E); }
+
+/* ==========================================================================
+   三级抽屉（★ 43 轮）· 设计定案 §4：宽 260 · 圆角 16 · 投影 `0 20 48 … .30`
+   —— 只装「关联脑图」的选项，单选、当前值打勾、选中即回填自动收掉。
+
+   位置规则（与 §4 的「每级右移上一级宽 ＋ 12」一致，但竖屏另走一套）：
+     · 横屏：紧跟二级右侧 ⇒ 二级宽 320 ＋ 12。
+       二级在 L1 位(x84) ⇒ 三级 x416；二级被列表抽屉顶到 L2 位(x354) ⇒ 三级 x686。
+     · 竖屏：800 宽塞不下三级并排（686+260 会出屏）⇒ 三级**整块盖在表单上**，
+       左缘与表单对齐，关掉即回到表单。
+   z-index 94：高于 .sd(92)；配套的全透明 .sd3-scrim 取 93，落在两者之间。
+   ========================================================================== */
+.sd3-scrim {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 93;
+}
+
+.sd3 {
+  position: fixed;
+  left: 416px;
+  /* ★ 48 轮：与 .dw / .sd 同一条「遮罩内垂直居中」口径 ⇒ 横屏 (800 − 768) / 2 = 16。
+     ★ 审查-02 P1-18：高度改**现算**（同 `.sd`）—— 与父层 `.sd` 同高，副弹窗才不会
+     比父层长出一截；PC fill 模式下也随画布一起变高。 */
+  top: 16px;
+  width: 260px;
+  height: calc(var(--canvas-h, 800px) - 32px);
+  background: var(--elevated);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 16px;
+  /* ★ 50 轮：与 `.drawer .tf` **同值手抄**（两个组件 wxss 互相看不见）——
+     副弹窗的投影一律朝右偏，绝不向左落在父层上，否则会把父层卡片压灰。 */
+  box-shadow: var(--sh-sub);
+  display: flex;
+  flex-direction: column;
+  z-index: 94;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.sd3.o1 { left: 686px; }
+
+/* 标题带 —— ★ 48 轮：与其余四个抽屉头同规格（灰底 ＋ 底分隔线 ＋ 52 高）。
+   ★★ 194 轮：底/收边改认 `--head-bg` / `--head-line`。 */
+.sd3-head {
+  height: 52px;
+  flex: 0 0 52px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--head-bg, #F7F8FA);
+  border-bottom: 1px solid var(--head-line, #E0E2E8);
+  box-sizing: border-box;
+}
+/* 标题要写清「为谁而选」——项目名可能很长，截断保「取消」。
+   ⚠️ 字号 13，比其余三个抽屉头（15）小一档：这一层的标题里带着项目名，
+      260 宽下用 15 号会把名字挤没。这是**有意的不一致**，不是漏改。 */
+.sd3-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sd3-body {
+  flex: 1;
+  min-height: 0;
+  /* ★ 48 轮：顶部 0 → 12（与 .dw-list / .tf-body / .sd-body 同一道呼吸位）。 */
+  padding: 12px 10px 14px;
+  box-sizing: border-box;
+}
+
+/* ---------- 三级选项：**卡片式** ＋ 右侧单选框（★ 45 轮）----------
+   43 轮那版是"一行文字 ＋ 选中才出现的勾"，看着就是一列纯文本、不像能点 ——
+   用户口径「看不出可以切换选择」。现在每行是一张白卡（描边 ＋ 圆角 ＋ 间距），
+   右侧常驻一颗单选框：未选 ＝ 空心圆，已选 ＝ 品牌黄底 ＋ 深色勾。 */
+.sd3-item {
+  height: 48px;
+  padding: 0 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.sd3-item-hv { background: var(--chip, #F1F2F5); }
+.sd3-item.on {
+  background: var(--yellow-soft, #FFF8DC);
+  border-color: var(--yellow, #FFD02F);
+}
+.sd3-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sd3-item.on .sd3-name { font-weight: 500; }
+.sd3-meta { font-size: 12px; color: var(--muted, #A5A8B5); flex: 0 0 auto; }
+
+.sd3-radio {
+  width: 18px; height: 18px; border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.sd3-item.on .sd3-radio { background: var(--yellow, #FFD02F); border-color: var(--yellow, #FFD02F); }
+.sd3-ck { font-size: 12px; line-height: 1; color: var(--on-accent, #1C1C1E); }
+
+/* ★★ 本轮 · 区块级空态 **L3（行内）** —— 三级选图列表里"一张都没匹配上"那一行
+   ⚠️ **手抄**：本组件 `styleIsolation` 默认 `isolated`，`app.wxss` 的 `.blank-line`
+      进不来（CSS 变量能进、类不能进）。真源：`小程序前端/app.wxss` 的
+      「区块级空态的两级骨架」段 ⇒ 改那边再同步这里，别开 apply-shared。
+   改前：无框 · `padding 4 4 0` · 12 / `--muted`（浅色 2.37:1，挤在 260 宽的三级里几乎读不清）。 */
+.sd3-empty {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px dashed var(--empty-line, #C7CAD5);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--slate, #555A6A);
+}
+
+/* 竖屏：三级**开在表单右侧**（★ 45 轮）。
+   一级表单在 x16 宽 320 ⇒ 三级 x16 + 320 + 12 = 348，宽 260，右缘 608 —— 768 的内容区装得下。
+   ★ 63 轮：顶与父层表单齐（工作区顶边）、高与父层同口径（--work-h-port − 18）。
+   ⚠️ 43 轮那版是"整块盖在表单上"（左缘对齐、宽 320）：那是按 L2 位（x286）算的地址，
+      但用户其实是从**一级位**点进来的（悬浮 Logo → 记一条待办 → 关联脑图），
+      盖住 ＝ 原地展开，看不出还有下一层 ⇒ 改回右侧展开。
+   ⚠️ 覆盖式那条留着兜底：竖屏、表单已在 L2 位（x286）时右侧只剩 178px，放不下 260。 */
+.sd3.port {
+  left: 348px;
+  /* ★ 63 轮：顶与父层表单同一条口径（工作区顶边）；高度随父层一起收短。 */
+  top: var(--head-h);
+  width: 260px;
+  height: calc(var(--work-h-port) - 18px);
+}
+.sd3.port.o1 {
+  left: 286px;
+  width: 320px;
+}

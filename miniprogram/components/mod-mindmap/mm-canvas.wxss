@@ -1,0 +1,210 @@
+/* ==========================================================================
+   ★★ 171 轮新建：**画布里"长在内容层"的那几段皮肤**（连线层 / 节点 / 折叠徽标）
+
+   为什么单独一个文件：待办详情「关联脑图」卡里那张**只读整图**要与脑图详情画得
+   **一模一样**（用户口径「就是把脑图显示在里面」）—— 而**组件 wxss 互相看不见**，
+   待办组件拿不到脑图组件里的 `.mm-node`。⇒ 把"只读卡也用得到"的那几条抠出来，
+   `mod-mindmap.wxss` 与 `mod-todo.wxss` **各自 @import 这一份**，两边同源。
+
+   ⚠️ 只搬**内容层**（连线 / 节点 / 徽标）—— 画布容器（`.mm-card` / `.mm-viewport`）、
+      交互态（`.mm-node.sel` / `.edit` / `.rec` / `.mm-ghost` / `.mm-anchor-dot`）、
+      工具条与浮条**都留在 `mod-mindmap.wxss`**：那些是脑图模块自己的骨架，
+      只读卡一件都用不上。
+   ⚠️ 行内 style 下发的 left/top/width/height 一律**盖过**这里的兜底值 ——
+      两处调用方都靠它（脑图模块的 `stageStyle` / 只读卡的 `vpStyle`）。
+   ⚠️ 待办侧的 `.mod-port .mm-node` 之类**竖屏覆盖**在 `mod-mindmap.wxss` 里，
+      特异性（0,2,0）本来就高过这里的基础档（0,1,0）—— @import 放在文件最前面
+      不会改变胜负关系。
+   ========================================================================== */
+
+/* 连线层。⚠️ 第 67 轮起 left/top/width/height 由**行内 style** 下发
+   （＝这张图连线层的"渲染盒" = 画布 ∪ 节点包围盒 ＋ 48 余量，见 utils/mindmap-core.js 的 renderBoxOf）。
+   原因：排版允许节点摆到画布之外，SVG 最外层会**默认裁掉视口外的东西** ——
+   固定 1168×722 会把一半以上节点的连线静默剪掉。
+   ⇒ 这里留的值只是"没有行内 style 时"的兜底，**真实值必须与 SVG 的 viewBox 一致**。 */
+.links {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1168px;
+  /* ★ 185 轮：横屏画布高**不再是常量 722** —— 与 `CANVAS.land.h` 同源
+     （＝ 横屏工作区 − 54；iPad mini6 横屏 776 → 816 ⇒ 画布 763）。
+     ⚠️ 本文件被 `mod-todo.wxss` 也 @import 了一份（待办详情的只读脑图卡），
+        那张卡的尺寸由**卡内实测**给（见 mindmap-core 的注释）⇒ 这里只是兜底；
+        兜底跟着画布走比留在旧值更安全（宁可大、不可小 —— 小了会剪掉 SVG）。 */
+  height: calc(var(--work-h-land) - 54px);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+/* ---------------- 节点（★ 第 66 轮定视觉分层；第 67 轮改多行排版） ----------------
+   参考版的层级**不靠底色深浅**，而是三样叠加：
+     根   ＝ 品牌色实心 ＋ 深色粗字（全图唯一的实心块，"主题"自己会跳出来）
+     一级 ＝ 浅灰底 ＋ 深色粗字（字号高一档）
+     叶子 ＝ 同一片浅灰底 ＋ 深色常规字（字号低一档）
+   全部**无边框**、圆角收小。
+
+   ★ 第 67 轮：节点从"单行 ＋ 省略号"改成"**按字数折行 ＋ 文字全部显示**"，
+     于是这里有三条硬约定，改一条就要连着改 JS 的 NODE_PAD / LH：
+       ① `flex-direction: column` —— 每行是一个独立 <text>，必须竖着摞；
+       ② `.mm-node-t` 的 `line-height` 是**固定 px**，与 JS `Math.round(fs × 1.4)` 同源
+          （lv0 = 24 / lv1 = 21 / lv2+ = 20）；
+       ③ `white-space: nowrap` ＋ **不写 text-overflow** —— 折行已在 JS 里定死，
+          渲染层再折一次会让行数与算出来的高度对不上，最后一行会被裁掉。
+     ⚠️ 宽度/高度由 JS 按文本估宽写死在行内 style（见 metricsOf）；这里的 padding
+        比 JS 的 NODE_PAD.x 小 2px，留那 2px 是为了兜住"估宽比实际窄一点"的情况。 */
+.mm-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 11px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mm-node-t {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--primary);
+  white-space: nowrap;
+  text-align: center;
+  /* ⚠️ 不许被压缩：flex 项默认 flex-shrink:1，一旦算出来的宽比实际文字窄，
+     它会把元素压小、让文字溢出得两边不均匀。钉成 auto 之后元素宽 = 文字宽，
+     真出现估算偏差也只会"略微鼓出来一点"，不会被切掉。 */
+  flex: none;
+}
+
+/* ★★ 275 轮：节点挂图 —— **文字下方**一块图。
+   ★★ 275b 改形态（用户 2026-10-26 第 2 条）：「图片应该完整显示，相当于**宽度固定，
+   高度按照图片自适应**」。
+   ── 改前：宽撑满、高固定 96、`aspectFill` 顶部裁切 ⇒ 头像/票据的边被切掉，用户不接受。
+   ── 现在：宽高**都由 JS 算好、走行内 style 下发**（`imgW` / `imgH`，见
+      `utils/mindmap-core.js` 的 `picBoxOf`），这里的 CSS **一个尺寸都不写死**。
+
+   ⚠️ 为什么尺寸必须走行内、不能写在这：图块高 ＝ 内容宽 ÷ 图片宽高比，而内容宽随文字变
+      ⇒ 它是**逐节点不同**的数。写在 CSS 里就只能写一个固定值，那正是 275 初版裁切的原因。
+      与 `metricsOf` 的算高账同源：JS 算多少、这里就画多少，差 1px 就是"图被裁一条"或"底下空一截"。
+   ⚠️ 仍然保留 `height: 96px` 作**兜底**（老基础库不认行内样式时也不至于塌成 0）——
+      它等于 `PIC_MIN_H`，只在"行内没下发"这一种情况下生效。
+   ⚠️ `flex: none` —— 节点是 `flex-direction: column`，图片默认会被压缩（`flex-shrink:1`），
+      一压高度就不对了（铁律：定高定宽的项一律 `flex: 0 0 auto`，这里用 `flex:none` 同义）。
+   ⚠️ 宽度小于节点内容宽时靠**居中**（节点是 `align-items: center` 的列）—— 竖图就是这种情形：
+      宁可图窄一点居中，也不为了"撑满"把它裁掉。
+   ⚠️ 本文件被 `mod-mindmap.wxss` 与 `mod-todo.wxss` 各自 @import ⇒ 画布与待办详情的
+      只读脑图卡**同一个皮肤**，别在任一侧另抄一份。
+   ⚠️ 图片上**不挂任何事件**：点它要等于点节点（画布靠矩形命中，天然成立），
+      也**不画**"看大图"角标 —— 画布自己能放大（用户第 2 条）。 */
+.mm-node-pic {
+  height: 96px;                 /* ＝ PIC_MIN_H，仅兜底；真值由行内 style 给 */
+  margin-top: 8px;              /* ＝ PIC_GAP */
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--chip);
+  flex: none;
+}
+.mm-node-pic-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `<image>` 用 `mode="aspectFit"`（**绝不裁**）；这两行是给"mode 未生效"的老基础库兜底
+     —— 兜底也必须是 contain，方向不能与 mode 相反（写成 cover 就等于老库上又开始裁图）。 */
+  object-fit: contain;
+}
+
+/* 根节点：品牌黄实心 ＋ 深色粗字
+   （参考版根节点是白字，但那是蓝底 —— 换成品牌黄之后白字对比度不够，按本工程
+     既有口径走"黄底黑字"，与 .tb-btn.yellow 同一套） */
+.mm-node.lv0 {
+  background: var(--yellow);
+}
+
+/* ★ 186 轮（深色模式）：黄底上的字**恒墨色**。
+   ⚠️ 原先这里没写 color，靠继承 `.mm-node-t` 的 `var(--primary)` —— 浅色下恰好
+      就是墨色，深色下会变柔白 ⇒ 黄底白字对比度崩掉（方案 §4.2「黄色面上的字
+      ＝ #1C1C1E，固定墨色，绝不能跟随正文变柔白」）。⇒ 显式钉死。 */
+.mm-node.lv0 .mm-node-t {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--on-accent);
+}
+
+/* 一级：浅灰底、粗体、字号高一档 */
+.mm-node.lv1 {
+  background: var(--chip);
+}
+
+.mm-node.lv1 .mm-node-t {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+/* 二级及以下：同一片浅灰底，常规字重 */
+.mm-node.lv2,
+.mm-node.lv3 {
+  background: var(--chip);
+}
+.mm-node.lv2 .mm-node-t,
+.mm-node.lv3 .mm-node-t {
+  color: var(--slate-strong);
+}
+
+/* ---------------- 节点 · 「刚转过来」（★★ 199 轮） ----------------
+   刚从胶囊转进来的那几枚叶子：整格铺一层紫底 ＋ 内描一圈紫边，直到用户**选中**它
+   （`selectNode` 里 `markNodesSeen` 清掉 `flash`，节点当场褪回 `--chip` 灰底）。
+
+   ── 为什么住在**本文件**（而不是 `mod-mindmap.wxss` 那些交互态里）────────────
+   它与 `.sel` / `.edit` / `.rec` 不是一类：那几个是"**此刻**这个节点在做什么"（交互态），
+   本类是**数据自带的属性**（这枚节点还没被过目）—— 与 `.mm-fold`（收起徽标）同档。
+   同档就该同处：待办详情里那张**只读整图**（`mod-todo.wxss` 也 @import 了本文件）
+   因此会自动显示同样的紫块，两个面上的同一棵树长得一样。
+
+   ⚠️ **不占布局**：框用 `inset` 阴影画（与 `.sel` 同一个理由）——
+      节点是"按字数折行、文字必须全部显示"，用 border 会从内容盒里吃掉 4px、
+      正好把最后半个字挤出去，而且会让 JS 算出来的宽高与实际渲染对不上。
+   ⚠️ **必须排在 `.mm-node.lv1/lv2/lv3` 的底色之后**（同特异性 (0,2,0)，靠先后定输赢）
+      —— 排在前面会被 `background: var(--chip)` 静默盖掉，症状是"转完什么都不亮"。
+   ⚠️ 与 `.mm-node.sel` 同为 (0,2,0)，而 `.sel` 在 `mod-mindmap.wxss`（本文件被 @import
+      在最前面）⇒ **`.sel` 赢**。这是要的：选中是当前焦点。
+      （正常路径下两者不会同时出现 —— 选中那一刻标记已被清掉。）
+   ⚠️ 与 `.mm-node.hv` 抢 `box-shadow`：`.hv` 在外圈、且排得靠后，悬停时紫框会暂时让位
+      （只剩紫底）—— 可接受，那是"鼠标在这儿"的瞬时反馈。
+   ⚠️ 颜色一律走令牌，**不许写字面 hex** —— 深浅两档各有一份 `--fresh` / `--fresh-bg`。 */
+.mm-node.fresh {
+  background: var(--fresh-bg);
+  box-shadow: inset 0 0 0 1.5px var(--fresh);
+}
+
+/* ---------------- 折叠徽标（★ 第 70 轮 / 252 轮统一口径） ----------------
+   「收起」之后挂**连线出发那条边**上的圆形数字（20×20，与 JS 的 FOLD_D 成对）。
+   ★ 口径（用户原话）：「这个节点展开时，它和子节点的连线从哪里出发，收起时就应该显示在哪里。」
+     ⇒ 左右族挂侧边中点外侧 6px；上下族**骑在底/顶边中点上**（圆心吃进节点 2px），
+       因为竖族的兄弟间距只有 10/12，往外推会压住下一个兄弟。见 `foldSideOf` / `FOLD_KISS`。
+   品牌黄底 ＋ 深色字：与根节点同一套"黄底黑字"，在浅灰节点与白画布上都读得出来。
+   ⚠️ 不可点（收起 / 展开另有按键）⇒ pointer-events: none。 */
+.mm-fold {
+  position: absolute;
+  /* ★ 252 轮：22 → 20（与 JS 的 FOLD_D 成对）。**为竖族让路**：
+     树形图 / 组织结构图 / 时间轴的兄弟间距（V_GAP）只有 10/12，徽标要骑在
+     "连线出发点"（节点底边中点）上，22px 时只剩 1px 缝隙、两个圆和方块粘在一起。 */
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--on-accent);   /* ★ 186 轮：黄底字恒墨色（原 var(--primary) 深色下会变柔白） */
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* ★ 审查-02 P1-14：折叠徽标浮在画布上 ⇒ 投影走 `--sh-fold`（深色下换黑纱；浅色逐值不变） */
+  box-shadow: var(--sh-fold);
+  z-index: 4;
+  pointer-events: none;
+}

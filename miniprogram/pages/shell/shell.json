@@ -1,0 +1,16 @@
+{
+  "navigationStyle": "custom",
+  "pageOrientation": "auto",
+  "usingComponents": {
+    "icon": "/components/icon/icon",
+    "nav-rail": "/components/nav-rail/nav-rail",
+    "bottom-nav": "/components/bottom-nav/bottom-nav",
+    "mod-overview": "/components/mod-overview/mod-overview",
+    "mod-project": "/components/mod-project/mod-project",
+    "mod-todo": "/components/mod-todo/mod-todo",
+    "mod-mindmap": "/components/mod-mindmap/mod-mindmap",
+    "mod-mine": "/components/mod-mine/mod-mine",
+    "capsule": "/components/capsule/capsule",
+    "splash": "/components/splash/splash"
+  }
+}

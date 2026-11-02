@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/shell/shell"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "@pageBgColor",
+    "backgroundTextStyle": "@bgTxtStyle",
+    "navigationBarBackgroundColor": "@navBgColor",
+    "navigationBarTextStyle": "@navTxtStyle",
+    "navigationBarTitleText": "Agent ToDo",
+    "pageOrientation": "auto"
+  },
+  "darkmode": true,
+  "themeLocation": "theme.json",
+  "permission": {
+    "scope.record": {
+      "desc": "用于把你的语音转成待办和脑图节点的文字"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "resizable": true
+}

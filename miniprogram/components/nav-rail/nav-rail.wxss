@@ -1,0 +1,252 @@
+/* 组件宿主：自定义组件根默认不拉伸，必须显式声明，
+   否则 rail 只有内容高、Logo 的 margin-top:auto 失效（不会贴底） */
+:host {
+  /* ★ 审查-02 B-4（2026-10-15）：`72px` → `var(--rail-w, 72px)`（值一字未变，纯收口）。
+     导轨宽的真源是 `app.wxss` 的 `--rail-w`；这里是它的**定义点之外唯一决定实际宽度**的地方
+     （`:host` 是组件宿主、`.rail` 是内层），两处必须同值 ⇒ 都改走令牌。
+     ⚠️ `.dw-mask` / `.cp-mask` / `.sd-mask` 三处遮罩的 `left` 也认同一支，
+        改导轨宽时**四处一起动**，漏一处就是"遮罩左边露一条不暗"。
+     兜底 `72px` 必须留着：无 CSS 变量的静态环境里同样是这个值。 */
+  flex: 0 0 var(--rail-w, 72px);
+  width: var(--rail-w, 72px);
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rail {
+  flex: 1;
+  min-height: 0;
+  width: var(--rail-w, 72px);
+  background: var(--card);
+  border-right: 1px solid var(--hairline, #E0E2E8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+.rail-list {
+  position: relative;              /* 滑块的定位上下文 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- 会移动的黄色滑块 ----------
+   只有一份实例；位置由 translateY 给（能补间，比改 top 更顺）。
+   尺寸与导轨项一致：40×48、圆角 12、步长 56（48 ＋ gap 8）。
+   ★ 118 轮：底色走 `--yellow`（原来裸写 #FFD02F，与令牌同值却没接上）。 */
+.rail-slab {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--yellow);
+  z-index: 0;
+  pointer-events: none;            /* 别挡点击：点击交给上面的导航项 */
+}
+.rail-slab.anim {
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rail-item {
+  position: relative;
+  z-index: 1;                      /* 压在滑块之上 */
+  width: 40px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* ★ 118 轮：导航项**原来挂的是 `hover-class="none"`** —— 也就是按下**完全没有反馈**。
+   滑块位移是"切过去了"的**结果**，不是"我按到了"的确认；没有即时反馈，
+   手指按下到滑块动之间有 280ms 的空白，读起来像"没反应"。
+   补一层 opacity（与 `.bs-agent-hv` 同值 0.6）；用 opacity 而不是底色，
+   是因为选中项底下就是黄色滑块，铺底色会把它盖掉、等于抹掉"我在哪一页"这个信息。 */
+.rail-item-hv { opacity: 0.6; }
+
+/* ★ 118 轮：色值走令牌（原来 #555A6A / #1C1C1E 裸写，与令牌同值却没接上）。 */
+.rail-label {
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--slate);
+  white-space: nowrap;
+}
+
+/* ★ 118 轮：「当前模块」的落点与竖屏底部导航**统一成一套** ——
+   颜色变深（`--slate` → `--primary`）＋ 字重 500，两边逐字一致。
+   ⚠️ 之前两边不一致（这边只变色、`.bnav` 那边还加粗），横竖屏各表一套语言。
+      统一时选了"带字重"这一侧：11px 中文在 500 下的字形变化可忽略，不会把 40px 宽栏撑开。 */
+.rail-item.on .rail-label {
+  color: var(--on-accent);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   ★★★ 274 轮 · **品牌块正上方那颗「写」**（用户口径第 2 条）
+   「在录音按键的上方同样的大小显示普通创建的按钮，图标要和移动端一致，无需文字」。
+   ── 为什么 40 而不是 56 ──────────────────────────────────────────────────
+   竖屏那颗 `.fab-write` 抄的是 `.fab`（56）；横屏这颗抄的是 `.rail-brand`（40）。
+   "同样的大小"指的是**与它旁边那颗录音键一样大**，不是与另一个形态一样大 ——
+   导轨只有 72 宽、内边距 20，56 塞进去会顶到栏边，与 40 的录音键也不是一组。
+   ── 皮肤 ────────────────────────────────────────────────────────────────
+   `--chip` 底 ＋ 无描边：导轨本身是 `--card`（白），中间那一档灰正好读成"次位键"；
+   再加描边会与 40×40 的小面积打架（描边占 2px，图标只剩 36 的地方）。
+   ⚠️ 圆角 12 与 `.rail-brand` 同值 —— 两颗不同圆角并排一眼就能看出来。
+   ⚠️ `margin-bottom: 10` 就是"与录音键之间的缝"，与 `.fab-write` 那条 10 同值。
+   ⚠️ 图标不写 `tone`：这块面随主题走，深色下必须换成 `d-edit`。
+   ★★★ 274c · **图标 22 ＝ `.rail-brand-mic` 的 22**（用户 2026-10-26 第 1 条：
+   「按键中的图标大小和录音按键中的图标不一样，应该保持图标大小一致」）。
+   274 轮写的是 18 —— 在 40 方的块里，18 的铅笔与 22 的麦克风差一档，
+   两颗 40×40 并排时读成"一颗是键、一颗是它的小挂件"。判据 H6 现读本条对撞。
+   ========================================================================== */
+/* ==========================================================================
+   ★★★ 274c · **导轨底那两颗的容器**（用户 2026-10-26 第 2 条）
+   「显示位置是在我的下面，应该是在录音键上方」—— 274 轮把「写」直接排在
+   `rail-list` 之后，靠 `.rail-brand` 自己的 `margin-top: auto` 把品牌块推到栏底，
+   于是**中间那一整段空白全落在「写」和品牌块之间** ⇒ 「写」被留在列表末尾
+   （即「我的」下面），离录音键一整屏远。
+   ── 为什么是包一层 ──────────────────────────────────────────────────────
+   `margin-top: auto` 必须挂在一个**恒在**的节点上：
+     · 挂 `.rail-write` ⇒ 抽屉关着时它被 `wx:if` 拿掉，auto 一起消失，
+       品牌块会弹到「我的」正下方；
+     · 两颗都挂 ⇒ 自由空白在两条 auto 之间**对半分**，品牌块浮在栏中段。
+   ⇒ 容器持 auto（整组贴底），「写」与品牌块之间只留 `.rail-write` 那 10。
+   ⚠️ 别用 `justify-content: flex-end` 代替：`.rail` 是这一列的 flex 容器，
+      容器自身没有"剩余空间"可推动（它是 shrink-to-fit 的被居中项）。
+   ========================================================================== */
+.rail-tail {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rail-write {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: var(--chip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 与 `.rail-brand-hv` 同一个按下态值（不新造一个同值类） */
+}
+.rail-write-hv { opacity: 0.82; }
+
+.rail-brand {
+  /* ★ 274c：`margin-top: auto` **搬去 `.rail-tail` 了** —— 吸底的是"写 ＋ 品牌块"
+     这一整组，不是品牌块自己。留在这里会让「写」永远够不着它（见上一条长注释）。
+     ⚠️ 别把这行加回来：加回来之后「写」又被甩到列表末尾。 */
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--yellow);
+  /* ★★ 217 轮：三态改成**叠放 ＋ 交叉淡出**（原来是 wx:if/elif/else 换节点）⇒
+     这里只需要当**定位包含块**，不再靠 flex 居中（三层各自 `left/top 50%`
+     ＋ `translate(-50%,-50%)`）。`display: flex` 留着无害（绝对定位子项不参与排布），
+     但**别**指望它把三层居中 —— 那会让"三层同心"这件事看起来靠的是它，
+     将来谁把某一层改成静态定位就会歪。 */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ★ 135 轮：图案换成 V8「接住」标志（`/assets/brand-logo-40.png`，导出原生 40×40）。
+   **尺寸 40 与容器（40 方 / 12 圆角 / 黄底）都不动** —— 设计说明：只替换 `logo` 态的图案，
+   `mic` / `rec` 两态保持原有容器。新图四角透明 ⇒ 圆角仍由容器裁出来，三态外形逐字一致。
+   ★★ 138 轮：src 换成 `/assets/brand-logo-512.png`（同一图案的高分辨率导出，**512²**）——
+   135 轮那句「导出原生 40×40」正是**糊的成因**（@3x 要把 40 渲染成 120 ⇒ 放大 3 倍）。
+   **CSS 尺寸仍是 40px**，只把「源」变大 ⇒ 显示尺寸与三态外形一个字不动。
+   ⚠️ 解码 512² RGBA ＝ 1.0MB（旧 40² 只 6.4KB）；口径见 `nav-rail.wxml` 那段注释。
+   ★★ 178 轮：图案换「细线版」（`设计/品牌Logo-V8-接住-细线版/` —— 同一构图、笔画收细）
+   —— **这条规则从 138 轮起就没再动过**：`src` 仍指向 `brand-logo-512.png`（同名覆盖、仍 512²），
+   `width/height` 仍是 40。判据 `check_brand_logo_round135.py` 11/0、**零改动通过**。 */
+/* ★★ 217 轮 · **三态叠放 ＋ 交叉淡出**（原来是 `wx:if / wx:elif / wx:else` 换节点）
+   ── 为什么换（与手机端 216 轮 `.cp-rec`、平板竖屏 `.fab` 同一件事）────────
+   停录那一刻原来是一次**节点替换**：18px 的倒计时"啪"地消失、麦克风"啪"地出现，
+   中间没有任何过渡 ⇒ 读起来是"整块里的东西跳了一下"。这里（横屏平板 ＋ PC）
+   是那个动作**用得最多**的一面，反而一直是最生的那一下。
+   ── 怎么叠 ──────────────────────────────────────────────────────────────
+   三层绝对定位 ＋ `left/top 50%` ＋ `translate(-50%,-50%)` ⇒
+   **完全不参与布局**，40×40 / 12 圆角 / 黄底由 `.rail-brand` 自己定死。
+   ⚠️ 三层必须常驻（`wx:if` 一删节点，过渡就没了）；
+      也不许并排（那就是「图标 ＋ 60」，105 轮改掉的形状）。
+   ⚠️ `pointer-events: none`：透明层不许吃掉点击（它要落到 `.rail-brand` 的 `bindtap` 上）。
+   ⚠️ 这条容器的 `overflow: hidden` 不影响本组（三层都在 40×40 以内，
+      `scale` 最大 1）；而 `.rail-brand.rec` 的 `rail-breath` 是容器**自己**的
+      box-shadow，不受自身 overflow 裁剪。 */
+.rail-brand-img,
+.rail-brand-mic,
+.rail-brand-clock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.88);
+  pointer-events: none;
+  /* 与 `.fab-*` 逐值相同：三层同时反向跑，时长不一致会让中间几帧"几个都半透明" */
+  transition: opacity 0.2s ease,
+              transform 0.24s cubic-bezier(0.22, 0.68, 0.36, 1);
+}
+.rail-brand-img.is-in,
+.rail-brand-mic.is-in,
+.rail-brand-clock.is-in {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.rail-brand-img {
+  width: 40px;
+  height: 40px;
+}
+
+/* ★ FR-9：品牌块重新承载动作 ⇒ 按下给一层反馈（82 轮纯装饰时删掉的正是这一条）。
+   与其它可点块用同一个值（.cp-hv / .fab-hv 同源）。 */
+.rail-brand-hv { opacity: 0.82; }
+
+/* 麦克风态 —— 与品牌图**共用同一块 40×40 黄底**，只把图案换掉（用户口径
+   「依旧和 logo 的形状一致，只不过图案换成黑色的麦克风图标」）。
+   voice.svg 本身是 #1C1C1E 描边，正是要的黑色。 */
+.rail-brand-mic {
+  width: 22px;
+  height: 22px;
+}
+
+/* 录音态 —— 块面上显示 60 秒倒计时（**纯秒数**，★ 第 89 轮口径：`60` → `1`）。
+   ⚠️ 40px 宽里最多 2 个字（原来是 5 个字的 `01:00`）⇒ 字号从 11px 提到 **18px**，
+      并把当年为塞下 5 个字加的 `letter-spacing: -0.4px` 去掉 —— 现在不需要挤了。
+      换字号前先量一遍（这里没有溢出提示，字被切掉是**静默**的）。 */
+.rail-brand-clock {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--on-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 闪烁 —— ⚠️ 与脑图浮条那颗录音键**同一个语言**（黄外发光向外扩散，见
+   mod-mindmap.wxss 的 `fb-breath`）：同一件事在两个地方出现，动画就该长得一样。
+   ⚠️ 别照抄 `.mm-node.rec` 那条（它是 inset 内描边，给的是"节点被盖住"的意思）。 */
+.rail-brand.rec {
+  animation: rail-breath 1.35s ease-out infinite;
+}
+@keyframes rail-breath {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 208, 47, 0.66); }
+  70%  { box-shadow: 0 0 0 9px rgba(255, 208, 47, 0); }
+  100% { box-shadow: 0 0 0 9px rgba(255, 208, 47, 0); }
+}

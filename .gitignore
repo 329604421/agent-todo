@@ -1,0 +1,61 @@
+# 忽略规则
+
+# ── 依赖 ──────────────────────────────────────────────
+node_modules/
+miniprogram_npm/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── 构建产物 ──────────────────────────────────────────
+dist/
+build/
+out/
+*.tsbuildinfo
+*.min.js
+*.min.css
+
+# ── 环境变量与密钥（★ .env.example 是模板，必须入库）──
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+!.env.example
+*.key
+*.pem
+*.p12
+secrets.*
+token*.json
+
+# ── 运行期产物 ────────────────────────────────────────
+logs/
+*.log
+uploads/
+server/prisma/*.db
+server/prisma/*.db-journal
+
+# ── 本地工具链缓存与临时目录 ─────────────────────────
+.tmp/
+.tmp-verify/
+.tmp-mm280/
+.cache/
+.playwright-cli/
+.trae-html-share-packages/
+
+# ── 微信开发者工具 ────────────────────────────────────
+project.private.config.json
+
+# ── 编辑器与系统 ──────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── 个人主页 README 的预览产物 ───────────────────────
+.profile-readme/
+preview.html
+preview.png

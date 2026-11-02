@@ -1,0 +1,1385 @@
+/* ==========================================================================
+   列表类**主弹窗**（宽 320 · 可独立弹出 · 三模块共用）
+     横 320×768 @(84,16)
+     竖 320×(—work-h-port − 18) @(16, 状态栏 ＋ 品牌栏) · 圆角 16 · 投影 0 12 32 rgba(28,28,30,.18)
+     ★ 63 轮：竖屏顶边**不再在遮罩里垂直居中** —— 遮罩从 y0 起，居中会让顶边钻进系统状态栏
+       （真机 y18 ＜ 状态栏 57），与系统时间 / 电量叠一起。现改成顶着**品牌栏下沿**；
+       底边不动 ⇒ 高度由 1156 收短到 `--work-h-port − 18`（设计稿 1110 ／ 真机 1073）。
+     ★ 48 轮（**横屏仍然有效**）：顶部由 24 收到 16 —— 横屏遮罩全高 800、抽屉 768 ⇒ 上下各 16。
+       （原来 24 是按"顶到状态栏下沿"摆的，垂直方向就变成上 24 ／ 下 8。）
+     `turned` ＝ 被同屏的另一个主弹窗（表单）压着 ⇒ 偏转 ＋ 不可点
+   ＋ 文件末尾的**副弹窗**（宽 260 的「待办筛选」，★ 47 轮）：
+     不独立弹出、也不让父层偏转；几何与 form-drawer 的 `.sd3` 同规格 ——
+     ★ 63 轮起：顶与父主弹窗**对齐**（横 16 ／ 竖 工作区顶边）、标题带与主弹窗**同一套**
+     （--surface 底 ＋ 底分隔线 ＋ 28 高描边胶囊按钮）。
+   ========================================================================== */
+
+/* ---------- 遮罩：只压展示区，不盖 navRail ---------- */
+.dw-mask {
+  position: fixed;
+  /* ★ 审查-02 B-4（2026-10-15）：`72px` → `var(--rail-w, 72px)`（值一字未变，纯收口）。
+     导轨宽的真源是 `app.wxss` 的 `--rail-w`；这里以及 `.cp-mask` / `.sd-mask` / `nav-rail`
+     四处过去各写一遍 ⇒ 改导轨宽要改四处、漏一处就是"遮罩左边露一条不暗"。
+     兜底 `72px` 必须留着：无 CSS 变量的静态环境里同样是这个值。 */
+  left: var(--rail-w, 72px);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--mask);
+  z-index: 80;
+}
+
+/* ---------- 抽屉壳 ---------- */
+.dw {
+  position: fixed;
+  left: 84px;
+  /* ★ 48 轮：**垂直居中于遮罩**（⚠️ **现在只对横屏成立** —— 竖屏 63 轮改成顶着品牌栏下沿，
+     见下面 `.dw.port`：竖屏遮罩从 y0 起，居中会把顶边送进系统状态栏）。
+     横屏遮罩是全高 800（.dw-mask 用 top:0/bottom:0），抽屉 768 ⇒ (800 − 768) / 2 = **16**。
+     原值是 top 24：上 24 ／ 下 800 − 792 = 8，用户口径「总是抽屉距离上边的间隔要比底部间隔大」。
+     ⚠️ 抽屉是 position:fixed，而 .stage 带 transform ⇒ 它的包含块是 **.stage 本身**（1280×800），
+        所以这里的 16 是相对设计画布的 16，与遮罩的 top:0/bottom:0 同一坐标系，算出来的居中是准的。 */
+  top: 16px;
+  width: 320px;
+  /* ★ 审查-02 P1-18（2026-10-14）：高度**改现算**，不再写死 768 ──────────────
+     768 是"遮罩全高 800 − 上下各 16"的手抄值。而 PC fill 模式下画布高 ＝ 视口高
+     （1080 屏 ⇒ `--canvas-h: 1080px`）⇒ 写死 768 会让抽屉**贴顶、底部空 296px、不再居中**。
+     竖屏同槽位早已是 `calc(var(--work-h-port) - 18px)`（见 `.dw.port`），横竖不对称。
+     `--canvas-h` 由 `utils/stage.js` 的 `fit()` 写进 `.stage` 内联样式，组件是它的后代、
+     继承得到；横屏遮罩 `top:0/bottom:0` 全高 ⇒ 减 32 ＝ 上下各留 16，与原值同源。
+     （无 JS 的静态环境里该变量缺席 ⇒ 用回 768 作兜底，观感与改动前一致。） */
+  height: calc(var(--canvas-h, 800px) - 32px);
+  background: var(--elevated);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 16px;
+  /* ★ 审查-02 A-2（2026-10-15）：接令牌 `--sh-drawer`（值与原行内**逐字相同** ⇒ 零视觉变化），
+     深色档换成黑纱 —— 原来这里是裸 `rgba(28,28,30,.18)`，深色下等于没有投影。 */
+  box-shadow: var(--sh-drawer);
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ★ 46 轮：标题带**浅底 ＋ 底分隔线** —— 用户口径「『待办 11』这个标题要和下面的列表内容
+   有一些颜色区分」。原来标题与列表同为白底，标题读作列表的第一行；
+   现在标题带是灰底、下面一条线收口，落成一条明确的「栏头」。
+   ★★ 194 轮：底从 `--surface`（**页底**）改认 `--head-bg` —— 深色下页底是全应用最暗档
+   (#18191B)，与抽屉体差 1.239 ⇒ 栏头读成一条**沟**；`--head-bg` 是"从抽屉体退一档"
+   (#232427)，差 1.093 ≈ 浅色那 1.063。收边同理走 `--head-line`。
+   ⚠️ 高度不变（仍 52）：全局 `view { box-sizing: border-box }`，那条 1px 分隔线吃在框内。 */
+.dw-head {
+  height: 52px;
+  flex: 0 0 52px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--head-bg, #F7F8FA);
+  border-bottom: 1px solid var(--head-line, #E0E2E8);
+}
+
+.dw-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 标题带右侧的一组（新建 ／ 筛选） */
+.dw-head-r {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 标题带上的「新建」（项目 / 脑图两个列表用）
+   ★ 48 轮：与「筛选」统一成同一颗**抽屉按钮** —— 四个抽屉头的动作键现在只有一种形态。
+   用户第 3 条点名的是副弹窗的键，但主弹窗标题带上这颗也是裸灰字，
+   留着就还是两套；一并收进来才算真的"统一"。
+   ★★ 194 轮：常态底从 `--card` 改认 `--elevated` —— 键是"坐在栏头这个面上、抬一档的东西"，
+   它的底只由**它坐在哪个面**决定：栏头退到 `--head-bg` 之后，键回到抽屉体那一档才有轮廓。
+   深色下原值 `--card`(#202123) 与栏头只差 1.092 ⇒ 键糊进栏头、形状全靠 1px 描边。
+   ⚠️ 与 .dw-fbtn 同值；改一个要同步另一个（以及 .tf-close、form-drawer 的 .sd-cancel）。 */
+.dw-head-act {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--elevated, #FFFFFF);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.dw-head-act-hv { background: var(--chip, #F1F2F5); }
+
+/* ★ 47 轮：待办列表的「筛选」按钮 —— 做成**带描边的胶囊**而不是一行灰字：
+   43 / 45 轮反复踩过"看着像文字、看不出能点"（三级抽屉的选项、抽屉里的行），
+   所以在标题带这种一眼扫过的地方，可点的东西一律给出形状。
+   开了筛选（activeCount > 0）⇒ 转深色底 ＋ 白字 ＋ 带条数，一眼看出"这张列表被筛过"。
+   ★★ 194 轮：常态底 `--card` → `--elevated`（同 `.dw-head-act`，见上面那条注释）。 */
+.dw-fbtn {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--elevated, #FFFFFF);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  /* ★ 94 轮：补 `justify-content: center` ＋ `gap` ——
+     加了图标之后才发现这一颗原来**没有**居中声明（另外四颗同族键都有），
+     单行文字时看不出来，图标一进来就偏左了。 */
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.dw-fbtn-hv { background: var(--chip, #F1F2F5); }
+.dw-fbtn.on {
+  /* ★★ 201 轮：同 `.tf-chip.on` —— 激活态从 `--solid` 改走 `--sel-chip-*`。
+     本键坐在标题带（深色 `--head-bg` #232427）上，`--solid` #36383B 压它只有 1.16:1
+     ⇒ "这张列表被筛过"在深色下几乎读不出来。改走黄族后黄边 ≈ 10:1。
+     ⚠️ 浅色值与之逐值相同 ⇒ 零像素变化。 */
+  background: var(--sel-chip-bg, #1C1C1E);
+  border-color: var(--sel-chip-line, #1C1C1E);
+  color: var(--on-solid);
+}
+
+/* ★ 56 轮：原来这里有一行「筛选行（仅项目：活跃 / 已归档）」（`.dw-filters` ＋ `.dw-fchip`）
+   —— 用户口径「项目卡片顶部的分页气泡去掉，只显示项目卡片」⇒ 整行删除。
+   它承载的能力一个没丢：活跃 / 已归档 搬进筛选副弹窗的「项目状态」一组
+   （`.tf-chip`，与别的筛条件同一套形态）—— 直接删掉会让已归档项目在这张列表里够不到。
+   ⚠️ 别再把它加回来：项目抽屉的层次现在与待办抽屉完全一致（标题带 → 列表 → 底部动作）。 */
+
+.dw-list {
+  flex: 1;
+  min-height: 0;
+  /* ★ 44 轮：待办卡有了投影，两侧各让出 10（原来 8）免得投影贴边被裁
+     ★ 47 轮：顶部 0 → 12 —— 标题带 46 轮起是灰底 ＋ 分隔线，紧贴第一张卡会读成
+     "卡是标题带的一部分"；给一道呼吸位，把"栏头 / 内容"分开。 */
+  padding: 12px 10px 10px;
+  box-sizing: border-box;
+}
+/* ★ 45 轮：去掉右侧那条灰色滚动条。
+   主手段是模板上的 `enhanced show-scrollbar="{{false}}"`，这里再兜一层 ——
+   老基础库或某些渲染路径下仍然是 WebView 的默认滚动条。
+   ★ 49 轮：**两个滚动容器都要覆盖** —— 原来只写了 .dw-list，
+   副弹窗（.tf-body）挂在同一张页面上却还是裸 `scroll-y`，右侧照样一条灰条。
+   凡是本进度表里新增滚动容器，都要回来加进这个选择器。 */
+.dw-list::-webkit-scrollbar,
+.tf-body::-webkit-scrollbar { width: 0; height: 0; display: none; color: transparent; }
+
+/* ==========================================================================
+   ★★ 本轮 · 区块级空态统一（L2 整列 / L3 分组内）
+   ──────────────────────────────────────────────────────────────────────────
+   ⚠️ **手抄** —— 本组件 `styleIsolation` 默认 `isolated`，`app.wxss` 的
+      `.blank-box` / `.blank-line` 进不来（CSS 变量能进、类不能进）。
+      真源：`小程序前端/app.wxss` 的「区块级空态的两级骨架」那一段。
+      ⇒ 改数值先改那边，再同步这两条；**不要为了省这几行去开 apply-shared**
+        （那会把全局上百条规则灌进来）。
+   改前：`.dw-empty` 22×12 虚线 12 圆角 13/`--muted`；`.dw-empty-i` 无框 12/`--muted`。
+   改后：与 L2 / L3 同值 —— 唯一保留的差异是 `.dw-empty` 的 `12×6` 外边距
+        （抽屉里上下要离标题栏与底栏远一点，这是抽屉自己的版式）。
+   ========================================================================== */
+.dw-empty {
+  margin: 12px 6px;
+  box-sizing: border-box;
+  padding: 22px 14px;
+  border: 1px dashed var(--empty-line, #C7CAD5);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--slate, #555A6A);
+}
+
+/* L3 · 分组下那一行（左对齐 · 单行） */
+.dw-empty-i {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px dashed var(--empty-line, #C7CAD5);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--slate, #555A6A);
+}
+
+/* ==========================================================================
+   ★★ 195 轮 · 列表**分页**的两行（模板在 `.dw-list` 末尾，见 drawer.wxml）
+   ──────────────────────────────────────────────────────────────────────────
+   ★ 195 轮**修订**（用户口径 2026-10-15：「那个加载更多别做成按键，就留文字就成了」）
+   ⇒ 撤描边、撤底、撤按下态，退回**一行提示文字**。上一版是"白底 ＋ 描边 ＋ 按下变底"
+   的一张面（借 `.dw-card` 那一套），读起来像列表里的第三张卡；用户要的是文字。
+   ⚠️ 撤了面之后，"能点"这件事靠什么说清？靠**它自己的字**：
+      可点的那行用 `--slate`（与分组名 `.dw-group-t` 同档，13px），
+      终点那行用 `--muted` 退一档（12px）—— 一行深、一行浅，深浅本身就是"点不点得动"。
+      ⚠️ 不要给它加下划线 / 加箭头去补强：上一版就是因为"补强"才长成了一颗键。
+   ⚠️ 点击区域没有缩：行高仍是 34（比 `.dw-foot-btn` 的 36 矮一档），
+      且文字两侧整行都能点（`view` 铺满宽度，不是 `<text>` 上挂 tap）。
+   ========================================================================== */
+.dw-more {
+  height: 34px;
+  margin: 2px 0 4px;
+  color: var(--slate, #555A6A);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* ⚠️ 这里原来有一条 `.dw-more-hv`（按下变底 `--chip`）—— 195 轮修订**删掉**了：
+   它现在是一行文字，没有"面"可以变；文字类行项的按下反馈在本工程一律不给
+   （与 `.dw-group-t` / `.dw-mm-meta` 这些不可点的文字同一处理）。
+   模板里对应的 `hover-class` 也一起摘了 —— 两边必须同进同退，
+   留一边会撞 `check_hover_pairing.py`（挂了的 hover-class 没有样式 / 样式没有主）。 */
+
+/* 终点那一行：「已无更多信息」**点不动**，靠 `--muted` 退一档与上面那行分开
+   （上面那行是可点的 `--slate`）—— 深浅就是这两行唯一的区别，不再有形状差别。
+   ⚠️ 它只在**确实分过页**（总条数 > `pageSize`）且已铺完时出现 —— 见 drawer.js。 */
+.dw-more.end {
+  color: var(--muted, #A5A8B5);
+  font-size: 12px;
+}
+
+.dw-group {
+  height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dw-group-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.dw-group-t {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+}
+
+.dw-group-arch {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--u-hold-bg, #F3F4F6);
+  color: var(--stone, #8E91A0);
+}
+
+.dw-foot {
+  height: 48px;
+  flex: 0 0 48px;
+  padding: 6px 14px;
+  box-sizing: border-box;
+  /* ★ 本轮：底部动作区可以并排两颗（创建 ＋ 确定）—— 不写死列数，有几颗分几份 */
+  display: flex;
+  gap: 8px;
+}
+
+.dw-foot-btn {
+  height: 36px;
+  border-radius: 10px;
+  background: var(--solid);
+  color: var(--on-solid);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  /* ★ 94 轮：文字前有反白图标（`w-plus` 新建 / `w-check` 确定） */
+  gap: 6px;
+}
+.dw-foot-btn-hv { opacity: 0.86; }
+/* ★★ 2026-10-27（全量检查 F19）· **36 高的底键补出 44 的命中区**（视觉仍 36）。
+   ── 病根：底栏键是整条抽屉最常用的动作，36 的可见高在缩放后（PC 窄窗 ×0.625 ≈ 22.5）
+      点起来很别扭。
+   ── 做法：`::after` 上下各铺 4（36 + 8 ＝ 44）。**横向一个像素都不补** ——
+      并在同一条底栏的两颗键之间只有 8 的间距，横向扩会互相压。
+   ⚠️ 底栏自身 48 高（padding 6），44 的水平居中热区仍在栏内，不会侵到列表区。 */
+.dw-foot-btn { position: relative; }
+.dw-foot-btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  bottom: -4px;
+  border-radius: 12px;
+}
+/* ★ 本轮：确认模式里"还没选任何一条"的确定键 —— 灰底灰字，按了也没反应
+   （读法同底部三键的置灰：灰不是"点不到"，是"此刻没有效果"） */
+.dw-foot-btn.off {
+  background: var(--chip, #F1F2F5);
+  color: var(--stone, #8E91A0);
+}
+
+/* ★★ 248 轮：多选态的「取消」—— 白底 ＋ 描边 ＋ 灰字，与「保存」（实心黑）**等宽并排**。
+   同一层里的两个方向，主次靠底色分，不靠尺寸（与详情页「取消关联 / 替换」那两颗同一条口径）。
+   ⚠️ 特异性 `.dw-foot-btn.ghost`(0,2,0) 与 `.dw-foot-btn.off`(0,2,0) 同级，
+      但本文件里 `.off` 写在前面 ⇒ 万一两个类同时出现（取消不会置灰，只防手滑）
+      也仍是"取消"的样子。真要让取消置灰请另开档，别在这里叠加。 */
+.dw-foot-btn.ghost {
+  background: var(--card);
+  color: var(--slate, #555A6A);
+  border: 1px solid var(--hairline, #E0E2E8);
+  /* ⚠️ 这一条不能省：`.dw-foot-btn` 本体没有 `box-sizing`，加了 1px 边框会让这颗键
+     比旁边那颗实心键**高 2px**、两颗键的上下缘错开（高度只能一起算，不能各算各的）。 */
+  box-sizing: border-box;
+}
+
+/* ★ 本轮：「当前」标志 —— 闪念胶囊「转到脑图」要指认"你现在正开着的那张图"。
+   底走品牌黄，与选中卡（也是黄）区分开：那一个是"我挑的"，这一个"我原本就在看"。
+   ⚠️ 这一颗**不带图标**，所以比同排其余 chip 窄一截，正好读作"标志"而不是"字段"。 */
+.dw-td-chip.cur {
+  background: var(--yellow, #FFD02F);
+  border-color: var(--yellow, #FFD02F);
+}
+.dw-td-chip.cur .dw-td-chip-t {
+  /* ★ 186 轮（深色模式）：整颗 chip 是**品牌黄底** ⇒ 字恒墨色。
+     原 `var(--primary)` 浅色下恰好是墨色、深色会变柔白（黄底白字 ~1.6:1）。 */
+  color: var(--on-accent);
+  font-weight: 500;
+}
+
+/* ---------- 卡通用（★ 48 轮：与副弹窗卡片对齐成同一套）----------
+   抽屉里的卡片只有一种底色口径：**白底 ＋ 1px --hairline 描边 ＋ 无投影**。
+   副弹窗（.tf-row / .tf-chip / .sd3-item）本来就是这个样子；主弹窗这张原来多带两层
+   浅投影，密排（卡间距 8）时投影互相叠进卡缝里，整列读起来比副弹窗灰一档 ——
+   用户口径「抽屉主卡片应该采用副卡片的颜色，目前主卡片的底色有点灰」⇒ 把投影撤掉。
+   语义色仍然保留：选中＝黄底黄边，归档＝浅灰底。
+
+   ★ 49 轮把这条从"卡"推广到**抽屉里的每一个面**：
+   面只允许两档 —— **纯白 #FFFFFF**（弹窗底 / 卡片 / 选项行 / 胶囊）与
+   **标题带那一档**（＝"栏头"这个语义，五个抽屉头共有）。
+   凡主弹窗里还拿 --chip(#F1F2F5) / --surface(#F7F8FA) 当**面底色**用的元素，
+   一律改成白底 ＋ 描边（.dw-td-chip / .dw-pj-stat / .dw-fchip / .tf-reset …）——
+   副弹窗里没有这些灰块，两张并排时"一头灰一头白"正是用户说的「底色不统一」。
+   ★★ 194 轮订正上面这句里的**令牌名字**：标题带那一档从 `--surface`（**页底**）改成
+   `--head-bg` —— 浅色下两者同值（#F7F8FA）所以当时读不出错，深色下页底会掉到全应用
+   最暗档、把栏头读成一条沟。**"面只有两档"这条口径本身不变**，变的是第二档现在
+   有自己的令牌（`--head-bg` / `--head-line`），不再寄生在"页底"这个名字上。
+   ⚠️ 语义灰不在此列，不要一起收：归档卡（.arch / .badge.arch）、徽章（.badge.node）、
+      空态虚线框（.dw-empty）—— 那几处的灰是在表达状态，不是在当背景。 */
+.dw-card {
+  border-radius: 12px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+/* ★★ 199 轮 · 待办卡：「刚从胶囊转过来」的提示色（`it.fresh`）
+   ── 形态与「选中」有意用**同一种语法**（一层填充 ＋ 一圈描边），只是换了色相 ──
+   这样"卡上有一层彩色底"始终只表示一件事："这条与你有关，去看一眼"；
+   区别靠色相（黄 = 我在看它 / 紫 = 它刚来）。用户 2026-10-15 就是这么读的：
+   原话「对于刚转过去的这个信息……最好有一个特殊的颜色填充来进行提示」。
+   ⚠️⚠️ **必须排在 `.dw-card.on` 之前** —— 两个类同特异性（0,2,0），靠先后定输赢。
+      万一有一条既带 `fresh` 又是当前选中（清标记的请求失败等异常路径），
+      屏幕上应该显示**当前选中**那一档 —— 用户此刻的操作焦点比"它刚来"更要紧。
+   ⚠️ 只改 `background` / `border-color`，**不碰任何几何**（padding / margin / border 宽度）：
+      卡的高宽账目与选中态、普通态完全一致，列表不会因为"有一条新到的"而错位。
+   ⚠️ 与 `.dw-card.arch`（归档灰化）的关系：归档排在本条之后 ⇒ 归档项目里的新到待办
+      显示为**灰**。这是有意的 —— "这个项目已经归档了"比"这条刚转过来"更需要先说。 */
+.dw-card.fresh {
+  background: var(--fresh-bg);
+  border-color: var(--fresh);
+}
+
+.dw-card.on {
+  background: var(--yellow-soft);
+  border-color: var(--yellow, #FFD02F);
+}
+
+/* ★ 审查-02 P1-5（2026-10-14）· 脑图卡的**第二档高亮**：「本轮选中待确认」
+   ── 为什么要分 ──────────────────────────────────────────────────
+   胶囊「转到脑图」那张列表里有两个不同的东西：
+     · `activeId` ＝ **当前**正开在脑图模块里的那张（"我在哪"）→ 走上面的 `.on`
+     · `pickedId` ＝ **这一轮点中的**那张（"我选了谁"）→ 走这里
+   原先 wxml 把两者映射到同一个 `.on`：选的不是当前图时屏上两张一模一样的黄卡，
+   只能靠「当前」chip 反推；选的就是当前图时两个标记还叠在同一张卡上。
+   ⇒ 这一档必须与 `.on` **一眼分得开**；分开的手段在 200 轮换过一次（见下）。
+
+   ★★ 200 轮 · 描边色从「主墨」换成「品牌黄」（用户 2026-10-15 真机口径）──────
+   用户原话：「转脑图时，选中状态下这个黑边样式不对，你查看一下脑图列表中的
+   选中状态配色，深色模式下的配色也要调整」。
+   根因两条 —— **同一处代码，深浅各错一半**：
+     · 浅色：`--primary` ＝ #1C1C1E ⇒ 一圈**墨黑**压在浅黄底上，读起来像贴了条胶带，
+       与列表里其它"黄"标记不是一套语法（P1-5 当年要的是"在余光里分开"，
+       但代价是把颜色轴从"黄"整个跳到"墨"）；
+     · 深色：`--primary` ＝ #EEEDEA（柔白 —— 它在深色下的身份是**文字**色）⇒
+       描边**反相成白边 ＋ 白内环**。深色页面里最扎眼的一档落在"选中"上，方向正好反了。
+       这是"拿会随主题反相的角色色去当描边"必然踩的坑，别再借 `--primary`。
+   ⇒ 换成与 `.on` **同一套黄**：`--yellow` 描边 ＋ `--yellow-soft` 底。
+      两支令牌在浅/深各有各的值（黄 #FFD02F 两态同值；底 #FFF8DC / #2E2917），
+      **组件里一个字面色都不写** ⇒ 深色自动跟着走，不需要任何 `.theme-dark` 特例。
+   ── 同一色相怎么再分两档 ─────────────────────────────────────────
+   靠**强度**。这是"同一件事的两档"，所以同色相是对的 —— 与 199 轮 `--fresh`
+   必须**另起色相**的理由不同（那里是"两件事"：我在看它 / 它刚来；
+   这里是"我在哪 / 我选了谁"）：
+     · `.on`（当前）＝ 1px 黄边，**平贴**；
+     · `.pick`（选中）＝ 1px 黄边 ＋ **1px 黄内环**（视觉读作 2px 黄）＋ **淡黄投影**"托起"。
+       投影与待办卡选中态（`.dw-card.td.on`）**逐值同源** —— 全应用"选中"共用一个语法。
+   ⚠️ 内环仍用 `box-shadow` 的 **inset** 画，**绝不改 `border-width`** ——
+      边框加减 1px 会把卡片内容盒整体挪位（铁律：对齐容器 ＝ 连边界一起对齐）。
+      本轮**几何一个字都没动**（只换颜色与投影）。
+   ⚠️ 特异性：`.dw-card.mm.pick`(0,3,0) > `.dw-card.on`(0,2,0) ⇒ 两者同时挂时
+      以 `.pick` 为准（"选中的就是当前那张"＝最强调的那一档），符合预期。 */
+.dw-card.mm.pick,
+.dw-card.cap.pick {
+  background: var(--yellow-soft);
+  border-color: var(--yellow, #FFD02F);
+  box-shadow: 0 0 0 1px var(--yellow, #FFD02F) inset,
+              0 1px 2px rgba(28, 28, 30, 0.04),
+              0 2px 8px rgba(255, 208, 47, 0.20);
+}
+
+/* 已归档项目：灰化 ＋ 不参与综合紧急度排序（FR-2.10）
+   ⚠️ 这层灰是**语义**（归档），不是"卡片默认发灰"，不要跟着一起回收成白。 */
+.dw-card.arch { background: var(--card-dim, #FAFAFB); }
+
+/* A · 项目卡（四档条数 ＋ 脑图数 ＋ agent，无采集统计） */
+.dw-card.pj {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dw-pj-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 项目卡左端的**项目色点**（★ 57 轮：8 → **16**，用户口径「项目列表卡片中的颜色原点需要加大，
+   要和右侧文字保持高度一致」）。
+   口径与 `.pdot-lg` / `.sd-cdot` 同一条：**色点的高度跟同一行文字的行高走** ——
+   这一行名称是 14px ⇒ 行高 16 ⇒ 色点 16，两个 16 **是一对**（见下面 `.dw-pj-name`
+   的 `line-height: 16px`，改一个必须改另一个）。
+   这张卡上色点是**项目身份的唯一颜色载体**，8px 在 320 宽的抽屉里只是一个脏点。 */
+.dw-pdot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  flex: 0 0 16px;
+}
+
+.dw-pj-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  /* ★ 57 轮：显式行高 16 —— 与左端 `.dw-pdot` 的 16 **是一对** */
+  line-height: 17px;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dw-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.dw-badge.node {
+  background: var(--u-mid-bg, #FDF3E2);
+  color: var(--u-mid-t, #8A5A00);
+}
+.dw-badge.arch {
+  background: var(--u-hold-bg, #F3F4F6);
+  color: var(--stone, #8E91A0);
+}
+
+/* 四档条数那一行 —— ★ 49 轮：`--surface` 灰底 → **白底 ＋ 描边**。
+   它是项目卡里面积最大的一块灰（一张卡约三分之一高），
+   项目抽屉整片读起来就是"灰的"；副弹窗里没有任何这样的灰块 ⇒ 两张并排一头灰一头白。
+   改成白底 ＋ 1px --hairline 之后，它仍然是一块"分出来的小区域"（靠描边），但没有灰面了。
+   ★★ 203 轮：与概览 `.ps-stat` **逐值同形**（用户口径「统一都换成这种卡片样式」）——
+     四格 `flex: 1 1 0` 等宽 ＋ 格内居中，`justify-content` 显式 `flex-start`。
+     ⚠️ 旧注释里那条"抽屉卡 296 宽里左簇正好"的差别**已作废**：等宽格会吃满整宽，
+        没有"左簇 vs 铺开"这个选择了（49 轮那条差异只对"按内容宽的簇"成立）。 */
+.dw-pj-stat {
+  border-radius: 8px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+/* 一格 ＝ 档名在上、数字在下，格内居中 —— ⚠️ 几何必须与概览 `.ps-s` 逐值相同 */
+.dw-stat {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.dw-stat-t {
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--stone, #8E91A0);
+  white-space: nowrap;
+}
+.dw-stat-n {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+.dw-stat.urgent .dw-stat-n { color: var(--u-urgent, #E5484D); }
+.dw-stat.mid .dw-stat-n { color: var(--u-mid, #EF9F27); }
+.dw-stat.low .dw-stat-n { color: var(--u-low, #378ADD); }
+/* ★ 203 轮：留置这一支由 `--stone` 换到 `--u-hold`（原 `.dw-stat.h` 走的就是 `--stone`）——
+   浅色下两者逐值相同（都 #8E91A0）⇒ 零像素变化；深色下与档名拉开一档亮度。 */
+.dw-stat.hold .dw-stat-n { color: var(--u-hold, #8E91A0); }
+/* 零档：整格压 `--muted` ＋ 数字降一档字重（与概览 `.ps-s.z` 同口径） */
+.dw-stat.z .dw-stat-t { color: var(--muted, #A5A8B5); }
+.dw-stat.z .dw-stat-n { color: var(--muted, #A5A8B5); font-weight: 600; }
+
+.dw-pj-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+.dw-pj-meta {
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+}
+.dw-pj-sep { font-size: 11px; color: var(--hairline-strong, #C7CAD5); }
+
+/* B · 待办卡（★ 44 轮：一条流水 ＋ 状态图标）
+   ★ 48 轮：**撤掉卡上的浅投影**。副弹窗里的卡片是"白底 ＋ 1px 描边、平贴"，
+   主弹窗这张原来叠了两层 6% 的投影；卡间距只有 8，投影正好落进卡缝里互相叠加，
+   整列读起来就比副弹窗灰一档（用户口径「主卡片的底色有点灰」）。
+   现在两边同质感 —— 白底 ＋ 描边 ＋ 无投影；「托起来」的层次**只留给选中态**。 */
+.dw-card.td {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* 已完成：弱化配色 = 标题转灰 ＋ 划掉。
+   ★ 44 轮不再用整卡 opacity .6 —— 那会把状态图标的绿一起灰掉，反而看不出"已完成"。
+   ★ 48 轮：卡底那层 #FAFAFB **一并去掉，回收成纯白** ——
+   完成态已经由「绿底圆含白勾（图标）＋ 文字转灰划掉」表达完整，
+   再压一层灰底只是让这张卡显脏，也破坏"所有卡同一底色"这条。 */
+.dw-card.td.done .dw-td-text { color: var(--stone, #8E91A0); text-decoration: line-through; }
+.dw-card.td.done .dw-td-bar { opacity: 0.45; }
+/* ★★ 160 轮 · **已删除**的那张卡 ─────────────────────────────────────────
+   与「已完成」同一套弱化手法（正文转灰 ＋ 色条减淡），但**不划掉正文**：
+   划掉是"这件事做完了"的语言，而这一条只是被收了起来（内容照旧有效，可能还要还原）。
+   ⚠️ 卡底**保持纯白**（不给灰底）—— 48 轮在这里立过一条：整卡压灰会让这列卡
+      "显脏"，也破坏"所有卡同一底色"。身份由底行那枚「已删除」徽章表达就够。
+   ⚠️ 弱化的判据是 `.del`（装配层给的 `it.deleted`），**不是** `it.done`：
+     一条"删之前已完成"的待办两个类都会有，这里的取值顺序要保证
+      正文色 → 本条在后（`--slate`），不被上面那条 `--stone` 划掉抢走。
+      两条特异性相同（都是 `.dw-card.td.x .dw-td-text`），靠书写顺序决胜 ⇒ **本条必须在后**。 */
+.dw-card.td.del .dw-td-text { color: var(--slate, #555A6A); }
+.dw-card.td.del .dw-td-bar { opacity: 0.45; }
+/* 底行那枚「已删除」徽章 —— 只调位置（`.dw-td-foot` 是 space-between：左边时间、右边它） */
+.dw-td-del { flex: 0 0 auto; }
+/* 当前打开的那条：卡底黄 ＋ 一层淡黄投影，一起读作"这一张是当前的"。
+   ★ 47 轮：把投影**调淡**（用户口径「阴影有点过重」）——
+   原来 `0 4px 14px rgba(255,208,47,.42)` 在卡片间距里会糊到上下两张卡上；
+   改成 `0 2px 8px / .20`：看得出"托起来"，但不抢卡片内容。
+   ★ 48 轮：普通卡去投影之后，**投影成了选中态独占的一层信号**（其余卡片平贴）。
+   主信号仍然是颜色 —— 底色 ＋ 描边（黄底 ＋ 黄边），投影只是辅证。
+   ⚠️ 不再需要"写在 .done 之后压过灰底"：那层灰底 48 轮已删。 */
+.dw-card.td.on {
+  background: var(--yellow-soft);
+  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.04), 0 2px 8px rgba(255, 208, 47, 0.20);
+}
+
+.dw-td-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dw-td-bar {
+  width: 4px;
+  min-width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  margin-top: 2px;
+}
+
+.dw-td-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--primary, #1C1C1E);
+}
+
+/* 卡片第二行：标签行 —— 归属项目 ＋ 关联脑图（名称在装配层已截到 7 字） */
+.dw-td-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* 卡片第三行：左 ＝「更新于 2026-09-22 17:30」，右 ＝ 完成状态徽章（★ 46 轮）
+   —— 创建时间已去掉：列表按更新时间倒序，卡上再摆一条创建时间等于给了两套时间轴。 */
+.dw-td-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-left: 12px;
+  min-width: 0;
+}
+
+.dw-td-meta {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+  flex: 0 0 auto;
+  /* ⚠️ 必须 nowrap：抽屉只有 320，一挤就会把它折行，
+     而卡片是 overflow 裁剪的 ⇒ 折下去的那半截（日期）直接被吃掉，只剩「创建」两个字。 */
+  white-space: nowrap;
+}
+
+/* 完成状态图标（★ 47 轮 · 取代 44~46 轮的文字徽章）
+   未完成 ＝ 空心圆；已完成 ＝ 圆里含对勾（用文字 ✓ 而不是 SVG —— 一个 16px 的圆里
+   画矢量勾在小程序里既没必要，也容易在小尺寸下糊）。
+   半径 8 ＝ 直径 16，和卡内其它微标（12 号图标）在同一档但略大，读作"这颗能表达状态"。 */
+.dw-st {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--hairline-strong, #C7CAD5);
+  background: var(--card);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dw-st-ck {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--on-success);
+  font-weight: 600;
+}
+.dw-st.on {
+  background: var(--success, #2E9E64);
+  border-color: var(--success, #2E9E64);
+}
+
+/* 卡片第二行的两个气泡 —— ★ 49 轮：**都改成白底 ＋ 1px --hairline 描边**。
+   原来「归属项目」是 --chip(#F1F2F5) 实心灰、「关联脑图」是白底 ＋ 深一档描边 ——
+   同一行里两个同类的标签却是两种"面"，而且灰的那个在每张卡上都出现，
+   整张列表读下来就偏灰（用户口径「主弹窗的弹窗底色偏灰」）。
+   现在两颗同款，靠左边的**项目色点**与右边的**脑图图标**区分身份。 */
+.dw-td-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.dw-td-chip.map { background: var(--card); border-color: var(--hairline, #E0E2E8); }
+/* ★ 54 轮：图片气泡 —— 项目气泡＝实心色点，脑图 / 图片＝白底描边（与 todo-card 同款分列）。
+   ⚠️ 三个气泡的宽度口径与 todo-card 的 `.tchip` 保持一致，同一件事在两个面不能长出两种样子。 */
+.dw-td-chip.img { background: var(--card); border-color: var(--hairline, #E0E2E8); }
+/* 项目气泡里的色点（★ 57 轮：5 → **8**）—— 气泡内文案 10px，8 是"小"档的统一值
+   （与 todo-card 的 `.tchip-dot`、「我的」页的 `.dot-sm` 同值）。
+   ⚠️ 气泡高 ＝ 3+15+3 ＝ 21，色点超过 10 会把 pill 顶高，所以这一档封顶在 8。 */
+.dw-td-dot { width: 8px; height: 8px; border-radius: 999px; flex: 0 0 8px; }
+.dw-td-chip-t {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  white-space: nowrap;
+}
+.dw-td-arch {
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--u-hold-bg, #F3F4F6);
+  color: var(--stone, #8E91A0);
+}
+
+/* C · 脑图卡（★ 本轮：两行纯文字 → **三段式**，与待办卡同构）
+   ① 脑图名 ／ ② 标签行（所属项目 ＋ 格式）／ ③ 底行（节点·层数 ／ 更新时间）
+   这么改的直接原因：列表拍平成"按更新时间倒序的一条流水"之后**组头没有了**，
+   项目名必须由卡片自己带（它是"这张图属于谁"的唯一线索）。 */
+.dw-card.mm {
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dw-mm-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ★★ 280 轮（用户 2026-10-27）· 「转脑图」选择列表里**不可选中**的那几张
+   （生成中 / 生成失败 / 未完善）：整卡压一档亮度，读作"看得见、点不动"。
+
+   ── 为什么压整卡而不是逐个换文字色 ────────────────────────────────────────
+   这张卡上有**三种颜色载体**（项目色点 / 格式缩略图 / 两枚 chip），逐个改色必漏一个；
+   而"不能选"是**整张卡**的属性，不是某一行字的属性。
+   ── 为什么不用 `pointer-events: none` ──────────────────────────────────────
+   点它要弹一句"为什么不能选"（卡片抛 `locked`）；整块失效就只剩"点了没反应"。
+   ── 0.45 的出处 ───────────────────────────────────────────────────────────
+   与 `.sd-submit.off` / `.tb-btn.off` / `.sd-alt.off` **同值** ——
+   全工程"禁用"只有这一种读法，别在抽屉里另造一档。
+   ⚠️ 与 `.dw-card.td.done` 只压条形**不矛盾**：那边要保住状态图标的绿（它本身就是信息），
+      这边的卡没有"必须保住颜色"的元素 —— 亮着反而会被读成"可以点"。 */
+.dw-card.mm.lock { opacity: 0.45; }
+
+/* 「待完善」那一枚 chip（只有「未完善」有，另两档底行已经把话说完了）——
+   底色沿用 `.dw-td-chip` 的白底描边，只把字压到 `--muted`：
+   它在报"缺东西"，不是一块新的强调。 */
+.dw-td-chip.lock .dw-td-chip-t { color: var(--muted, #A5A8B5); }
+
+/* 标签行 —— 与待办卡的 `.dw-td-tags` 同一排法：两个白底描边气泡，
+   靠**左边的项目色点**与**右边的格式缩略图**区分身份（不靠颜色深浅）。 */
+.dw-mm-tags {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+/* 项目名可能很长 ⇒ 这一颗允许被压缩并出省略号；格式那颗恒定完整（只有两三个字） */
+.dw-mm-tags .dw-td-chip { min-width: 0; flex: 0 1 auto; }
+.dw-mm-tags .dw-td-chip.fmt { flex: 0 0 auto; }
+.dw-mm-tags .dw-td-chip-t { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* 格式气泡里的缩略图：48×34 的图缩到 **20×14** ——
+   这个尺寸认不出细节，但足够认出"左右分布 / 向下展开 / 横向一根轴"这个**结构差**，
+   而"这是哪种格式"本来就只差这些。 */
+.dw-mm-thumb {
+  width: 20px;
+  height: 14px;
+  flex: 0 0 20px;
+  border-radius: 2px;
+  background: var(--chip, #F1F2F5);
+}
+
+/* 底行 —— 左「N 节点 · M 层」／ 右「更新于 …」（全量时间，与待办卡底行同一口径） */
+.dw-mm-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dw-mm-meta {
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   D · ★★ 248 轮：**胶囊选择卡**（待办详情页「+选择胶囊」开的那张主弹窗）
+   ==========================================================================
+   用户口径：「卡片显示当前胶囊列表卡片，**可多选卡片**，底部按键为『取消』『保存』」。
+
+   ── 形态：与待办卡同构（正文 ＋ 底行时间），但**没有任何子操作** ──────────
+   这一层只做"挑几条"：编辑 / 删除仍然只在闪念胶囊里做（用户第 6 条：
+   默认流程是先在胶囊里完成文本校正，再回到待办关联）。
+   ⇒ 卡上不挂「⋯」、不挂「✕」，整卡只有"选中 / 取消选中"一个动作。
+
+   ── 正文为什么封 3 行 ─────────────────────────────────────────────────
+   抽屉只有 320 宽，而一条口播可能是一整段话。不封的话一条就能占掉半屏，
+   "多选"这件事在视觉上退化成"一次只能看到两条"。封顶后每张卡高度稳定，
+   扫读的节奏与待办卡一致。
+   ⚠️ `-webkit-line-clamp` 只在小程序的真机内核里生效；万一失效也不崩
+      （退化成全文展开）—— 所以不写死 `height`，让卡自己长。
+   ⚠️ 全文在哪里看：**详情页**那张卡点开是全文查看层（`mod-todo` 的 `.viewer`），
+      选择抽屉里不重复提供入口 —— 挑选时不需要读完整段。
+
+   ── 选中态复用 `.pick` ────────────────────────────────────────────────
+   与脑图 picker 的"本轮选中"同一套语言（黄边 ＋ 黄内环 ＋ 淡黄投影）；
+   **不用 `.on`** —— 那是"当前正开着的那一条"，胶囊列表里没有这个概念。 */
+/* ==========================================================================
+   D-1 · 闪念胶囊**选择卡**（★★ 248 轮建 · ★★ 277 轮按胶囊列表对齐）
+   ==========================================================================
+   277 轮之前这张卡是"正文 ＋ 底行时间"的极简版（13px、内边距 10/12、无引线、无图）。
+   用户口径（2026-10-27）：「打开的胶囊列表抽屉中要能显示胶囊挂载的图片
+   （胶囊的显示样式也要和胶囊列表保持一致，别忘了文字前的黄竖线标志）」。
+
+   ── 为什么可以做到"逐值同源"而不是"看着像"──────────────────────────────
+     两张卡所处的容器**同宽**：胶囊列表是 `.cp`（宽 320）、这里是 `.dw`（宽 320），
+     两边列表区的左右内边距都是 12 ⇒ 卡外宽都是 296。所以同一个 19 的左内边距、
+     同一个 14px 字号、同一个 148 高的图，在两处落到的字数与图大小是一致的。
+     ⚠️ 改这里任何一条，都要回头看 `components/capsule/capsule.wxss` 的 `.cp-bub` /
+        `.cp-bub::before` / `.cp-pic` / `.cp-pic-img` —— 四处成对：
+          内边距 11 13 11 19 ↔ 同值 ｜ 引线 left6/top12/3×18 ↔ 同值
+          正文 14/1.5          ↔ 同值 ｜ 图 radius9 / height148 ↔ 同值 */
+.dw-card.cap {
+  position: relative;
+  /* ★ 左 19 ＝ 引线(6+3) ＋ 10 的呼吸位。与 `.cp-bub` 的 `11px 13px 11px 19px` 同值。 */
+  padding: 11px 13px 11px 19px;
+  display: flex;
+  flex-direction: column;
+  /* 卡内三段（正文 / 图 / 底行）的间隔统一 8 —— 图自己有 `margin-top:1` 补到 9，
+     与 `.cp-pic` 的 `margin-top:9` 对齐；这里不逐段写 margin，省得三处漂。 */
+  gap: 8px;
+}
+
+/* ★★ 277 轮：正文左端那条**品牌黄引线** —— "这是一段被引用下来的口播"。
+   与 `.cp-bub::before` **逐值相同**（188 轮定的品牌黄、跨主题跨形态恒色；
+   263 轮把 `top 10→12`、`height 20→18` 与内边距 11 配套）。
+   ⚠️ 伪元素不占布局位 ⇒ 加它不会让卡片变高变宽。
+   ⚠️ 写 `var(--yellow)` 而不是写死 `#FFD02F`：`--yellow` 在浅 / 深两套令牌里同值，
+      "跨主题恒色"这条由令牌表自己保证。 */
+.dw-card.cap::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--yellow, #FFD02F);
+}
+
+.dw-cap-t {
+  /* ★★ 277 轮：13 → **14**，与 `.cp-bub-t` 同档。同一枚胶囊在两处显示成两种字号，
+     用户读起来会以为"抽屉里的更短"（这是本轮顺手收掉的一处不一致）。 */
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--primary);
+  word-break: break-word;
+  /* 三行封顶（见上面那段）：抽屉是"挑几条"，不封的话一条长口播就占满整屏 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* ★★ 277 轮：胶囊挂的那张图 —— 位置（正文之下、时间之上）与皮肤照 `.cp-pic`。
+   高度 148 与胶囊列表**同值**：两边容器同宽（见上面那段算式），所以图也一样大。
+   ⚠️ 不设 hover、不挂 tap：这张卡唯一的动作是"选中"，点图＝点卡。 */
+.dw-cap-pic {
+  border-radius: 9px;
+  overflow: hidden;
+  /* 图还没取回来时的那层底 —— 与 `.cp-pic` 同一个令牌，免得加载中是一块白 */
+  background: var(--chip, #F1F1F4);
+  margin-top: 1px;   /* 与上面 gap 8 合起来 ＝ `.cp-pic` 的 margin-top 9 */
+}
+.dw-cap-pic-img {
+  display: block;
+  width: 100%;
+  height: 148px;
+  /* `mode="aspectFill"` 已由 `<image>` 自己裁；这两行是给老基础库的兜底 */
+  object-fit: cover;
+  object-position: center top;
+}
+
+.dw-cap-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dw-cap-time {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+}
+
+/* 已选的那颗勾 —— 16 方、品牌黄底、恒墨字（黄底不跟主题反相，见 icon 组件的 `tone` 口径）。
+   放在底行右端：与上面那个时间同一条基线，扫一列时"哪几条选了"一目了然
+   （卡面本身还有 `.pick` 的黄底黄边，这里是对色弱用户的第二重信号）。 */
+.dw-cap-ck {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 999px;
+  background: var(--yellow, #FFD02F);
+  color: var(--on-accent);
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   竖屏 · 抽屉 320×(--work-h-port − 18) @(16, 工作区顶边) · 遮罩 800×--mask-h @(0,0)
+   （设计稿 1192；★ 184 轮起画布高由视口现算 ⇒ 遮罩高随 `--mask-h` 走）
+   遮罩仍从 y0 起（状态栏 ＋ 品牌栏一起压暗 = 模态该有的样子），但**抽屉本体**从
+   工作区顶边起 —— 顶部那一段只留遮罩，不再让抽屉标题与系统状态栏叠在一起。
+   ========================================================================== */
+.dw-mask.port {
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  /* ★★ 184 轮：遮罩高 ＝ **底栏顶边** ＝ 画布高 − 88，由 fit() 现算写进 `--mask-h`
+     （画布高不再是常量：竖屏平板 ＝ 视口高 ÷ s，见 utils/stage.js 的 capsuleMetrics）。
+     ⚠️ 与下面 `.dw.port` 的 `height: calc(var(--work-h-port) - 18px)` 同源 ——
+        两个数都由 fit() 那一份推导给出，改口径别只改一处。 */
+  height: var(--mask-h, 1192px);
+}
+
+.dw.port {
+  left: 16px;
+  /* ★ 63 轮：**顶边下移到品牌栏下沿**（＝ 工作区顶边），高度随之收短。
+     48 轮那版是"在遮罩里垂直居中"（上 18 ／ 下 18）—— 那是按**遮罩**算的；
+     而竖屏遮罩必须从 y0 起（要压住状态栏与品牌栏），于是抽屉顶边落在 y18，
+     正好钻进系统状态栏里，真机（状态栏 57）会与系统时间 / 电量**叠在一起**
+     —— 用户截图上「17:45」压着抽屉标题「项目-4」报的就是这个。
+     现在顶边由骨架定：top ＝ 状态栏占位 ＋ 品牌栏高 ＝ **工作区顶边**；
+     底边**不动**（仍 y1174 ＝ 1192 − 18，距底部导航 18）⇒ 高度只为让出顶部而收短：
+       height ＝ --work-h-port − 18
+     设计稿 1128 − 18 ＝ **1110**（原 1156）· 真机 1091 − 18 ＝ **1073**。
+     ⚠️ 横屏不渲染品牌栏、抽屉高度本来就合适 ⇒ 基类里的 16 / 768 **不动**。
+     ⚠️ 这里两个 var 都定义在 .stage 的行内样式（utils/stage.js 的 fit()），
+        且在**使用处**参与 calc ⇒ 取到的是真机的状态栏 / 品牌栏高，不是设计稿值。
+        （别把 calc(...) 搬进 app.wxss 的 page{} 定义成组合变量 ——
+          自定义属性在**声明它的元素上**就展开，会永远算出设计稿的 64。） */
+  top: var(--head-h);
+  width: 320px;
+  height: calc(var(--work-h-port) - 18px);
+}
+
+/* ★ 47 轮：本层被**同屏的另一个主弹窗**（表单抽屉）压着时「侧转」＝ 不可点。
+   两个主弹窗等宽（都 320），不偏转就读作"一个盖住了另一个"。
+   ⚠️ 副弹窗（下面的 .tf，宽 260 贴在右侧）开着时**不**加这个类 ——
+      副弹窗是"同一层往外展开"，父层仍然可读、可点。 */
+.dw.turned {
+  transform-origin: left center;
+  transform: perspective(1100px) rotateY(25deg);
+  pointer-events: none;
+  /* ★ 审查-02 P2-3：显式降到 89（与 `.sd.turned` 的 91 同一条口径）——
+     原来靠 DOM 顺序"恰好"压在遮罩(80)之上、第二档(93)之下；写出来才是表达。
+     89 在既有层级表里是空档 ⇒ **零视觉变化**，只是让"不可点"同时是层级表达。 */
+  z-index: 89;
+}
+
+/* ★ 本轮（闪念胶囊「转到脑图」）：**第二档** —— 右移 270 开在左边那张主弹窗的右侧。
+   ⚠️ 数值必须与 form-drawer 的 `.sd.o1` (354) / `.sd.port.o1` (286) **逐字相同**：
+      两个主弹窗右移的距离不同的话，同屏并排时右边那层的左缘会错开一截。
+   ⚠️ 竖屏 286 那条是 3 类选择器，权重高于 `.dw.o1` 的 2 类 ⇒ 顺序写反也会生效；
+      但别省 `.dw.o1` 那条 —— 横屏（`.dw` 的 left 84）全靠它覆盖。 */
+.dw.o1 { left: 354px; }
+.dw.port.o1 { left: 286px; }
+
+/* ==========================================================================
+   副弹窗 · 列表筛选（★ 47 轮待办 ／ ★ 56 轮起项目共用；组的形状由 `tf.groups` 给）
+   宽 260 · 圆角 16 · 投影 `6 10 18 rgba(28,28,30,.14)`（比主弹窗更深，读作最上层）
+   位置：紧跟父主弹窗右侧（父宽 320 ＋ 12 缝）
+         · 横屏：父层 x84 ⇒ 本层 x416
+         · 竖屏：父层 x16 ⇒ 本层 x348（右缘 608 —— 768 的内容区装得下）
+   z-index 94（高于主弹窗 90 / 表单 92）；配套的全透明 .tf-scrim 取 93，
+   落在两者之间 ⇒ 点外面只收副弹窗，不动整个列表。
+   ⚠️ 这一段的几何与 form-drawer.wxss 里的 `.sd3`（关联脑图的副弹窗）**规格相同** ——
+      两个副弹窗是同一层级的东西，位置 / 宽度 / 投影必须一致。改一个记得对另一个。
+   ========================================================================== */
+.tf-scrim {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 93;
+}
+
+.tf {
+  position: fixed;
+  left: 416px;
+  /* ★ 48 轮：顶与父主弹窗对齐。
+     ★ 63 轮：横屏 16（基类）；竖屏改成**父层的新顶边**（工作区顶边），见 `.tf.port`。
+     ⚠️ 副弹窗**不**跟主弹窗一起"居中" —— 它高度是 auto，真居中会让短面板浮在半空，
+        与左侧那张从 16 起头的列表错开一截。副弹窗是"父层往右展开"，**顶齐**才是它的对位关系。 */
+  top: 16px;
+  width: 260px;
+  /* ★ 47 轮：**高度跟着内容走**（`auto` ＋ `max-height`），不撑满 768 ——
+     筛选只有四组条件，撑满会在下面留下 300（竖屏 680）px 的空白，读起来像面板没加载完。
+     内容真超了（项目多、都列出来）再由 max-height 截住、body 内部滚。
+     ⚠️ 与 `.sd3`（关联脑图的副弹窗，恒高）**有意不同**：那一层是一串不定长的选项列表，
+        撑满才是它该有的样子。两者一致的只是位置 / 宽度 / 投影这一层规格。 */
+  height: auto;
+  /* ★★★ 2026-10-27（全量检查 F10）· **上限跟着画布高走，不再写死 768**。
+     ── 病根：`max-height: 768px` 是按 800 高的设计画布定的；PC 矮窗（1280×500）
+        时画布高已被 `stage.fit()` 现算成 500，副抽屉却仍允许 768 ⇒ 顶 16 ＋ 768
+        沉出屏幕，底部那排键点不到。
+     ── 现在：`canvas-h − 32`（上 16 ＋ 下 16）—— **canvas-h ＝ 800 时逐值等于 768**，
+        设计稿与平板一个像素都不动；只有窗口真的比画布矮时才收。
+     ⚠️ `--canvas-h` 由 `stage.fit()` 写在 `.stage` 上，组件是它的后代、能继承到。
+     ⚠️ 竖屏那一档另有 `.tf.port`（`--work-h-port − 18px`），别在这里重复算。 */
+  max-height: calc(var(--canvas-h, 800px) - 32px);
+  background: var(--elevated);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 16px;
+  /* ★ 50 轮：投影必须朝**远离父层**的方向偏，否则会把父层（主弹窗）染色。
+     原来是 `0 20px 48px .3` —— 模糊 48、左右对称，向左溢出的那 48px 正好落在
+     父层右缘，把主弹窗的卡片由 #FFFFFF 压到 #F1F1F1（实测横剖面 330→380 逐级变暗），
+     读起来就是「主弹窗的卡片比副弹窗的卡片灰」。
+     现在 x 偏 +6、模糊收到 18 ⇒ 最左只探出 6-9 = **-3px**，几乎不外溢；
+     亮度降到 .14 补偿「投影变小」带来的悬浮感损失。 */
+  box-shadow: var(--sh-sub);
+  display: flex;
+  flex-direction: column;
+  z-index: 94;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 标题带 —— ★ 48 轮：与主弹窗 .dw-head **完全同规格**（灰底 ＋ 底分隔线 ＋ 52 高）。
+   原来这一层是白底、也没有分隔线，跟左侧那张"灰头"列表并排时明显不是一套
+   （用户口径「无论是主弹窗还是副弹窗，都需要有抽屉标题栏」）。
+   ★★ 194 轮：底/收边改认 `--head-bg` / `--head-line`（原因见 app.wxss 令牌段）。
+   ⚠️ .dw-head / .tf-head / .sd-head / .sd3-head / .ep-head **五处共用同一套值**
+      —— 改一处要同步其余四处（真源是 app.wxss 的两枚令牌，这里只负责认领）。 */
+.tf-head {
+  height: 52px;
+  flex: 0 0 52px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--head-bg, #F7F8FA);
+  border-bottom: 1px solid var(--head-line, #E0E2E8);
+  box-sizing: border-box;
+}
+.tf-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* ★ 48 轮：标题栏上的动作键一律用**抽屉按钮**的样式 ——
+   28 高描边胶囊，与主弹窗那颗「筛选」是同一颗。原来这里是一行裸灰字，
+   与主弹窗并排时读起来像两套体系（用户口径「按键也需要按照抽屉按钮的样式统一」）。
+   ⚠️ 必须配 view 元素（不是 text）：inline-flex 的居中在 text 上不保证生效。
+   ★★ 194 轮：常态底 `--card` → `--elevated`（与 `.dw-head-act` / `.dw-fbtn` 同族）。 */
+.tf-close {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  background: var(--elevated, #FFFFFF);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.tf-close-hv { background: var(--chip, #F1F2F5); }
+
+.tf-body {
+  /* flex:0 1 auto（不是 1）—— 面板高度由内容决定，body 只在内容超 max-height 时才被压出滚动 */
+  flex: 0 1 auto;
+  min-height: 0;
+  /* ★ 48 轮：顶部 0 → 12 —— 标题带 46 轮起就是灰底 ＋ 分隔线，紧贴第一组条件会读成
+     "这组条件是标题带的一部分"。与 .dw-list 那 12 是同一道呼吸位。 */
+  padding: 12px 12px 14px;
+  box-sizing: border-box;
+}
+
+/* ---------- 分组：小标签 ＋ 控件（260 宽里靠标签而不是留白来分段） ---------- */
+.tf-grp { margin-bottom: 14px; }
+
+.tf-lab {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, #A5A8B5);
+}
+
+/* ---------- ① 搜索 ---------- */
+.tf-sear {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+}
+.tf-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  font-size: 14px;
+  color: var(--primary, #1C1C1E);
+}
+.tf-ph { color: var(--muted, #A5A8B5); }
+/* 清空键 24 见方 —— 它整块都是热区（P-6 是 44，但这里旁边紧挨输入光标的落点，
+   做到 44 会吃掉整个输入框的右半边 ⇒ 用 24 见方 ＋ 只在自己身上截事件） */
+.tf-clr {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--chip, #F1F2F5);
+  color: var(--slate, #555A6A);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* ★ 审查-02 S1（2026-10-15）：按下反馈。
+   ⚠️ 本键**自身已是 `--chip` 灰底** ⇒ 不能走"改底"那条（与 `.tf-close-hv` 不同：
+      `.tf-close` 是白底所以能改底）。压 `opacity` —— 与 `.sd-del-hv` / `.op-hv` 同族同值。 */
+.tf-clr-hv { opacity: 0.7; }
+
+/* ---------- ② / ④ 胶囊（形状由组数据决定，类由 `grp.wrap` / `grp.fill` 挂） ----------
+   · 默认：一行排开，不换行（待办状态 3 个、项目状态 3 个 —— 都放得下）
+   · `.wrap`（节点 5 个、更新时间 4 个）：允许换行，胶囊各自取内容宽（3 个字的节点名
+     大约 4 个一行 ＋ 1 个折行）
+   · `.w2`（更新时间）：**两两成行** —— 「最近3个月」比其余三个宽不少，
+     四个挤一行会把它压成第二个「最近一月」，读起来像重复项 */
+.tf-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tf-chips.wrap { flex-wrap: wrap; }
+
+/* ★ 94 轮：「筛选」里的这些胶囊**不加图标** —— 它们是**选项**（选中态靠 `.on` 黑底表达），
+   不是"按下就会发生什么"的键。给选项加图标会让一排条件读起来像一排操作。 */
+.tf-chip {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.tf-chip-hv { background: var(--chip, #F1F2F5); }
+.tf-chip.on {
+  /* ★★ 201 轮（用户 2026-10-16）：选中面从 `--solid` 改走 `--sel-chip-*` ——
+     深色 `--solid`(#36383B) 压在副弹窗底上只有 1.2:1，选中的那颗与被选的、与容器分不开；
+     改走**黄族**后与同一张副弹窗里的 `.tf-row.on`（所属项目 / 关联 agent 那种"行"选中）
+     同色 ⇒ 上面一排胶囊、下面一列行，选中长一个样。
+     ⚠️ 本类服务的是**所有**筛选胶囊：项目的「项目状态 / 节点」、待办的「待办状态 / 更新时间」、
+        脑图的「格式 / 更新时间」—— 一处改，七组同时好。
+     ⚠️ 浅色值与原 `--solid` 逐值相同 ⇒ 浅色零像素变化。 */
+  background: var(--sel-chip-bg, #1C1C1E);
+  border-color: var(--sel-chip-line, #1C1C1E);
+  color: var(--on-solid);
+}
+/* 「最近3个月」比其余三个宽 —— 四个排一行会把它挤掉 ⇒ 两两成行 */
+.tf-chip.w2 { flex: 1 1 46%; }
+
+/* ---------- ③ 所属项目：一行一个（色点 ＋ 名称 ＋ 条数） ---------- */
+.tf-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tf-row {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.tf-row-hv { background: var(--chip, #F1F2F5); }
+.tf-row.on {
+  background: var(--yellow-soft, #FFF8DC);
+  border-color: var(--yellow, #FFD02F);
+}
+
+/* ★ 57 轮：8 → **14**。筛选行是 34 高的紧凑行，取 14（不是 16）——
+   这一档的口径仍是"跟同一行文字的行高走"，但 `.tf-row` 是副弹窗里密度最高的一行，
+   给到 16 会让 34 高的行显得局促（这里文案 13px、行高 14）。 */
+.tf-dot {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border-radius: 999px;
+}
+/* 「全部」没有项目色 ⇒ 同宽透明占位，保住整列文字对齐 */
+.tf-dot.empty { background: transparent; }
+
+.tf-row-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tf-row.on .tf-row-t { font-weight: 500; }
+.tf-row-n {
+  flex: 0 0 auto;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--muted, #A5A8B5);
+}
+
+/* ---------- 清除全部（只在真的有条件生效时出现） ----------
+   ★ 49 轮：`--surface` 灰底 → 白底 ＋ 描边（与 .tf-close / .tf-chip 同一套"面"）。
+   副弹窗里原本只剩这一块灰，收掉之后**整张副弹窗除标题带外全是白的** ——
+   "主弹窗和副弹窗底色统一"这条才算真的闭合。 */
+.tf-reset {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--slate, #555A6A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+.tf-reset-hv { background: var(--chip, #F1F2F5); }
+
+/* 竖屏：副弹窗同样开在父层右侧（x16 ＋ 320 ＋ 12 ＝ 348），高度上限同样跟着屏幕走 */
+.tf.port {
+  left: 348px;
+  /* ★ 63 轮：顶与父层同一条口径 —— 父层 .dw.port 已下移到工作区顶边，副弹窗跟齐；
+     高度上限也改成与父层同一算式（--work-h-port − 18），不再写死 1156。 */
+  top: var(--head-h);
+  width: 260px;
+  max-height: calc(var(--work-h-port) - 18px);
+}
+
+/* ★ 审查-02 B-3（2026-10-15）：**补上 o1 档几何** —— 上一版只有 `.tf`（一级位）与 `.tf.port`，
+   `.dw` 一旦走到 `.dw.o1`（被表单抽屉压着、自己右移 270）就没有对应档，
+   副弹窗会停在 `left: 416` 原地 ⇒ **父层与它错开约 270px，而且不报错**（纯静默错位）。
+   ⚠️ 这两条**逐条抄自 `.sd3`**（`form-drawer.wxss` 的 `.sd3.o1` / `.sd3.port.o1`）——
+      本文件上面那段注释已定死「两个副弹窗是同一层级的东西，位置 / 宽度 / 投影必须一致」，
+      缺档就是让"必须一致"这句话在 o1 这一档上失效。
+   ⚠️ 横屏是**并排**（354 ＋ 320 ＋ 12 ＝ 686）；竖屏 768 宽装不下三层
+      （286 ＋ 320 ＋ 12 ＋ 260 ＞ 768）⇒ 口径是**就地替换**（占父层那个槽位：左 286、宽 320），
+      与 `.sd3.port.o1` 完全同源，别自己发明第三套。
+   ⚠️ 现状是 **latent**：父层走到 o1 位时它整体侧转（`pointer-events: none`），
+      筛选键点不动 ⇒ 这一档目前进不来。补它是为了让"改一处记得对另一处"这条口径成立，
+      不是为了修一个已发生的事故。 */
+.tf.o1 { left: 686px; }
+.tf.port.o1 { left: 286px; width: 320px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ★★ 280 轮 · 「语义转脑图」lead 卡（只有闪念胶囊的「选择脑图」里有）
+   ── 形态：与脑图卡**同宽同圆角同描边**（`.dw-card` 给），内容不同：
+      一行「图标 ＋ 名称」＋ 一句说明。它是这张列表里唯一的**动作卡**
+      （其余都是"挑一张现有的"），所以给一枚 26×26 的暖黄底图标块当身份标记 ——
+      与胶囊卡的 3×18 黄色引线同一套语言（黄＝品牌，不是状态）。
+   ── 为什么图标块用 `--yellow-soft` 而不是 `--yellow` 实心：
+      实心黄在这个 320 面板里会抢掉"选中"那一眼（`.dw-card.mm.pick` 也是黄系）。
+      浅底 ＋ 默认 tone 的图标：浅色下是暖白底墨图标、深色下是暗暖底柔白图标，
+      两态都读得清（`--yellow-soft` 是**随主题变**的一档，所以不给 `tone="ink"`）。
+   ══════════════════════════════════════════════════════════════════════════ */
+.dw-card.mm.lead {
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dw-mm-lead-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dw-mm-lead-ic {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--yellow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dw-mm-lead-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--stone, #8E91A0);
+  /* 说明最多两行 —— 再长就把"确定"键挤出视野，而那正是这张卡要引导的下一步 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* ★★ 280 轮：脑图格式「未设置」那一档（语义转脑图的占位/未完善态）。
+   压一档灰：读起来是"还没选"，不是"这一项坏了"。 */
+.dw-card.mm .dw-td-chip.fmt.dim .dw-td-chip-t {
+  color: var(--muted, #A5A8B5);
+}

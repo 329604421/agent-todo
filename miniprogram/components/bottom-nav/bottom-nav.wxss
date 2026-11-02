@@ -1,0 +1,115 @@
+/* bottomNav · 竖屏底部导航（V8 走查定稿 2026-09-21 ／ 滑块动效 09-21）
+   壳 800×88 · 白底 ＋ 顶部 1px #E0E2E8 发丝线
+   导航项 5 等分铺满整宽（800 / 5 ＝ 160），左右不再留缺口；
+   项内胶囊 144×56（圆角 14）· 图标 24 ＋ gap 4 ＋ 标签 12；
+   88 中底部留 24 给系统手势条（三项对齐 y8–64，下方 24 空白）。
+   自定义组件根默认不拉伸，必须显式声明 :host 否则不会被压成 88 高
+
+   ⚠️ 下面这几处 `800px` 是**画布坐标**、不是"响应式宽度" ——
+      `.stage` 的逻辑尺寸恒为 800×1280（真机靠 `transform: scale` 整体缩放），
+      所以这一层写死 800 是**对的**。不要改成 `100%` / `vw`：那会跟着掉进
+      "父级有多宽就多宽"，把画布坐标系统搞乱（滑块位移 160 是算出来的，一起歪）。
+   ★ 118 轮：三处色值走令牌（`#FFD02F` / `#8E91A0` / `#1C1C1E` 原来裸写、与令牌同值却没接上）。 */
+:host {
+  flex: 0 0 var(--bnav-h, 88px);
+  width: 800px;
+  align-self: stretch;
+  display: block;
+  min-height: 0;
+}
+
+.bnav {
+  position: relative;
+  width: 800px;
+  height: var(--bnav-h, 88px);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.bnav-hr {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 1px;
+  background: var(--hairline, #E0E2E8);
+}
+
+.bnav-list {
+  position: relative;              /* 滑块的定位上下文 */
+  margin-top: 8px;
+  width: 800px;
+  height: 56px;
+  display: flex;
+  flex-direction: row;
+}
+
+/* ---------- 会移动的黄色滑块 ----------
+   只有一份实例；位置由 translateX 给（位移能用 transform 补间，比改 left 更顺）。
+   160 宽 ＝ 一项的宽度；内部居中放 144×56 的圆角块，与设计稿的胶囊同尺寸。 */
+.bnav-slab {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 160px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;            /* 别挡点击：点击交给上面的导航项 */
+}
+.bnav-slab.anim {
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bnav-slab-in {
+  width: 144px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--yellow);
+}
+
+.bnav-item {
+  position: relative;
+  z-index: 1;                      /* 压在滑块之上 */
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ★ 118 轮：同 nav-rail —— 原来挂 `hover-class="none"`，五个主导航项按下无任何反馈。
+   补 opacity（不用底色：选中项底下是黄色滑块，铺底色会盖掉"我在哪一页"）。 */
+.bnav-item-hv { opacity: 0.6; }
+
+.bnav-in {
+  width: 144px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+}
+
+.bnav-label {
+  font-size: 13px;
+  line-height: 17px;
+  /* ★ 2026-10-24（复审 P2-15）：导航项标签是**要读的字**，走可读档。
+     原来 `--stone`（浅色 3.13:1）在缩放后的手机/平板上读起来是"一片灰"。 */
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* ★ 118 轮：「当前模块」的落点与横屏左导轨**统一成一套**（颜色变深 ＋ 字重 500）——
+   两边逐字一致，改一边记得同步另一边（见 nav-rail.wxss 的 `.rail-item.on`）。 */
+.bnav-item.on .bnav-label {
+  color: var(--on-accent);
+  font-weight: 500;
+}

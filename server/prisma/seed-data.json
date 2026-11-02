@@ -1,0 +1,923 @@
+{
+  "$source": "小程序前端/utils/mock.js",
+  "$note": "本文件由 工具/gen_seed_data.js 生成，请勿手改；改数据请改 mock.js 后重跑生成器。值的形态**原样保留**（日期无时分秒、余额带 ¥ 号），由 seed.ts 用后端函数解析。",
+  "$generatedAt": "2026-10-09T07:58:31.381Z",
+  "AGENTS": [
+    {
+      "id": "a1",
+      "name": "WorkBuddy 主工位",
+      "quotaLeft": "1240",
+      "monthlyQuota": "2000",
+      "quotaResetAt": "01",
+      "updatedAt": "2026-09-12 20:10"
+    },
+    {
+      "id": "a2",
+      "name": "Claude Code",
+      "quotaLeft": "24",
+      "monthlyQuota": "200",
+      "quotaResetAt": "30",
+      "updatedAt": "2026-09-18 11:08"
+    }
+  ],
+  "TOKEN_KEYS": [
+    {
+      "id": "k1",
+      "vendor": "DeepSeek",
+      "balance": "¥ 128.40",
+      "updatedAt": "2026-09-20 09:12"
+    },
+    {
+      "id": "k2",
+      "vendor": "智谱 GLM",
+      "balance": "¥ 8.60",
+      "updatedAt": "2026-09-18 21:40"
+    },
+    {
+      "id": "k3",
+      "vendor": "火山方舟",
+      "balance": "¥ 64.00",
+      "updatedAt": "2026-09-10 15:30"
+    }
+  ],
+  "PROJECTS": [
+    {
+      "id": "p1",
+      "name": "彩票小助手",
+      "color": "qing",
+      "node": "迭代期",
+      "agentId": "a1",
+      "remark": "小程序 ＋ 后端 ＋ Rokid 眼镜端三线并进。视觉规范先定稿，再进模块实现。",
+      "archivedAt": null,
+      "createdAt": "2026-08-02",
+      "updatedAt": "2026-09-17 14:02"
+    },
+    {
+      "id": "p2",
+      "name": "摇头晃脑 AR",
+      "color": "ganlan",
+      "node": "迭代期",
+      "agentId": "a1",
+      "remark": "头控 AR 游戏，1 主 PRD ＋ 6 游戏子 PRD。",
+      "archivedAt": null,
+      "createdAt": "2026-07-18",
+      "updatedAt": "2026-09-18 19:40"
+    },
+    {
+      "id": "p3",
+      "name": "Agent ToDo",
+      "color": "zi",
+      "node": "建设期",
+      "agentId": "a1",
+      "remark": "AI Task 工位的人因规划 / 调度 / 治理层。",
+      "archivedAt": null,
+      "createdAt": "2026-08-20",
+      "updatedAt": "2026-09-20 09:20"
+    },
+    {
+      "id": "p4",
+      "name": "rockchip 工具链",
+      "color": "song",
+      "node": "迭代期",
+      "agentId": "a2",
+      "remark": "板端工具链脚本集合。",
+      "archivedAt": null,
+      "createdAt": "2026-06-30",
+      "updatedAt": "2026-09-12 16:30"
+    },
+    {
+      "id": "p5",
+      "name": "WorkBuddy 数据探查",
+      "color": null,
+      "node": "暂停期",
+      "agentId": "a1",
+      "remark": "本机会话数据探查与索引，暂停。",
+      "archivedAt": "2026-09-10 18:20",
+      "createdAt": "2026-05-11",
+      "updatedAt": "2026-09-10 18:20"
+    }
+  ],
+  "TODOS": [
+    {
+      "id": "d1",
+      "projectId": "p1",
+      "mindmapId": "m1",
+      "text": "补齐 OCR 期号截断的兜底逻辑：识别结果不足 7 位时按当前年份补全前缀，写库前再校验一次。",
+      "urgency": "urgent",
+      "done": false,
+      "createdAt": "2026-09-17 21:04",
+      "completedAt": null,
+      "updatedAt": "2026-09-21 18:20",
+      "images": [
+        {
+          "id": "i1",
+          "label": "识别失败截图",
+          "uri": "https://example.com/ocr-fail.png"
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "projectId": "p1",
+      "mindmapId": "m1",
+      "text": "购彩日历金额分档从 5 档细化到 7 档，把 50 元以上再拆细。",
+      "urgency": "mid",
+      "done": false,
+      "createdAt": "2026-09-16 20:47",
+      "completedAt": null,
+      "updatedAt": "2026-09-19 08:30",
+      "images": []
+    },
+    {
+      "id": "d3",
+      "projectId": "p1",
+      "mindmapId": "m1",
+      "text": "账本页支持按月导出 CSV 方便对账。",
+      "urgency": "low",
+      "done": false,
+      "createdAt": "2026-09-14 16:20",
+      "completedAt": null,
+      "updatedAt": "2026-09-15 14:05",
+      "images": []
+    },
+    {
+      "id": "d4",
+      "projectId": "p1",
+      "mindmapId": "m1",
+      "text": "考虑接入语音记账（先攒着，不急）。",
+      "urgency": "hold",
+      "done": false,
+      "createdAt": "2026-09-11 10:05",
+      "completedAt": null,
+      "updatedAt": "2026-09-12 09:18",
+      "images": []
+    },
+    {
+      "id": "d5",
+      "projectId": "p2",
+      "mindmapId": null,
+      "text": "AR 首页 8 方向图标做头动跟随的收敛测试。",
+      "urgency": "mid",
+      "done": false,
+      "createdAt": "2026-09-15 19:12",
+      "completedAt": null,
+      "updatedAt": "2026-09-18 21:10",
+      "images": []
+    },
+    {
+      "id": "d6",
+      "projectId": "p2",
+      "mindmapId": null,
+      "text": "HUD 状态文字在强光下的可读性复测（S2 / S3）。",
+      "urgency": "urgent",
+      "done": false,
+      "createdAt": "2026-09-18 09:36",
+      "completedAt": null,
+      "updatedAt": "2026-09-20 22:40",
+      "images": []
+    },
+    {
+      "id": "d7",
+      "projectId": "p3",
+      "mindmapId": "m4",
+      "text": "脑图气泡与项目气泡的形状区分：项目实心、脑图白底描边。",
+      "urgency": "low",
+      "done": false,
+      "createdAt": "2026-09-13 15:10",
+      "completedAt": null,
+      "updatedAt": "2026-09-18 11:45",
+      "images": []
+    },
+    {
+      "id": "d8",
+      "projectId": "p3",
+      "mindmapId": null,
+      "text": "agent 档案补齐「额度重置日」字段（先攒着）。",
+      "urgency": "hold",
+      "done": false,
+      "createdAt": "2026-09-09 08:40",
+      "completedAt": null,
+      "updatedAt": "2026-09-10 16:40",
+      "images": []
+    },
+    {
+      "id": "d9",
+      "projectId": "p1",
+      "mindmapId": null,
+      "text": "热力图选中态改成 L 形括标，不换底色。",
+      "urgency": "low",
+      "done": true,
+      "createdAt": "2026-08-28 11:02",
+      "completedAt": "2026-09-02 17:25",
+      "updatedAt": "2026-09-02 17:25",
+      "images": []
+    },
+    {
+      "id": "d10",
+      "projectId": "p1",
+      "mindmapId": "m3",
+      "text": "按 V8 精简基线重新梳理一期验收清单。",
+      "urgency": "mid",
+      "done": false,
+      "createdAt": "2026-09-20 10:15",
+      "completedAt": null,
+      "updatedAt": "2026-09-20 10:15",
+      "images": [
+        {
+          "id": "i2",
+          "label": "验收线草稿 1",
+          "uri": "https://example.com/accept-1.png"
+        },
+        {
+          "id": "i3",
+          "label": "验收线草稿 2",
+          "uri": "https://example.com/accept-2.png"
+        }
+      ]
+    },
+    {
+      "id": "d11",
+      "projectId": "p5",
+      "mindmapId": null,
+      "text": "会话数据索引脚本迁到新机器（项目已归档，内容保留）。",
+      "urgency": "low",
+      "done": false,
+      "createdAt": "2026-09-05 14:00",
+      "completedAt": null,
+      "updatedAt": "2026-09-21 09:05",
+      "images": []
+    },
+    {
+      "id": "d12",
+      "projectId": "p1",
+      "mindmapId": null,
+      "text": "热力图第 38 周数据回填（7 月版，已被 9 月版取代）。",
+      "urgency": "hold",
+      "done": true,
+      "createdAt": "2026-07-28 09:12",
+      "completedAt": "2026-08-05 15:30",
+      "updatedAt": "2026-08-05 15:30",
+      "images": []
+    },
+    {
+      "id": "d13",
+      "projectId": "p2",
+      "mindmapId": null,
+      "text": "旧版 3×3 九宫格首页的存档备份（已弃用，留档备查）。",
+      "urgency": "hold",
+      "done": true,
+      "createdAt": "2026-03-10 11:20",
+      "completedAt": "2026-03-20 09:00",
+      "updatedAt": "2026-03-20 09:00",
+      "images": []
+    }
+  ],
+  "CAPSULES": [
+    {
+      "id": "c1",
+      "text": "票据录入那条链路，扫码入口先不接，先只做拍照和相册两个。",
+      "createdAt": "2026-09-19 08:12",
+      "source": "voice"
+    },
+    {
+      "id": "c2",
+      "text": "购彩日历的格子上，金额超过 50 的想加一个角标，不然一眼看不出大小。",
+      "createdAt": "2026-09-20 12:40",
+      "source": "voice"
+    },
+    {
+      "id": "c3",
+      "text": "账号合并只认 openid 这一条，手机号先不绑。",
+      "createdAt": "2026-09-20 22:05",
+      "source": "voice"
+    },
+    {
+      "id": "c4",
+      "text": "验收清单里「强光下 HUD 可读性」要单独占一条，上次就是这么漏掉的。",
+      "createdAt": "2026-09-21 08:31",
+      "source": "voice"
+    }
+  ],
+  "MINDMAPS": [
+    {
+      "id": "m1",
+      "projectId": "p1",
+      "name": "票据录入链路",
+      "nodes": 10,
+      "depth": 3,
+      "format": "logic",
+      "updatedAt": "2026-09-16 21:04"
+    },
+    {
+      "id": "m2",
+      "projectId": "p1",
+      "name": "兑换规则与奖级",
+      "nodes": 8,
+      "depth": 3,
+      "format": "mindmap",
+      "updatedAt": "2026-09-14 09:52"
+    },
+    {
+      "id": "m3",
+      "projectId": "p1",
+      "name": "验收清单",
+      "nodes": 21,
+      "depth": 4,
+      "format": "org",
+      "updatedAt": "2026-09-20 09:20"
+    },
+    {
+      "id": "m4",
+      "projectId": "p3",
+      "name": "待办模块拆解",
+      "nodes": 7,
+      "depth": 3,
+      "format": "tree",
+      "updatedAt": "2026-09-15 15:10"
+    },
+    {
+      "id": "m5",
+      "projectId": "p3",
+      "name": "设计令牌与组件",
+      "nodes": 11,
+      "depth": 3,
+      "format": "timeline",
+      "updatedAt": "2026-09-13 08:40"
+    },
+    {
+      "id": "m6",
+      "projectId": "p2",
+      "name": "头控交互草稿",
+      "nodes": 10,
+      "depth": 3,
+      "format": "fishbone",
+      "updatedAt": "2026-09-19 11:26"
+    }
+  ],
+  "MINDMAP_TREE": {
+    "m1": {
+      "id": "n0",
+      "text": "票据录入链路",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "识别",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "拍照 / 相册 / 扫码 三个入口",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1b",
+              "text": "OCR 返回字段与置信度",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "修正",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "期号补齐到 7 位",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n2b",
+              "text": "号码红蓝分隔",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n3",
+          "text": "入库",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n3a",
+              "text": "同票号去重",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n3b",
+              "text": "失败重试与人工兜底",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "m4": {
+      "id": "n0",
+      "text": "待办模块拆解",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "信息体",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "文字（必填）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1b",
+              "text": "图片（可选 · 相册）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "归属与协同",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "项目（必填 · 单级）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n2b",
+              "text": "脑图（可选 · 整张）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "m2": {
+      "id": "n0",
+      "text": "兑换规则与奖级",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "兑奖期限",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "60 自然日内有效",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1b",
+              "text": "超期视为弃奖",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1c",
+              "text": "双色球 / 大乐透同规",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "兑付门槛",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "单注 < ¥1 万 → 彩票店",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n2b",
+              "text": "单注 ≥ ¥1 万 → 彩票中心",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "m3": {
+      "id": "n0",
+      "text": "一期验收清单与上线前自检",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "A · 项目模块（创建与归档）",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "创建：名称与颜色都可改",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n1a1",
+                  "text": "不需要和 agent 侧同步任务状态",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                },
+                {
+                  "id": "n1a2",
+                  "text": "允许重名，重名时靠颜色与所属项目区分",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "n1b",
+              "text": "归档：只读且随时可取消归档，不做删除",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n1b1",
+                  "text": "归档后只读，不能再新增、改动或删除任何节点",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                },
+                {
+                  "id": "n1b2",
+                  "text": "可随时取消归档，数据一条都不丢",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "B · 待办模块（详情与表单）",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "详情页：正文、图片、关联脑图与所属项目一屏可见",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n2a1",
+                  "text": "正文必填，图片可选且最多九张",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                },
+                {
+                  "id": "n2a2",
+                  "text": "可关联一张脑图与一个所属项目",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "n2b",
+              "text": "表单抽屉：创建与编辑共用一套壳",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n2b1",
+                  "text": "创建：四个字段一屏填完，不跳步",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                },
+                {
+                  "id": "n2b2",
+                  "text": "编辑：改完立刻重排画布，不需要手动对齐位置",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "n3",
+          "text": "C · 脑图模块（列表与画布）",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n3a",
+              "text": "独立模块：列表态与画布态两个视图",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n3a1",
+                  "text": "列表态挑图、画布态改结构，两者互不打断",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "n3b",
+              "text": "严格树：每节点只有一个父节点，不留自由连线",
+              "remark": "",
+              "level": 2,
+              "kind": "branch",
+              "children": [
+                {
+                  "id": "n3b1",
+                  "text": "不留自由连线，导出的 Markdown 层级永远正确",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                },
+                {
+                  "id": "n3b2",
+                  "text": "导出时层级缩进必须正确",
+                  "remark": "",
+                  "level": 3,
+                  "kind": "leaf",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "m5": {
+      "id": "n0",
+      "text": "设计令牌与组件",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "颜色",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "主墨 ＋ 中性四阶",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1b",
+              "text": "品牌黄（唯一强调色）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1c",
+              "text": "紧急程度四档",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "字体",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "七级字号层级",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n2b",
+              "text": "数字走 Inter",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n3",
+          "text": "组件",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n3a",
+              "text": "待办卡",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n3b",
+              "text": "抽屉（列表 ／ 表单）",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "m6": {
+      "id": "n0",
+      "text": "头控交互草稿",
+      "remark": "",
+      "level": 0,
+      "kind": "root",
+      "children": [
+        {
+          "id": "n1",
+          "text": "对准",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n1a",
+              "text": "准星恒居中",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n1b",
+              "text": "IMU 噪声收敛",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "手势",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n2a",
+              "text": "单击＝进入瞄准",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n2b",
+              "text": "长按＝回首页",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n3",
+          "text": "反馈",
+          "remark": "",
+          "level": 1,
+          "kind": "branch",
+          "children": [
+            {
+              "id": "n3a",
+              "text": "HUD 只留状态文字",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            },
+            {
+              "id": "n3b",
+              "text": "强光下可读性复测",
+              "remark": "",
+              "level": 2,
+              "kind": "leaf",
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

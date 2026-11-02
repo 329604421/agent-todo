@@ -1,0 +1,789 @@
+/* ==========================================================================
+   模块组件（09-21 起）—— 只渲染 <main>，骨架与外框归壳页 pages/shell。
+   样式隔离设为 apply-shared，app.wxss 的设计令牌与骨架类对组件同样生效；
+   选择器里保留 .mod-port 的写法，因为 .app 就在壳页的祖先链上。
+   ========================================================================== */
+
+/* 组件宿主：占满壳页的挂载位 .modwrap */
+:host {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   概览（W1 · FR-5 · ★ V8 改造 · ★★ 09-23 第五十九轮专项）
+   横屏：活跃度日历 1168×496 → 项目待办统计（4 列网格）→ Agent 概况（2 列）
+   竖屏：活跃度日历 768×531 → 项目待办统计（2 列网格）→ Agent 概况（1 列）
+   品牌栏（★ 09-22 走查：只竖屏、且挂在壳页；与右上角胶囊同行）样式在 app.wxss
+
+   ★ 第五十九轮的结构变化：横屏原来的「下半区 ＝ 左统计 ＋ 右额度」两栏壳
+     （`.ov-bottom`）**撤掉** —— 用户口径要把统计铺成 8 张项目卡的网格、Agent 概况铺成
+     2 列卡，两者都吃整宽；8 张卡 ＋ 2 张 agent 卡本来就装不进 776。
+     于是三个区块整宽竖向堆叠，**本页横竖都整页可滚**（与「我的」「项目」同一处理：
+     能滚就够，不摆滚动条）。
+
+   ★ 第六十一轮（用户 2 条口径）：
+     · `.ps-stat`（四档条数）**压到项目卡底部** —— `margin-top: auto`；
+     · `.ag-card.stale` 的**虚线边框 ＋ 浅底撤掉** ⇒ agent 卡边框完全统一，
+       过期弱化改走卡脚文字 `.t-11.ag-stale`。
+   ========================================================================== */
+
+/* 本页自己滚（横屏）：`.workarea` 基础层是 overflow:hidden ＋ 定高 776，
+   这里用「两类名」提高权重盖过它。 */
+.workarea.ov-area { overflow-y: auto; }
+
+/* ★ 49 轮口径：本页的滚动容器都不显示滚动条 —— `.ov-area`（整页）与 `.heat-scroll`
+   （活跃度日历横向）。能滚就够，不摆一条灰条。 */
+.ov-area::-webkit-scrollbar,
+.heat-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; color: transparent; }
+
+/* ---------------- 区块 · 活跃度日历：外层 .sec-heat 承接原卡总高 496 ---------------- */
+.sec-heat { flex: 0 0 496px; }
+
+/* 卡本体 ＝ 496 − 区块头 34 ＝ 462；卡片高度不再写死，由外层给。
+   子元素 358（body306 ＋ legend20 ＋ detail32）在 420 的内容区里余 34，
+   用 space-between 均分到两个间距上，避免卡底留白。 */
+.heat {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+/* 热力图行 306 ＝ 右区（周号尺 14 ＋ gap 4 ＋ 网格 288） */
+.heat-body {
+  flex: 0 0 306px;
+  height: 306px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.heat-axis {
+  flex: 0 0 36px;
+  width: 36px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heat-axis-cell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heat-axis-t {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.heat-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heat-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.heat-inner {
+  width: 1254px;         /* 30 × 36 ＋ 29 × 6 */
+  display: inline-block;
+  vertical-align: top;
+}
+
+.heat-ruler {
+  height: 14px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.heat-ruler-cell {
+  width: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heat-ruler-t {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.heat-grid {
+  height: 288px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.heat-col {
+  width: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heat-cell {
+  width: 36px;
+  height: 36px;
+  /* ★ 审查-02 P2-11（2026-10-14）：6 → **8**，回到设计稿。
+     设计定案 §8：「热力格 45×45 · **圆角 10** · gap 6（横屏 **36／8／6**）」
+     ⇒ 横屏 尺寸36 / 圆角8 / gap6、竖屏 45 / 10 / 6。工程两向都少 2px
+     （此处 6、`.mod-port` 那处 8），且无改轮记录 —— 按设计稿补齐。 */
+  border-radius: 8px;
+  position: relative;
+}
+
+/* ★ 审查-02 S1（2026-10-15）：热力格按下反馈。
+   ⚠️ 只压 `opacity`、**绝不改 `background`** —— 本格的底色是内联的语义色阶
+     （`style="background:{{heatColors[cell.level]}}"`），既压不过内联样式，
+     也与"深浅＝活跃度"的读法打架。与卡片族（`.ag-card-hv` / `.ps-cell-hv .ps-card`）
+     同用 0.86，够读出"按到了"又不破坏色阶判读。 */
+.heat-cell-hv { opacity: 0.86; }
+
+/* 选中 ＝ 四角 L 形括标（2px 粗 · 6 长 · 内缩 7），底色不变 */
+.sel-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+.sel-box::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+}
+.sel-box::after {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
+}
+.cnr { position: absolute; width: 6px; height: 6px; }
+.cnr.tr { right: 7px; top: 7px; border-top: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+.cnr.bl { left: 7px; bottom: 7px; border-bottom: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+
+/* ★★ 2026-10-16（P0 裁决）：括标色**按格子落不落在「恒亮档」上**分叉。
+   ── 为什么必须分 ──────────────────────────────────────────────────────────
+   热力档是**两套色板**（`utils/theme.js` 的 HEAT_LIGHT / HEAT_DARK），而**最亮那两档
+   在两个主题下都是亮面**：
+     · 浅色 HEAT_LIGHT[3] = `#FFD02F`（品牌黄）／[4] = `#E5A400`（暖金）；
+     · 深色 HEAT_DARK [3] = `#B98C1A`（暖金）／[4] = `#FFD02F`（品牌黄）。
+   而括标用的是 `--primary`（浅色墨 `#1C1C1E` / **深色柔白 `#EEEDEA`**）⇒ 深色下压在
+   第 5 档（`#FFD02F`）上只剩 **1.25 : 1** —— 选中标记整个消失（浅色下这两档是墨，正好对）。
+   ⇒ 这正是全应用那条 **P0 铁律**（黄面上的笔画恒墨）：level ≥ 3 的格子括标改走 `--on-accent`。
+   ⚠️ 浅色**零变化**（`--primary` 浅色档与 `--on-accent` 同值 `#1C1C1E`）。
+   ⚠️ level 1–3 不许跟着改：那三档在深色下是暗面，柔白括标才读得出（换墨就糊了）。
+   ⚠️ 与 `.heat-cell` 上的内联 `background:{{heatColors[…]}}` 无关：这里只改**括标的边**，
+      没碰底 —— "深浅＝活跃度"那条语义一个字没动。 */
+.heat-cell.hi-lvl .sel-box::before,
+.heat-cell.hi-lvl .sel-box::after,
+.heat-cell.hi-lvl .cnr.tr,
+.heat-cell.hi-lvl .cnr.bl { border-color: var(--on-accent); }
+
+/* 图例行：左＝图例，右＝「共 N 周…」（★ 59 轮：中间的「分档 …」已删） */
+.heat-legend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-l {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.legend-scale {
+  width: 116px;
+  height: 20px;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.legend-cell {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/* 弹性占位：把「共 N 周…」推到最右 */
+.legend-flex { flex: 1; min-width: 0; }
+
+/* 选中详情条 —— ★ 59 轮：内容改成一整行左对齐（原来的「已选中」前缀与右端说明都删了） */
+.heat-detail {
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.hd-strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+/* D-6：三个来源的数分开给（第 97 轮起含胶囊），颜色区分（图上仍只画合值） */
+.hd-created { font-size: 13px; font-weight: 500; color: var(--blue); white-space: nowrap; }
+.hd-done    { font-size: 13px; font-weight: 500; color: var(--success); white-space: nowrap; }
+
+/* 胶囊那一格 —— ★ 第 97 轮。
+   ⚠️ **刻意不给彩色**：三数里「创建 / 完成」用蓝 / 绿是为了区分**两条序列**，
+   胶囊是第三条，但它没有"必须一眼分辨"的义务；而暖黄那一族（`--yellow*`）
+   在浅底上做**小字**对比度只有 1.5–1.8:1，根本读不清 —— 为它单造一支深黄
+   又会破掉 94 轮"裸色收敛"的收敛线。
+   ⇒ 用 `--slate`（正文灰，对比度 ≈7:1）：它是"第三个序列"而不是"禁用态"，
+     靠前面的 `/` 分隔符与前两个数并排，读者一样能分清。
+   ⚠️ 别改成 `--u-mid` 琥珀 —— 那是本产品"中等紧急"的语义色，借来会串味。 */
+.hd-cap { font-size: 13px; font-weight: 500; color: var(--slate); white-space: nowrap; }
+
+/* ==========================================================================
+   ② 项目待办统计 —— 项目卡网格（FR-5.2「复用项目卡片」）
+   卡体型（色点 / 四档条数 / 底行）**照抄项目列表主弹窗那张项目卡**
+   （drawer.wxss 的 `.dw-card.pj` / `.dw-pj-*` / `.dw-badge.node`）——
+   两边同形，读起来才是同一种卡。⚠️ 那张卡在 drawer.wxss 里（组件样式互相看不见），
+   所以这里是**同值手抄**：改任何一边都要两边一起改（工程里踩过多次的老坑）。
+   与抽屉的唯一一处差别，见 `.ps-stat` 的注释。
+   ========================================================================== */
+.sec-stats, .sec-agents { flex: 0 0 auto; }
+
+.stats {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 网格：换行 ＋ 同一行的卡**等高**（align-items:stretch 让每行按该行的最高卡拉平） */
+.ps-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* 格子宽度必须**锁死**（`flex: 0 0 calc(...)` 不伸不缩 ＋ `min-width:0`）——
+   只写 `width` 时它只是 flex-basis，长项目名会把同行的邻居顶窄，同一屏就参差不齐。
+   规则与项目详情的待办网格（mod-project.wxss 的 `.tg-cell`）完全一致。
+   横屏 4 列：(1136 − 3×10) / 4。 */
+.ps-cell {
+  flex: 0 0 calc((100% - 30px) / 4);
+  min-width: 0;
+  display: flex;
+}
+
+/* 卡本体 —— 撑满格子，等高由格子决定（外面拉平、里面也要跟着长） */
+.ps-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+/* ★ 94 轮：裸写的 #FCFCFD（与白卡差 3/255 ⇒ 按下看不出反馈）统一到 `--surface`，
+   与 `.mm-tile` / `.tc` 同值 —— 卡片按压全工程一个值。
+   ★ 118 轮：`:active` → `hover-class="ps-cell-hv"`。
+   ⚠️ hover 类挂在**外层 `.ps-cell`**（它才是挂 `bindtap="onStatTap"` 的那一层），
+      再由选择器下沉到卡面 —— 原来 `.ps-card:active` 只在按到卡面本身时才亮，
+      按到格子留白处反而没反馈；现在整格都是热区，反馈与热区对齐了。 */
+.ps-cell-hv .ps-card { background: var(--surface, #F7F8FA); }
+
+.ps-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 项目色点 16 —— ★ 57 轮统一的两档口径里的「行内大档」（与名字 14px 那一行同行） */
+.ps-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  flex: 0 0 16px;
+}
+
+.ps-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 17px;          /* 与左端色点的 16 是一对 */
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 节点徽章 —— ★ 审查-02 B-5（2026-10-15）：**只留"概览卡这一档的尺寸"**。
+   形态（`display` / `border-radius` / `white-space`）与颜色（`--u-mid-bg` / `--u-mid-t`）
+   全部交回全局 `.badge` ＋ `.badge-node` —— 那才是唯一的真源；
+   这里过去把颜色又抄了一遍 ⇒ "节点徽章什么色"有两份写法，改一处忘一处就分家。
+   ⚠️ 选择器**必须写成 `.badge.ps-badge`（0,2,0）**：全局 `.badge` 是 0,1,0，
+      靠"组件 wxss 在 app.wxss 之后"取胜是不可靠的（构建顺序不由本文件决定），
+      写成两类名才稳过。
+   ⚠️ 这两个值是**有意的另一档**（概览卡 256 宽，比项目卡的徽章紧一档）——
+      不是为了掩盖差异，差异就写在这里、一眼可见。 */
+.badge.ps-badge {
+  padding: 3px 8px;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+
+/* 四档条数 —— 白底 ＋ 描边（★ 49 轮：不再用灰底当面）。
+   ★★ 203 轮（用户口径）：「各紧急程度和统计数字组合起来，数字不是很醒目」
+       ＋「项目列表抽屉也有项目卡片，统一都换成这种卡片样式」。
+   ── 与抽屉 `.dw-pj-stat` 的关系（**本轮起两处同形**）────────────────────────
+     49 轮起两处是"同值手抄"，差别只有两条：① 概览走 `space-between` 把四档铺开、
+     抽屉走左簇；② 概览这一条压到卡底（`margin-top: auto`，第六十一轮）。
+     ⇒ **203 轮把第 ① 条取消**：两处都改成「四格等宽 ＋ 格内居中」，`justify-content`
+       一律显式 `flex-start`（等宽格会吃满整宽，`justify-content` 已经没有余量可分配，
+       写 `flex-start` 是为了把口径写死、而不是靠"默认值恰好一样"）。
+       第 ② 条保留（本页是 `align-items: stretch` 的等高网格，`margin-top: auto`
+       才把四档条顶到卡的内底缘 ⇒ **同一行的四档条落在同一条水平线上**）。
+     ⚠️ 别把 `margin-top:auto` 删掉 —— 一删它就跟着 `.ps-foot` 浮动，各卡高度不同时
+        四档会参差，横向比对就没了。
+   ── 为什么 `space-between` 必须走（实测，不是审美）────────────────────────
+     它对的是四段的**词首**，而档名 2 字/3 字不等宽（「不紧急」42.7px、其余 31.7px）
+     ⇒ 四个数字的右缘落在 40.7 / 102.6 / 175.6 / 237.5px，间距 62 / 73 / 62（不等距）
+     ⇒ 跨卡比大小只能逐个读，61 轮想要的"横着一扫"只做到水平线、没做到"竖着能比"。
+   ── 方案 2 的机制（数字怎么从词组里出来）────────────────────────────────
+     · 拆成两个节点：`.ps-s-t` 档名 9.5px `--stone`（退成灰）／`.ps-s-n` 数字 17px/700；
+     · 颜色从"整个词"**收窄到数字本身** ⇒ 先被读到的是数，不是"紧急"两个字；
+     · `flex: 1 1 0` 四格等宽 ＋ `align-items: center` ⇒ 四个数字一条竖线；
+     · 数字走全局 `.num`（等宽数字族）＋ `tabular-nums` ⇒ 1 位与 2 位不跳宽。
+   ⚠️ 颜色只准落在 `.ps-s-n` 上 —— 档名一律 `--stone`。档色写死 4 条（`urgent/mid/low/hold`），
+      键名来自 `store.urgencyList()`，与计数键同源。
+   ⚠️ **不要给这一族加软底**（方案 3 被否）：`--u-mid-bg` / `--u-mid-t` 与卡头
+      `.badge-node`（节点徽章）**逐值相同** ⇒ 一张卡上会出现两枚一模一样的琥珀软块。 */
+.ps-stat {
+  margin-top: auto;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+/* 一格 ＝ 档名在上、数字在下，格内居中 */
+.ps-s {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ps-s-t {
+  /* ⚠️ 2026-10-24（复审 P2-15）**已评估、暂不改**：9.5px ＋ `--stone`(#8E91A0) 压白底
+     只有 3.13:1，按可读档该走 `--text-2`(#686C7A) 并抬到 10.5px。
+     但 203 轮把这一族钉成了**跨文件同值**（`.ps-s-t` 字号 ≡ 抽屉 `.dw-*` 档名 9.5px、
+     `.ps-s-n` 颜色 ≡ `--u-*` 基色），并有「抽屉与概览四档条同高」的渲染层证据 ⇒
+     单边抬字会同时打破 C7 / H9 / E1 / E2 / H11 / H13 / H15 七条。
+     ⇒ 真要改必须**两边一起抬**并重测条高，属视觉口径调整，记在待拍板表，等真机复核。 */
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--stone);
+  white-space: nowrap;
+}
+.ps-s-n {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+/* ⚠️ 2026-10-24（复审 P2-16）**已评估、暂不改**：这四颗是 17px/700 的统计数字，
+   基色压白底分别 3.91 / 2.17 / 3.60 / 3.13，低于"要读的字"的档位（161 轮自己写过
+   "3.91 只够做描边、不够做字"）。深字档 `--u-*-t` 是 7.42 / 5.93 / 8.09 / 6.54。
+   但 203 轮以**计算色**把"非零档 ＝ 档色基色"钉成了机器判据（H11 浅色 / H13 深色 /
+   H15 深色留置数字与档名分色），换档等于重做三组基线 ⇒ 记入待拍板，与 P2-15 同批。 */
+.ps-s.urgent .ps-s-n { color: var(--u-urgent); }
+.ps-s.mid .ps-s-n { color: var(--u-mid); }
+.ps-s.low .ps-s-n { color: var(--u-low); }
+/* ★ 203 轮：留置这一支由 `--stone` 换到 `--u-hold` ——
+   浅色下两者**逐值相同**（都 #8E91A0）⇒ 浅色零像素变化；
+   深色下 `--u-hold`(#9B9DA7) 与档名的 `--stone`(#A7A8A3) 是同色相、差一档亮度，
+   而旧写法两个**共用一个灰** ⇒ 深色下「留置 3」四个字读成同色（数字不跳）。
+   这是本轮**唯一**和深色有关的改动，四档从此口径统一（都走 `--u-*` 这一支）。 */
+.ps-s.hold .ps-s-n { color: var(--u-hold); }
+/* 零档（n === 0）：整格压成 `--muted`、数字再降一档字重 ⇒ 全零卡自动沉底。
+   ⚠️ 它是 `.ps-s.z` 而不是"整条不渲染" —— 同行其它卡有四档条、缺一层会像少零件。
+   ★ 2026-10-24（复审 P2-15）：**这一档刻意保持 `--muted`** ——
+     "零"不承载信息（没有待办这件事本身由空态与卡面说），压淡正是它的语义。
+     复审那条"弱文字要可读"针对的是**要读的字**，不是"可以忽略的零"。 */
+.ps-s.z .ps-s-t { color: var(--muted); }
+.ps-s.z .ps-s-n { color: var(--muted); font-weight: 600; }
+
+/* 底行 —— 与 `.dw-pj-foot` 同值 */
+.ps-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.ps-meta {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* ★ 审查-02 P1-12（2026-10-14）：分隔符不再借用**描边令牌** ──────────────
+   `--hairline-strong`(#C7CAD5) 的设计用途是**边框线**，不是文字：白底上对比 ≈ 1.7:1，
+   深色下 #4A4D51 on `--card` #202123 ≈ 1.2:1 ⇒ 直接消失，三个信息读成连写一串。
+   改用**文字档** `--stone`（白底 ≈ 3.6:1 ／ 深色 ≈ 4.7:1）。
+   ⚠️ 别顺手改到 `.ag-mdiv` —— 那是分隔**线**，与这里不是一回事。 */
+.ps-sep { font-size: 11px; color: var(--stone, #8E91A0); }
+
+/* ★★ 本轮：外观整段并入 `app.wxss` 的 `.blank-box`（居中两行 · 副行走 `.blank-box-s`）。
+   这里只剩**布局角色**：统计区是 flex 列，空态不参与伸缩（否则会被拉满整块）。 */
+.stats-empty {
+  flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   ③ Agent 概况 —— 卡面照抄「我的」页 agent 卡（mod-mine.wxss 的 `.agent-card` /
+   `.ag-*`），同值手抄＋注释锁定：**两边改一边漏一边，就是"同一个东西长成两个样子"**。
+   与那一页的差别**只有两处**（都是有意的，别当漏抄去补）：
+     · 横屏锁宽 2 列（那边是 `flex: 1 1 520px` 自适应）
+     · ★ 第六十二轮：**不渲染「关联项目」气泡行**（`.ag-chips` / `.ag-chip*` / `.ag-none`
+       在本文件已整组删除）—— 项目清单在本页是重复信息，只在「我的」页表达
+
+   ★★ 157 轮（用户口径）：卡面去掉「当前剩余 / 更新于 X」、立「距离重置圆环」——
+     灰块结构从"三数并排 ＋ 卡脚一行"改成"左圆环 ＋ 右两行"，与「我的」页**逐值同源**
+     （圆环那一段整套从 mod-mine.wxss 手抄，见下面 `.ag-body` / `.ag-ring*` / `.ag-meta`）。
+     ⚠️ 本页**原本独有的「过期弱化」（FR-5.3）随之撤下**：第六十一轮起它唯一的落点就是卡脚那句
+        「更新于 X · 待更新」，现在那句整行没了；而卡面上也再没有"会过期的手填值"（余额已删、
+        「每月套餐」是静态档位、「距离重置 / 承担项目」都是现算）⇒ 弱化没有对象。
+        数据层仍有 `stale`（`agentCardViews()` 照样算），只是不渲染 —— 换落点随时能用。
+   ★★ 158 轮（用户口径）：圆环与圆心大字先离开"纯主墨"（改蓝色系）；
+     竖屏的 agent 卡也从"一行一张"改成**一行两张**（`calc((100% - 12px) / 2)`）——
+     横屏本来就是两列，两档现在就统一了。
+   ★★★ 159 轮（用户口径·定稿）：圆环**改走热力图那支暖黄阶**（`--yellow` → `--yellow-deep`）、
+     圆心大字**回到 `var(--primary)`** —— 158 那支紫蓝"和整个应用的配色体系有点不相干"。
+     完整理由（为什么是热力色阶、为什么大字回到主墨、轨道为什么不用第 1 档）
+     写在 mod-mine.wxss 那一大段里，**本页照抄同一串 `var(...)` 与同一套值**，
+     ⚠️ 只改这边或只改那边 ＝ "同一个东西长成两个样子"。
+   ========================================================================== */
+.ag-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* 横屏 2 列：(1168 − 12) / 2 */
+.ag-card {
+  flex: 0 0 calc((100% - 12px) / 2);
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+.ag-card-hv { background: var(--surface, #F7F8FA); }   /* ★ 94 / 118 轮：同 `.ps-card-hv` */
+
+/* ★ 第六十一轮（用户意见 2）：**过期弱化不再动卡的外观**。
+   原来这里有一组 `.ag-card.stale { border-style: dashed; background: #FCFCFD; }` ——
+   它与本页"列出全部 agent"这条口径直接打架：同排两张卡一虚一实、底色还差一档，
+   读起来像"两种卡"，用户的原话是「第一个 agent 的边框好像颜色不对」。
+   ⇒ 边框与底色**全部交回 `.ag-card`**（实线 ＋ 白底），弱化只落在卡脚那句
+     「更新于 X · 待更新」的文字上（见下）。
+   ⚠️ **别再往 `.ag-card.stale` 上加 border / background** —— 一加回去，同排卡片又会不一致。 */
+
+/* ★ 157 轮删除：`.ag-card.stale .ag-stale`（过期弱化的唯一落点）。
+   那句「更新于 X · 待更新」已整行撤下（用户口径）⇒ 这条规则连同模板里的
+   `{{item.stale ? 'stale' : ''}}` 类绑定一起删。
+   ⚠️ 别只删一半：`.ag-card.stale` 本身在第六十一轮就已经是空壳（边框/底色都交回 `.ag-card`），
+      留着类绑定只会让人以为本页还有"过期弱化"这条口径。 */
+
+.ag-row1 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ag-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* agent 卡主体（★ 157 轮）—— **逐值手抄自 mod-mine.wxss**（那边是正本，注释也在那边）。
+   结构：左「距离重置圆环」＋ 右「每月套餐 / 承担项目」两行。
+   ⚠️ 改这一组必须两边一起改（本工程 54 / 55 轮各踩过一次"同一个东西长成两个样子"）。 */
+.ag-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.ag-ring-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 圆环：`--ring-deg` 由模板 inline 下发（`store.ringOf()` 算），wxss 兜底 0deg；
+   第一行 `background: var(--hairline)` 是设备不吃 conic-gradient 时的**有意退化**。
+   ★ 158 轮：环改过一次蓝色系（`--blue` → `--blue-violet`）。
+   ★★ 159 轮：环改走**热力图那支暖黄阶**（`--yellow` → `--yellow-deep`）、圆心大字回到主墨。
+     ⚠️ 与 mod-mine.wxss **逐字节同一串 `var(...)`** —— 不许在这边改成硬写的 hex。
+     为什么是这三支（含"轨道为什么不用热力图第 1 档"）写在 mod-mine.wxss 的环那一段。 */
+.ag-ring {
+  --ring-deg: 0deg;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--ring-track);
+  background: conic-gradient(var(--ring-a) 0deg, var(--ring-b) var(--ring-deg), var(--ring-track) var(--ring-deg) 360deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ag-ring-core {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 圆心大字：**主墨** —— 见 mod-mine.wxss 里那一整段（暖黄阶对比度不足、且与同灰块的另两颗值同色）。
+   ★ 159 轮从 `var(--blue)` 改回 `var(--primary)`。 */
+.ag-ring-num {
+  font-size: 23px;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1;
+}
+.ag-ring-num.muted {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.ag-ring-unit {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1;
+  margin-left: 2px;
+  margin-top: 8px;
+}
+
+.ag-ring-lab {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ag-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ag-mcell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ag-mdiv {
+  height: 1px;
+  background: var(--hairline-soft);
+}
+
+.ag-lab {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ag-val {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ★ 第六十二轮（用户意见）：这里原有一组「关联项目气泡行」样式 ——
+   `.ag-chips` / `.ag-chip` / `.ag-chip.arc` / `.ag-chip-t` / `.ag-chip-arc` / `.ag-none`，
+   与 mod-mine.wxss 同值手抄。**整组已删**，因为概览的 agent 卡不再渲染那一行：
+   色点 ＋ 项目名的完整清单在本页属于重复信息（「项目待办统计」的卡上已经全有），
+   只把卡片撑高、把页面搅乱；关联项目名单**只在「我的」页表达**。
+   ⚠️ **不要把它们抄回来** —— 这不是漏抄，是本页的口径。
+   ⚠️ 若将来真要恢复，**整套**（含 `.dot-sm` 的用法）都得从 mod-mine.wxss 原样搬，
+      不要只搬一半（这个工程 54 / 55 轮各踩过一次"同一个东西长成两个样子"）。 */
+
+/* ★ 157 轮删除：卡脚那一行（左「每月套餐 X」右「更新于 X · 待更新」）。
+   「每月套餐」已并进 `.ag-meta` 第一行；「更新于」按用户口径整条撤下。
+   ⚠️ 别抄回来 —— 模板里已经没有调用点。 */
+
+/* ★★ 本轮：`.ag-empty` 撤掉 —— 三处 agent / 模型 key 空态统一挂 `app.wxss` 的 `.blank-box`
+   （原来这里是"flex 列 + gap 6 + 居中 + 18 内边距"，与 L2 差在 18 vs 22×14、间距 6 vs 4）。
+   两行文案改由 `.blank-box`（主行）＋ `.blank-box-s`（副行）承担，不再借 `.t-13` / `.t-11`
+   —— 那两个是"整页通用字号"，借来用会让空态跟着别处一起漂。 */
+
+/* ==========================================================================
+   竖屏（画布 727403959376047）：内容宽 768，热力格 45 正方、可见 14 周
+   卡 · 活跃度日历 768×531；项目待办统计 2 列；Agent 概况 1 列
+   ========================================================================== */
+/* 竖屏：工作区高一律 var(--work-h-port)（真机状态栏 57／品牌栏 44 ⇒ 1091），
+   写死 1128 会顶穿底栏（09-23 走查·十七）。内容超过工作区时本层自己滚。 */
+.mod-port .ov-area {
+  /* ★★ 204 轮：定高从 `--work-h-port`（可视高）换成 **`--scroll-h-port`**（滚动容器高
+     ＝ 可视高 ＋ 让位段）—— 让位段现在住在容器内部，容器不吃满就轮不到内容顶到 y0。
+     `padding-top` 归 0：那 12 已经被让位段（`<brand-head>`）收进盒高，
+     双份让位会把首屏整块顶下去。两个形态输入见 app.wxss 的 `.workarea` 注释。 */
+  flex: 0 0 var(--scroll-h-port);
+  height: var(--scroll-h-port);
+  padding: 0 16px 16px;
+  gap: 16px;
+  overflow-y: auto;
+  /* ★ 206 轮：`--head-extra` 不再本地声明 —— 继承 `.app.port .workarea` 的 4px
+     （竖屏缩"logo → 首个子标题"的间隙）。只想改**本页**的间距时再在这里覆盖。 */
+  --area-gap: 16px;
+}
+
+.mod-port .sec-heat { flex: 0 0 531px; width: 768px; }
+.mod-port .heat {
+  flex: 1 1 auto;
+  height: auto;
+  padding: 12px;
+  gap: 12px;
+}
+
+/* 热力图行 371 ＝ 右区（周号尺 14 ＋ gap 6 ＋ 网格 351）；星期轴 30 宽靠底 */
+.mod-port .heat-body {
+  flex: 0 0 371px;
+  height: 371px;
+  align-items: flex-end;
+}
+.mod-port .heat-axis {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 351px;
+  margin-top: 0;
+}
+.mod-port .heat-axis-cell { width: 30px; height: 45px; }
+
+.mod-port .heat-right { gap: 6px; }
+.mod-port .heat-inner { width: 1524px; }          /* 30 × 45 ＋ 29 × 6 */
+.mod-port .heat-ruler-cell { width: 45px; flex: 0 0 45px; }
+.mod-port .heat-grid { height: 351px; }
+.mod-port .heat-col { width: 45px; flex: 0 0 45px; }
+/* ★ 审查-02 P2-11：圆角 8 → **10**，与设计定案 §8 的「45×45 · 圆角 10」对齐 */
+.mod-port .heat-cell { width: 45px; height: 45px; border-radius: 10px; }
+
+/* 图例行：竖屏同样「左图例 ＋ 右说明」 */
+.mod-port .heat-legend { height: 20px; }
+
+/* 选中详情条 h32，文案与横屏一致 */
+.mod-port .heat-detail { flex: 0 0 32px; height: 32px; }
+
+/* 项目待办统计：卡宽 367（＝ (744 − 10) / 2）两列换行 */
+.mod-port .stats { padding: 12px; gap: 12px; }
+.mod-port .ps-cell { flex: 0 0 calc((100% - 10px) / 2); }
+
+/* Agent 概况：竖屏 ★ 158 轮起**一行两张**（各 (768 − 12) / 2 ＝ 378），
+   与「我的」页的 agent 卡、以及本页自己的项目卡（两列）都对齐。
+   ⚠️ 原来是 `flex-direction: column` ＋ `width: 100%`（一行一张铺满），
+      那正是用户在竖屏截图里看到的"右侧一大片空" —— 别改回去。
+   ★ 157 轮：灰块放宽 ⇒ 圆环跟着放大一档（与 mod-mine.wxss 的那三行同值）。 */
+.mod-port .ag-grid { flex-direction: row; flex-wrap: wrap; }
+.mod-port .ag-card { flex: 0 0 auto; width: calc((100% - 12px) / 2); }
+.mod-port .ag-body { padding: 14px 18px; gap: 22px; }
+.mod-port .ag-ring { width: 88px; height: 88px; }
+.mod-port .ag-ring-core { width: 66px; height: 66px; }
+.mod-port .ag-ring-num { font-size: 25px; }
+/* ⚠️ 与 mod-mine.wxss 同一条：`.ag-ring-num.muted` 与 `.mod-port .ag-ring-num` 特异性**并列**
+   ⇒ 不写这条，竖屏的「未填」会被放大到 25px。 */
+.mod-port .ag-ring-num.muted { font-size: 15px; }
+.mod-port .ag-val { font-size: 21px; }

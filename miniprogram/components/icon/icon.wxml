@@ -1,0 +1,9 @@
+<!-- `prefix` ＝ `''` 或 `'d-'`（深色版）—— 由 icon.js 按当前主题算好，见该文件头。
+     ⚠️ 别把前缀拼进 `name`：`name` 是调用方写的**语义名**（`check` / `w-check`…），
+        它要能被判据从 wxml 里读出来（`check_round94.py` 就是这么核对黑底键用没用反白版的）。 -->
+<image
+  class="ico"
+  src="/assets/icons/{{prefix}}{{name}}.svg"
+  mode="aspectFit"
+  style="width:{{size}}px;height:{{size}}px;opacity:{{opacity}};"
+/>

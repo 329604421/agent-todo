@@ -1,0 +1,113 @@
+<!-- 待办卡片（V8 折叠态 · 设计稿 3:509）
+     ★ 44 轮：
+       · 状态徽章「未完成 / 已完成」上卡 —— 状态从"靠底部的弱标签 + 整卡透明"改成卡片自带的徽章。
+       · 时间改成**更新于**；加一层浅投影。
+     ★ 45 轮（与「待办列表抽屉」的卡对齐，两个面用的是同一套卡片语言）：
+       · 卡片分成三段：正文 ／ 标签行（归属项目 ＋ 关联脑图 ＋ 图片）／ 底行
+       · 底行 = 创建9-21 ｜ 未完成 ｜ 更新9-22 —— "什么时候建的、现在什么状态、什么时候动过"
+         在一行里读完，不用去详情页找。
+       · 状态徽章从标签行挪到**底行**：标签行只放"属于谁"的关系，状态是时间性的东西。
+     ★ 46 轮：底行与抽屉同步收敛成两项 —— 左「更新于 2026-09-22 17:30」右「完成状态」，
+       创建时间去掉（列表是更新时间的流水，再报创建时间就有两套时间轴）。
+       ★ 47 轮：完成状态从**文字徽章**改成**图标**（空心圆 / 圆圈含勾），与待办列表主弹窗同步。
+       ★ 52+ 轮：紧凑态 `compact` —— 项目页的网格小卡。它只做两处减法：
+         · 「⋯ 更多」整颗不渲染（网格里不做四操作，那个语义交给详情页）
+         · 完成圆圈变成可点开关（点一下＝勾掉），非紧凑态仍然是纯展示。
+     ★★ 166 轮（用户口径）：紧凑态那一下**不再直接勾掉**。原话：「点击那个圆圈的图标
+       可以直接完成这个待办，但这个过程容易误操作……点击之后整个卡片被那个半透明给覆盖，
+       然后整个卡片上层出现两个按钮，一个就是已完成、一个就是取消，这样的话会比较合理，
+       避免点击一下不操作」。
+       ⇒ 点圆圈 **只开确认层**（`.tc-cf`），勾不勾由层上那两颗键说了算。
+       ⚠️ 非紧凑态**一个字没动**（那边圆圈本来就是"点它＝点卡片"，没有误操作可言）。 -->
+<view class="tc {{cls}} {{compact ? 'mini' : ''}}" bindtap="onOpen" hover-class="{{confirming ? 'none' : 'tc-hv'}}">
+  <view class="tc-main">
+    <view class="tc-bar" style="background:{{u.main}}"></view>
+    <text class="tc-text">{{todo.text}}</text>
+    <!-- ★ 118 轮：「⋯」热区 28 → **44**（P-6）。
+         做法：外层 `.tc-more` 是 44×44 的**透明热区**（只吃点击），
+              内层 `.tc-more-i` 仍是 28×28，hover 底色也画在它上面 ⇒ **视觉零变化**。 -->
+    <view class="tc-more" wx:if="{{!compact}}" catchtap="onMenu">
+      <view class="tc-more-i" hover-class="tc-more-hover">
+        <icon name="more" size="16" />
+      </view>
+    </view>
+  </view>
+
+  <view class="tc-tags" wx:if="{{(pname && !hideProject) || mname || imgCount}}">
+    <!-- 项目气泡与脑图气泡必须一眼可分：项目＝实心色点，脑图＝白底描边（FR-3.7）
+         ★ 45 轮：项目页里这颗气泡不渲染（hideProject）—— 那页上方就是项目卡片本身 -->
+    <view class="tchip" wx:if="{{pname && !hideProject}}">
+      <view class="tchip-dot" style="background:{{pcolor}}"></view>
+      <text class="tchip-t">{{pname}}</text>
+      <text class="tchip-arch" wx:if="{{parchived}}">已归档</text>
+    </view>
+    <view class="tchip map" wx:if="{{mname}}">
+      <icon name="mindmap" size="14" />
+      <text class="tchip-t">{{mname}}</text>
+    </view>
+    <view class="tchip img" wx:if="{{imgCount}}">
+      <icon name="album" size="14" />
+      <text class="tchip-t">{{imgCount}} 张图</text>
+    </view>
+  </view>
+
+  <view class="tc-foot">
+    <text class="tc-meta-t">更新于 {{at}}</text>
+    <!-- ★ 47 轮：与待办列表主弹窗的卡同步 —— 完成状态用**图标**表达
+         （未完成 ＝ 空心圆；已完成 ＝ 圆圈里含对勾），不再用「未完成 / 已完成」文字徽章。
+         两个面用的是同一套卡片语言，不同步就会同一个东西长成两个样子。
+         ★ 52+ 轮：`catchtap` ⇒ 圆圈是**自己一只热区**。紧凑态点它＝勾掉（抛 toggle），
+         非紧凑态由 onToggle 转发成 open（等价于点卡片），两种语义都在 js 里收口。
+         ★★ 166 轮：紧凑态点它**不再直接勾**，改成**开确认层**（下面那块 `wx:if`）；
+            非紧凑态仍转发 open —— 两种语义仍在 js 的 `onToggle` 里收口，模板只管"点谁"。 -->
+    <!-- ★ 审查-02 S1（2026-10-15）：补 `hover-class` —— 它是**自己一只热区**（`catchtap`），
+         与整卡 `.tc` 的反馈联动不到（`.tc-hv` 是卡底的），且非紧凑态点它＝转发 open，
+         反馈却只来自卡底，容易读成"没点中圈"。压 `opacity`（见 wxss）。 -->
+    <view
+      class="tc-st {{todo.done ? 'on' : ''}}"
+      catchtap="onToggle"
+      hover-class="tc-st-hv"
+      aria-role="checkbox"
+      aria-checked="{{todo.done}}"
+      aria-label="{{todo.done ? '已完成，点击可撤销' : '未完成，点击标记完成'}}"
+    >
+      <text class="tc-st-ck" wx:if="{{todo.done}}">✓</text>
+    </view>
+  </view>
+
+  <!-- ★★ 166 轮：完成确认层（紧凑态专用）
+       ⚠️ 三种点击**必须全部 `catchtap`** —— `.tc` 上有 `bindtap="onOpen"`，
+          任何一层漏成 `bindtap`，用户在确认层里点着点着就把详情页打开了。
+       ⚠️ 半透明层**自己**也是 `catchtap="onCfCancel"`：它几乎铺满整张卡，是误触概率最高的一层
+          ⇒ 它的落点必须是"什么都不改"那一侧（点空白 = 取消）。
+       ⚠️ 两颗键的**顺序有意是「已完成」在前**：与它在该卡底行、以及详情页操作区里
+          "主位键在最左/最上"的读法一致；取消不是主位，不该抢那个位置。
+       ★★ 167 轮（用户口径）：两颗键**文字前各配一枚小图标**，且两者间距拉大。
+          原话：「这两个按钮是否能按照应用的规范在文字前面配一个小图标，此外这两个按钮的
+          间距也要拉大一些，这样平板上不容易点错」。
+          ⇒ 图标**逐个同源、不新造**（照 112 轮 `.ep-foot` 那颗的取法，全工程只此两枚）：
+            · 「已完成」⇒ `w-check`（＝ `.dw-foot-btn` 的「确定」／`.sd-submit` 的「保存」，
+              黑底主键的**反白勾**；`w-` 前缀＝反白版 —— 黑底上写 `check` 就等于黑底黑图）；
+            · 「取消」⇒ `close`（全工程「取消／关闭」只此一枚）＋ `opacity="0.65"`
+              —— 白底 ＋ `--slate` 字这一档，图标本体是 `#1C1C1E`，不压一下会比文字更重。
+            ⚠️ **不能拿 `undo` 当「取消」**：那个图标在本工程已被「还原」占用（160 轮软删还原），
+              拿来读成"撤销上一步"；而取消不是撤销 —— 什么都没发生过。
+          ⚠️ 尺寸 **13** —— 图标与间距**都按"字号"取档**（字号是这一族里唯一稳定的自变量）。
+             本工程实测两条档位（都在用的键，一条不用编）：
+               字 13 那一档 ⇒ 图标 **13** ／ 图文距 **5**（`.cp-hbtn` 胶囊、`.sd-cancel` 抽屉取消胶囊）
+               字 14–15 那档 ⇒ 图标 15–16 ／ 图文距 **6**（`.sd-submit`／`.ep-btn`／`.dw-foot-btn`／`.mf-act`）
+             本键字号 13 ⇒ 取前一行。**不取 15** —— 那是字 14／键高 36 那一档的值，
+             撇到这颗 30 高的小键上会显得图标比字大一号。 -->
+  <view class="tc-cf" wx:if="{{confirming}}" catchtap="onCfCancel">
+    <view class="tc-cf-row">
+      <view class="tc-cf-b yes" catchtap="onCfYes" hover-class="tc-cf-b-hv">
+        <icon name="w-check" size="13" />
+        <text>已完成</text>
+      </view>
+      <view class="tc-cf-b no" catchtap="onCfCancel" hover-class="tc-cf-b-hv">
+        <icon name="close" size="13" opacity="0.65" />
+        <text>取消</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,960 @@
+<!-- 模块组件（09-21 起）：只渲染 <main>。
+     骨架 stage-wrap / stage / app、左导轨、底部导航、悬浮 Logo 全部搬到了壳页 pages/shell；
+     这里保留 .main 这一层，是为了让 .app.port .xxx 这类骨架选择器继续命中。
+     本模块的抽屉 / 表单抽屉 / 查看层仍在组件内（绝对定位，参照物是壳页的 .app）。
+
+     ★ 09-22 第四十三轮（待办页专项）：
+       ① 补回 **FR-3.8 详情顶栏**（标题 ＋ 紧急程度徽章 ＋ 完成态）。
+       ② 「紧急程度」四档可点选择器**整块删除** —— 详情页里摆一排编辑控件正是"编辑页感"的根因。
+       ③ 新增「交给 agent 的文本」（原文 ＋ 关联脑图 Markdown 的拼接结果）＋ 一键复制。
+       ④ 操作栏只留 完成 / 编辑 / 删除，一律 44 高（P-6 触控目标）。
+       ⑤ 所有子标题右侧的灰色小字、卡内解释说明文字**整组去掉**。
+
+     ★ 09-22 第四十四轮（第二批 7 条走查）：
+       ⑥ 顶栏卡片搬进第一个区块，区块名「待办原文」→「**待办信息**」；
+       ⑦ 「交给 agent 的文本」→「**适配 agent 文本**」，搬到操作区下方整宽。
+       ⑧ 「关联脑图」无关联时**整块不渲染**（跟「图片」一样，空区块不留痕）。
+       ⑨ 操作栏的完成键**标签固定「完成」**。
+
+     ★ 09-22 第四十五轮（第三批 7 条走查的 1~2、5~7 条）：
+       ⑩ 「待办信息」底下原来摆着**两张卡**（详情头 ＋ 原文卡），信息完全重复
+          （详情头的标题＝原文首行）⇒ **合并成一张**：详情头吸收正文，正文可滚可选中。
+       ⑪ 页内的「适配 agent 文本」整块**删掉**，改成**导出抽屉**（表单抽屉的一个新 mode
+          `export`）；操作区新增「**导出**」按钮，点它弹出 —— 详情页回归"看"，复制走抽屉。
+       ⑫ 「新建项目」不再就地替换表单，改为在右侧开**第二个表单抽屉**（二级），
+          本层待办表单作为一级**侧转**且不可点（见文件末尾 form2）。
+
+     ★ 09-22 第四十六轮：**横屏改单栏靠左**（第四批走查第 4 条 —— 原话「排版错乱 …… 直接
+       就在屏幕展示区靠左侧显示即可，右侧可以先空着」）。两栏（左主区 700 ＋ 右栏 456）
+       只在内容填满时成立，内容少时读作"左上散一堆 ＋ 右下几颗按钮" ⇒ 改成一条 760 宽、
+       左对齐的竖列，右侧全部留白。`sec-first` 随之只留在首块「待办信息」上。
+
+     ★ 09-23 第八十二轮（待办页专项 · 第六批）：
+       ⑬ **区块顺序调了**（用户口径）—— 待办信息 → **所属项目** → **图片** → **关联脑图** → 操作。
+          原来是 待办信息 → 图片 → 关联脑图 → 所属项目：图片紧跟着正文，
+          读起来像"正文的附件"；现在"这条待办挂在哪个项目下"紧跟正文，
+          图片与脑图作为两类附件并列在后。
+       ⑭ **「所属项目」从一行字升级成项目详情那张「基础信息」卡**（用户口径
+          「太简单了，建议参考项目详情中的基础信息修改」）：色点·名称·节点徽章 ＋ 查看项目 ／
+          agent 行 ／ 备注行 ／ 灰块四格。皮肤搬进 app.wxss 由两页共用（见 app.wxss）。
+       ⑮ **「关联脑图」常显 ＋ 关联/查看两颗键**（用户口径，推翻 44 轮"没关联就整块不渲染"）。
+          「关联」开的是 `drawer` **主弹窗**（宽 320 · 直接落在左侧 L1 位 · 内含「＋ 新建脑图」），
+          与编辑抽屉里那个 260 宽的三级副弹窗是**两条不同的路**（用户自己指出的差别）。
+       ⑯ 待办表单的「关联脑图」**只在编辑态出现**（创建态删掉）—— 用户口径
+          「创建待办弹窗中删除关联脑图的功能，这样就不用在此时展开三个抽屉了」。
+
+     ★ 09-26 第八十三轮（待办页专项 · 第七批，3 条）：
+       ⑰ **跳转键统一**：详情页里三颗"只是去看看"的键 —— 「查看项目」／「查看」／「关联」——
+          一律用全局 `.tb-btn`（白底描边 · 28 高 · 13/500 · `--slate`）。
+          在此之前「查看 / 关联」用的是 `.op`（44 高 · 等宽 · 与操作区四颗同款），
+          与「查看项目」是两套皮肤 —— 用户口径「这两个都是非操作类的按钮啊」。
+          ⇒ 分层从此明确：**`.tb-btn` ＝ 跳转键 ／ `.op` ＝ 操作键**（会改数据的才用）。
+       ⑱ **删掉脑图卡内那枚 `chevron-right`** —— 它与「查看」是同一个动作的两个入口（用户口径
+          「那个也是查看的功能按钮」）。`.link-txt` 因此一直铺到卡右内边距。
+          ⚠️ 整行 `bindtap` 保留：点卡片看详情是全产品通例，删的只是那枚箭头暗示。
+       ⑲ 待办表单的「＋ 新建项目」**也只在编辑态出现**（创建态删掉）—— 与 ⑯ 同一口径。
+
+     ★ 09-26 第八十四轮（待办页专项 · 第八批，1 条）：
+       ⑳ 脑图卡里那两颗跳转键**靠右**（`.link-acts` 加 `justify-content: flex-end`）——
+          用户口径「脑图卡片上的查看关联按钮靠右侧展示，这样和上方的项目卡片按钮呼应」。
+          83 轮只做到"皮肤同款"，位置还散在两处：项目卡的「查看项目」被 `.sec-flex`
+          推到 `.bs-row1` 末尾，而「查看 / 关联」是左起排 ⇒ 呼应只做了一半。
+          这一轮把位置也收齐：两张卡同宽（`.split` 760 ／ 竖屏 100%）、
+          左右内边距同为 14 ⇒ 两处右缘都落在「卡右缘 − 14」这条线上，
+          所以**只写 flex-end、不补任何 padding/margin 去凑**（一凑两处就会错开）。
+
+     详情页结构（★ 165 轮换了前两块；82 轮起单栏、两向一致；★★ 230 轮操作栏上移）：
+       一条 760 宽（竖屏 768）的左对齐单栏，**不再分 col-main / col-side 两层**：
+         所属项目 → 操作 → 待办信息 → 图片 → 关联脑图
+           （★ 165 轮：首块 `sec-first` 从「待办信息」搬到「所属项目」）
+           （★★ 230 轮：操作栏从页底搬到「所属项目」下方、「待办信息」上方 —— 样式与功能不变）
+       抽屉：待办列表（主）／ 脑图选择（主 · 由「关联」开）／ 导出（mode export）／
+             待办表单（L1）→ 项目·脑图表单（L2，L1 侧转）
+
+     ★★ 2026-10-21 第二百三十轮（用户口径 · 详情页加图 ＋ 操作栏上移 · 3 条）：
+       ㉑ **「图片」区块常显 ＋ 卡内直接加图** —— 用户原话「目前添加图片的操作只能在待办
+          编辑抽屉中看到，在详情页没法顺畅的添加图片」。改前那块挂着
+          `wx:if="{{detail.imgCount}}"`：没有图时整块不渲染，加图只有"编辑抽屉"一条路。
+          ⇒ 外层条件整条摘掉；空态参照「关联脑图」无关联那套（`.blank-line` 一句 ＋
+            整宽 `.tb-btn.lg`）；有图时在格子末尾补一块「＋ 添加图片」（同 160×112）。
+          ⚠️ "参照脑图样式"落到实现上是**同一条规则**（`.img-empty` 与 `.mm-foot.is-empty`
+             写在同一个声明块里），不是照抄一遍数值 —— 见 wxss。
+       ㉒ **操作栏上移到「所属项目」下方、「待办信息」上方**（用户口径「样式功能没有变化」）
+          ⇒ 区块序 ＝ 所属项目 → **操作** → 待办信息 → 图片 → 关联脑图。
+       ㉓ **深浅两态都要成立**：新增的框线 / 底色 / 文字**一律走令牌**
+          （`--card` / `--hairline` / `--empty-line` / `--slate` / `--chip`），本文件与
+          wxss 里**不写任何字面 hex** —— 深色档因此自动跟随，不需要第二份覆盖。
+
+     ★★ 2026-10-21 第二百三十一轮（用户口径「对『操作』模块中那几个按钮的样式很不满意」
+        ＋ 拍板「方案 A · 品牌黄主键 · 辅键留图标」）：
+       ㉔ **操作栏只换视觉，功能/绑定/三态颗数一个字没动** —— 四颗 `op primary|strong|danger`
+          换成「一颗 `op-main` ＋ 三颗 `op-q`（`.op-sep` 竖线分隔）」。改前四颗等宽平摊、
+          四套皮肤同台（实心墨/墨描边/浅描边/红描边），主键与「删除」一样重。
+          ⚠️ 主键仍是**状态跃迁键**，拨的还是原来 `.op.primary` 那三处同一批事件
+              （完成 → `onToggleDone`／还原 → `onRestore`）；已删除档 `.op-quiets` **整块不渲染**
+              ⇒ 主键自己整宽。
+          ⚠️ 图标 `tone`：主键落在恒亮的品牌黄上 ⇒ `tone="ink"`；辅键用默认 tone（深色自动 `d-*`）。
+          设计稿与三方案对比：`测试页面/ops-bar-231-preview.html`（HTML，可直接开）。
+          ⚠️ **上面这套 `op-main` / `op-q` 已被下一轮整段替换**（232 轮改成 `op-cell`
+             四段通栏托盘）—— 这一段留着记录"第一次为什么这么改"，**不要照着它找类名**。 -->
+
+
+<view class="main {{landscape ? '' : 'mod-port'}}">
+
+    <!-- 主工作区 776（内容 756；横屏无品牌栏、首块之前不留 padding）／ 竖屏 1128（内部滚动） -->
+    <!-- ★★ 209 轮：`on-detail` 只在**有详情**时挂。本页竖屏的 `padding-bottom: 96px`
+         是给"操作区四颗按钮避开右下悬浮 Logo"的（见 wxss 那条注释）——
+         空态没有按钮，留着它只会把空态整体抬高 (96−16)/2 = **40px**，
+         三页空态因此对不齐。挂条件类 ⇒ 详情态几何一个字不变、空态落回通用 16。 -->
+    <view class="workarea t-area {{detail ? 'on-detail' : ''}}">
+    <!-- ★★ 204 轮：让位段（状态栏 ＋ 品牌行）—— 滚动内容的**第一段**，随内容滚走。
+         ★★ 207 轮：横屏**又渲染了**（206 试过整段撤掉、内容贴顶太紧已回退）。
+         横屏这段是**空盒子**，只贡献 `LAND_HEAD`(6) 的高度、不画 logo
+         （brand-head.wxml 内部还有一层 `wx:if="{{!landscape}}"` 挡着）。 -->
+    <brand-head landscape="{{landscape}}" />
+
+      <view class="split" wx:if="{{detail}}">
+
+        <!-- ① 所属项目（★ 82 轮：从原来的"一行色点 ＋ 名字 ＋ 一句话"改成
+             **项目详情「基础信息」那一张卡**）——
+             用户口径「所属项目卡片目前太简单了，建议参考项目详情中的基础信息修改」。
+             ★★ 162 轮：与项目详情那张卡**同步**重排 —— 卡内改成两块带小标题的组
+               （③ 项目概要组 ／ ④ 所属 agent 组），顺序与项目页逐字一致。
+             ★★ 163 轮：同样**与项目页同步** ——
+               ③ 两块并排成 `.bs-cols` 一行两栏（左「所属 agent」／右「项目概要」）；
+               ④ 撤掉「当前剩余」，顶上「每月套餐」（口径与理由见项目页 mod-project.wxml
+                  与 app.wxss 的 `.bs-cols` / `.bs-pair` 两条注释）。
+             ★★ 164 轮：同样**与项目页同步** —— agent 名从灰块外面挪进灰块里、撤掉「每月套餐」
+               （用户口径见项目页 mod-project.wxml 那段）。
+               ⚠️ 这一页的 agent 名本来就是**纯展示**（没有 `bindtap`），挪个位置不影响可点性。
+             两页的形状**逐字一致**（组名、标签、格数、栏序、折行行为都一样）——
+             同一张卡长在两页，只有右端那颗按钮的文案与动作不同
+             （这边「查看项目」／那边「编辑 · 取消归档」）。
+             ⚠️ 皮肤（`.basic` / `.bs-*` / `.bs-cols` / `.bs-group*` / `.pdot-lg` / `.badge-arch`）
+                住在 **app.wxss**：组件 wxss 互相看不见，两页要共用一份皮肤只能放全局。
+             ⚠️ 折行（窄屏）与并排（宽屏）**由 `.bs-cols` 自己判**（`flex-wrap` ＋ `flex-basis`），
+                这一页**不写任何方向分支** —— 写了就要在项目页再写一份，迟早漂。
+             ⚠️ 这一页的 agent 名**不可点**（纯展示，`hover-class="none"`）——
+                跳转由整卡的 `onGoProject` 承担；项目页那边它才是「去我的」的入口。
+             ⚠️ 项目概要三数走 `store.projectSummary()`（**唯一真源**），与项目页基础卡同一排数同源 ——
+                两页各 filter 一遍，迟早会出现"同一张卡在两页数不一样"。
+             ★★ 165 轮：这一整块**提到「待办信息」之前**、成为本页首块（`sec-first` 随迁）——
+                用户口径「先显示所属项目，再显示待办信息，然后才是关联脑图和操作」。
+                ⇒ 页面读序 ＝ "**这条待办挂在谁名下** → 这条待办本身 → 两类附件 → 操作"。
+                ⚠️ **只换前两块**：③ 图片 / ④ 关联脑图 / ⑤ 操作 三块一个没动
+                   （图片仍紧跟「待办信息」—— 那条 82 轮的账本轮没动它，要动另说）。
+                   ★★ 230 轮追记：⑤ 操作 后来**自己动了**（上移到「所属项目」下方），
+                      见文件头 230 那段；③④ 两块的位置与卡面至今没变。 -->
+        <view class="sec sec-proj sec-first">
+          <view class="sec-head">
+            <icon name="project-b" size="16" />
+            <text class="sec-t">所属项目</text>
+          </view>
+
+          <!-- ★ 审查-02 S1（2026-10-15）：整卡可点（`onGoProject` → 跳项目页），补卡面反馈
+               （`.basic-hv`，与 `.tc-hv` 同族）。卡内「查看项目」那颗另有自己的 `.tb-btn-hv`。 -->
+          <view class="card basic" bindtap="onGoProject" hover-class="basic-hv">
+            <view class="bs-row1">
+              <view class="pdot-lg" style="background:{{detail.project.color}}"></view>
+              <text class="bs-name">{{detail.project.name}}</text>
+              <view class="badge badge-node" wx:if="{{!detail.project.archived}}">{{detail.project.node}}</view>
+              <view class="badge badge-arch" wx:else>已归档</view>
+              <view class="sec-flex"></view>
+              <view class="tb-btn bs-act" catchtap="onGoProject" hover-class="tb-btn-hv">
+                <icon name="project" size="13" opacity="0.65" />
+                <text>查看项目</text>
+              </view>
+            </view>
+
+            <!-- 备注（项目自身）—— 与项目页同一位置：名称之下、两组概要之上 -->
+            <view class="bs-remark">
+              <text class="bs-remark-t" wx:if="{{detail.project.remark}}">{{detail.project.remark}}</text>
+              <text class="bs-remark-none" wx:else>未填写备注</text>
+            </view>
+
+            <!-- ★★ 163 轮：下面两个组**并排成一行**（左「所属 agent」／右「项目概要」），
+                 与项目页基础卡**逐字同构**；窄屏由 `.bs-cols { flex-wrap }` 自动折回上下两组。 -->
+            <view class="bs-cols">
+
+              <!-- 「所属 agent」组（左栏 · ★★ 164 轮：名字收进灰块、撤「每月套餐」）——
+                   **灰块里**只有两件：agent 名 ｜ 距离重置。
+                   ⚠️ 名那一格不写标签 —— 它的标签就是上面那行小标题「所属 agent」；
+                      所以它是 `.bs-agent`（值单独占一格），不是 `.bs-cell`（label＋value 两行）。
+                   ⚠️ 没关联 agent 时整组只剩一句灰字（与项目页同一读法、不画空灰块）。 -->
+              <view class="bs-group">
+                <text class="bs-group-t">所属 agent</text>
+                <block wx:if="{{detail.project.agentName}}">
+                  <view class="bs-pair">
+                    <view class="bs-agent" hover-class="none">
+                      <text class="bs-agent-n">{{detail.project.agentName}}</text>
+                    </view>
+                    <view class="bs-sep"></view>
+                    <view class="bs-cell">
+                      <text class="bs-lab">距离重置</text>
+                      <text class="bs-val num">{{detail.project.resetIn}}</text>
+                    </view>
+                  </view>
+                </block>
+                <view class="bs-agent" wx:else hover-class="none">
+                  <text class="bs-agent-none">未关联 agent</text>
+                </view>
+              </view>
+
+              <!-- 「项目概要」组（右栏）—— 这个项目自己的三个数（与项目页同源、同序、同标签） -->
+              <view class="bs-group">
+                <text class="bs-group-t">项目概要</text>
+                <view class="bs-pair">
+                  <view class="bs-cell">
+                    <text class="bs-lab">未完成待办</text>
+                    <text class="bs-val num">{{detail.project.openCount}} 条</text>
+                  </view>
+                  <view class="bs-sep"></view>
+                  <view class="bs-cell">
+                    <text class="bs-lab">已完成待办</text>
+                    <text class="bs-val num">{{detail.project.doneCount}} 条</text>
+                  </view>
+                  <view class="bs-sep"></view>
+                  <view class="bs-cell">
+                    <text class="bs-lab">项目脑图</text>
+                    <text class="bs-val num">{{detail.project.mindmapCount}} 张</text>
+                  </view>
+                </view>
+              </view>
+
+            </view>
+          </view>
+        </view>
+
+        <!-- ② 操作：**三态**（★★ 160 轮 · ★★ 230 轮上移）
+             用户原话（160 轮）：*「未完成状态下有『完成』『导出』『编辑』『删除』按钮；
+             已完成状态下有『导出』『还原』（点击还原更改状态为未完成）『删除』按钮，
+             已删除状态下只有『还原』（点击还原状态为未完成）」*。
+
+             ⇒ 不再是"四颗键按状态换标签"，而是**三套按钮集合**：
+               · 未完成 —— 完成 / 导出 / 编辑 / 删除（四颗，等宽一行）；
+               · 已完成 —— 导出 / 还原 / 删除（把原来的「完成（可撤回）」换成明确的「还原」）；
+               · 已删除 —— **只有**还原（一颗，占满整行）。
+             ⚠️ 为什么「已完成」那档不再留「完成」键：一颗键同时是"做"与"撤"，
+                用户得先读顶部徽章才知道此刻按下去是哪个方向 ——
+                160 轮把"撤回"独立成「还原」，与已删除那档**同一个词、同一个去向**
+                （都回到未完成），两处读法就一致了。
+             ⚠️ 三支的判据只看 `detail.deleted` / `detail.done` 两个布尔（互斥且完备）：
+                不在这里算"该显示哪几颗"，模板只表达"这一档长什么样"。
+             ⚠️ 已删除那档**不渲染导出 / 编辑 / 删除**：后端的 `PATCH` / 完成 / 取消完成
+                本轮起都会挡住已删除的待办（那是"不可编辑"这条口径的落点），
+                摆出来只会让用户走一遍"点了报错、内容弹回去"的白工。
+
+             ★★ 230 轮（用户口径）：「操作栏的位置调整到『所属项目』的下方，在『待办信息』
+                上方，样式功能没有变化」—— 整块**原样上移**，类名、三态分支、四颗键一个
+                字没动（`.sec-ops` / `.ops-card` / `.op` 的样式也在 wxss 里原地不动）。
+                为什么它该在这儿：操作是"对这条待办本身做什么"，而下面「待办信息 / 图片 /
+                关联脑图」是"这条待办长什么样" —— 先给动作、再给内容，比读完全部内容
+                再翻到页底找按钮顺。
+             ⚠️ 它**不再是最末一块** ⇒ 竖屏那段 `padding-bottom: 96` 原本"给四颗键避开
+                右下悬浮 Logo"的理由变了（现在末块是「关联脑图」那张卡），那段留白仍留着
+                —— 见 wxss 里 `.on-detail` 那条注释（改的是理由，不是数值）。 -->
+        <view class="sec sec-ops">
+          <view class="sec-head">
+            <icon name="sliders-b" size="16" />
+            <text class="sec-t">操作</text>
+          </view>
+
+          <!-- ★★ 232 轮：操作栏改**通栏动作条**（功能、绑定、三态颗数仍然一个字没动）
+               用户口径：先否掉 231 的「主键拉伸」（「主按键的宽度也要有限度，别占据太大」），
+               再拍板「这么看还是C好看，改成通栏动作条模式」。
+               231 那版：`op-main` 一颗 `flex:1 1 auto` 的黄键 ＋ `op-quiets` 里三颗无框辅键。
+                 ⚠️ 它在手机 336 里没问题，但本页只挂在平板/横屏（卡内 730）⇒ 主键被摊成
+                    **537 宽的一条黄棒**，横贯半张卡。
+               改后：`op-cell` 四段**严格等分**坐进 `--chip` 托盘，主键占第一段。
+                 · 宽度上限 ＝ 整条的 1/4（730 卡里 179）—— **没有任何被剩余空间拉长的路径**，
+                   这正是用户那句「别占据太大」的落点。
+                 · 已删除那档只剩一颗 ⇒ 托盘让开（`ops solo`），黄药丸按内容宽居中。
+               ⚠️ 主键仍是**状态跃迁键**，与更早 `.op.primary` 拨的三处完全同一批事件：
+                  未完成 → `onToggleDone`（完成）／已完成 → `onRestore`（还原）／已删除 → `onRestore`（还原）。
+               ⚠️ 图标 tone：主键落在恒亮的品牌黄上 ⇒ `tone="ink"` 恒墨（跟主题变亮会变"黄底白图标"）；
+                  辅键落在随主题变暗的托盘上 ⇒ 默认 tone（深色自动换 `d-*`），压 opacity 让图标轻一档。 -->
+          <view class="card side-card ops-card">
+            <view class="ops {{detail.deleted ? 'solo' : ''}}">
+              <!-- ③ 已删除：只剩「还原」⇒ `solo` 让托盘整块让开，一颗黄药丸居中 -->
+              <block wx:if="{{detail.deleted}}">
+                <view class="op-cell is-main" bindtap="onRestore" hover-class="op-cell-main-hv">
+                  <icon name="undo" size="14" tone="ink" />
+                  <text>还原</text>
+                </view>
+              </block>
+
+              <!-- ② 已完成：还原（主）／导出 ｜ 删除 -->
+              <block wx:elif="{{detail.done}}">
+                <view class="op-cell is-main" bindtap="onRestore" hover-class="op-cell-main-hv">
+                  <icon name="undo" size="14" tone="ink" />
+                  <text>还原</text>
+                </view>
+                <view class="op-cell" bindtap="onExport" hover-class="op-cell-hv">
+                  <icon name="export" size="13" opacity="0.72" />
+                  <text>导出</text>
+                </view>
+                <view class="op-cell danger" bindtap="onDelete" hover-class="op-cell-hv">
+                  <icon name="trash-red" size="13" opacity="0.9" />
+                  <text>删除</text>
+                </view>
+              </block>
+
+              <!-- ① 未完成：完成（主）／导出 ｜ 编辑 ｜ 删除 -->
+              <block wx:else>
+                <view class="op-cell is-main" bindtap="onToggleDone" hover-class="op-cell-main-hv">
+                  <icon name="check" size="14" tone="ink" />
+                  <text>完成</text>
+                </view>
+                <view class="op-cell" bindtap="onExport" hover-class="op-cell-hv">
+                  <icon name="export" size="13" opacity="0.72" />
+                  <text>导出</text>
+                </view>
+                <view class="op-cell" bindtap="onEdit" hover-class="op-cell-hv">
+                  <icon name="edit" size="13" opacity="0.72" />
+                  <text>编辑</text>
+                </view>
+                <view class="op-cell danger" bindtap="onDelete" hover-class="op-cell-hv">
+                  <icon name="trash-red" size="13" opacity="0.9" />
+                  <text>删除</text>
+                </view>
+              </block>
+            </view>
+          </view>
+        </view>
+
+        <!-- ③ 待办信息 ＝ 一张卡：紧急程度色条 ＋ 档名 ＋ 完成态 ＋ 创建/完成时间 ＋ 正文。
+             第四十四轮这里是「详情头卡片 ＋ 原文卡片」两张，标题＝正文首行 ⇒ 同一段话出现两遍，
+             所以第四十五轮合并：正文直接住在详情头里，长文在卡内滚动。
+             ★ 82 轮 / ★★ 165 轮：82 轮改过它下面各块的顺序；**165 轮它退到第二块** ——
+               首块标记 `sec-first` 搬到「所属项目」那一块（用户口径见下一块注释）。
+             ★★ 230 轮：操作栏上移之后它是**第三块**（所属项目 → 操作 → 待办信息）——
+               区块序号跟着改，卡面与绑定一个字节没动。 -->
+        <view class="sec sec-info">
+          <view class="sec-head">
+            <icon name="info-b" size="16" />
+            <text class="sec-t">待办信息</text>
+          </view>
+
+          <view class="card hero-card">
+            <view class="hero-top">
+              <view class="hero-flag" style="background:{{detail.urgency.main}}"></view>
+              <text class="hero-urg" style="color:{{detail.urgency.text}}">{{detail.urgency.name}}</text>
+              <!-- ★★ 160 轮：两个徽章**互斥**（已删除的那条不再自称"已完成"）——
+                   一条已删除的待办在数据层仍记着自己删之前的状态（软删不碰 status），
+                   但界面上它只有一个身份：**已删除**（这一档的操作区也只剩「还原」）。
+                   ⚠️ 顺序上 `deleted` 写在前面：先判它，就不会出现"已完成 ＋ 已删除"并排。 -->
+              <view class="badge badge-del" wx:if="{{detail.deleted}}">已删除</view>
+              <view class="badge badge-done" wx:elif="{{detail.done}}">已完成</view>
+              <view class="hero-flex"></view>
+              <text class="t-11 hero-at">创建于 {{detail.createdAt}}{{detail.completedAt ? ' · 完成于 ' + detail.completedAt : ''}}</text>
+            </view>
+
+            <!-- ★ 审查-02 C-1（2026-10-15）：**这三个属性当前是空转的，但有意留着** ——
+                 `.hero-card` 是 `flex: 0 1 auto`、它的父 `.sec-info` 是 `flex: 0 0 auto`
+                 ⇒ 卡永远是**内容高**，正文再长也不在卡内滚（超出屏高的部分交给 `.workarea`），
+                 于是这个 `scroll-view` 里的内容高度 ≡ 容器高度 ⇒ `scroll-y` 无从触发、
+                 `enhanced` / `show-scrollbar` 也就没有滚动条可收。
+                 ⚠️ **别把它们当"死代码"删掉**：`.t-scroll` 这个滚动容器从 49 轮起就在
+                    「本页不显示滚动条」的名单里（见 wxss 那条 `::-webkit-scrollbar`），
+                    而**它的高度是别人给的**（`.hero-card`）——
+                    哪一轮真给 `.hero-card` 定了高，这三个属性立刻变成"能滚起来"的唯一依据，
+                    删掉就是那次改动的**静默失效**。
+                 ⇒ 口径：留下来，并把"它现在空转"写在这里，免得下次审查又当成一处"死属性"报一遍。 -->
+            <scroll-view class="t-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+              <text class="t-text" selectable>{{detail.text}}</text>
+            </scroll-view>
+          </view>
+        </view>
+
+        <!-- ④ 闪念胶囊（★★ 248 轮建 · ★★ 249 轮上移）——
+             ★ 249 轮用户口径（2026-10-23）：「闪念胶囊模块要往上提一提，放到图片模块上方」。
+               ⇒ 只动 **DOM 顺序**（胶囊 → 图片 → 关联脑图），样式与类名一个没改；
+                 原来那套"区块常显／空态共用／网格末尾加号"的取舍全部照旧。
+
+             ① 「待办详情中增加『闪念胶囊』模块，样式类似于图片和关联脑图，
+                 需要有『+选择胶囊』」
+             ② 「点击『+选择胶囊』弹出选择胶囊的抽屉（主抽屉），卡片显示当前胶囊列表卡片，
+                 可多选卡片，底部按键为『取消』『保存』，无胶囊新增按钮」
+             ③ 「关联后，胶囊卡片就在待办详情页以卡片形式显示，**一行可以展示多个卡片**，
+                 卡片信息只能查看不能编辑，可以取消关联」
+
+             ── 三条落点（全部照「图片」那一块的既有口径来，不另起一套）──────────
+             · **区块常显**：它带着「选择胶囊」这个**动作**，区块消失就等于动作消失
+               （与「图片」「关联脑图」同一条，230 / 82 轮定下的口径）。
+             · **空态**与「关联脑图」无关联态共用同一套：一句 `.blank-line` ＋ 整宽
+               `.tb-btn.lg`。`.cap-empty` 与 `.img-empty` / `.mm-foot.is-empty`
+               **写在同一个声明块里** —— "参照脑图样式"落成"同一份实现"，不是照抄一遍数值。
+             · **有内容**：`flex-wrap` 网格 ＋ 每格 220 宽（卡内 700 ⇒ 一行 3 张），
+               末尾补一块「＋ 选择胶囊」—— 与图片格末尾那块「＋ 添加图片」同一种读法
+               （"这一格是加号，不是内容"），只是内容从图变成一段文字。
+             ⚠️ 已删除的待办：**不渲染 ✕、也不渲染「＋ 选择胶囊」**（那一档只剩「还原」，
+                与图片那两块同一条守卫；`mod-todo.js` 的 handler 里各还有一道）。
+             ⚠️ 卡面只有一个动作（点开看全文），所以那颗 ✕ 必须 `catchtap` ——
+                用 `bindtap` 会先弹全文再取消，两个都触发（247 轮在图片格上实锤过）。
+             ⚠️ 卡片正文封 3 行（`-webkit-line-clamp`）：一条长口播不封会占掉半个屏，
+                "一行多个"就名存实亡。全文走点开的查看层。 -->
+        <view class="sec sec-cap">
+          <view class="sec-head">
+            <icon name="bolt" size="16" />
+            <text class="sec-t">闪念胶囊<text class="n" wx:if="{{detail.capCount}}"> {{detail.capCount}}</text></text>
+          </view>
+
+          <view class="card side-card">
+            <view class="caps" wx:if="{{detail.capCount}}">
+              <view
+                class="cap"
+                wx:for="{{detail.capsules}}"
+                wx:key="id"
+                data-i="{{index}}"
+                bindtap="onCapOpen"
+                hover-class="cap-hv"
+              >
+                <text class="cap-t">{{item.text || '（这条还是空的）'}}</text>
+                <!-- ★★ 277 轮（用户口径 2026-10-27 第 3 条）：「待办详情中的胶囊卡片中
+                     也要能显示挂载图片」。
+                     ── 位置：正文**之下**、时间**之上**（与闪念胶囊列表 `.cp-bub`
+                        的 txt → pic → time 同一条顺序）；点它不必单独绑事件 ——
+                        这张卡整块绑的是 `onCapOpen`（看全文），全文层里那张大图
+                        已经能点开看大图（`.cap-view-pic`），这里只是"有没有图"的提示。
+                     ⚠️ 卡**高度**因此从死 96 变成 `min-height: 96`（见 wxss）：
+                        没有图的卡还是原来的 96，有图的卡往下长；
+                        同一行里由 `align-items: stretch` 拉齐（`.caps` 是 flex 行），
+                        所以不会出现"一行三张参差不齐"。
+                     ⚠️ `lazy-load`：一行可能挂五六条，滚到眼前再取图。 -->
+                <view class="cap-pic" wx:if="{{item.img}}">
+                  <image class="cap-pic-img" src="{{item.img}}" mode="aspectFill" lazy-load></image>
+                </view>
+                <text class="cap-time">{{item.time}}</text>
+                <!-- ★ 取消关联：只解除这条待办与它的关系，胶囊本身回闪念胶囊列表
+                     （用户口径第 5 条 —— 确认框里把"回到列表末尾、创建时间重记"说清楚）。
+                     ★★ 2026-10-23（247 轮追加）：与图片格那颗 ✕ 一起换成 `<icon name="w-close" size="14">`
+                     —— 同一颗控件、同一种毛病（字形居中不可靠，见图片那段长注释）。
+                     两处必须同一版，否则同一页会出现"一个正一个歪"。 -->
+                <view
+                  wx:if="{{!detail.deleted}}"
+                  class="cap-del"
+                  data-id="{{item.id}}"
+                  catchtap="onUnlinkCapsule"
+                  hover-class="cap-del-hv"
+                >
+                  <icon name="w-close" size="14" />
+                </view>
+              </view>
+
+              <!-- 有内容时的"再选一条"入口：与上面每格同宽 ⇒ 落在同一条网格线上，
+                   不会在末尾鼓出一个半格（与图片格那块 `.img-add` 同一取舍）。 -->
+              <view
+                wx:if="{{!detail.deleted}}"
+                class="cap cap-add"
+                bindtap="onPickCapsule"
+                hover-class="cap-hv"
+              >
+                <icon name="plus" size="20" opacity="0.5" />
+                <text class="cap-t add">选择胶囊</text>
+              </view>
+            </view>
+
+            <!-- 空态 —— 与「关联脑图」无关联态同一套：一句 `.blank-line` ＋ 一颗整宽大键 -->
+            <view class="cap-empty" wx:else>
+              <view class="blank-line">这条待办还没有关联闪念胶囊</view>
+              <view class="cap-acts" wx:if="{{!detail.deleted}}">
+                <view class="tb-btn lg grow" bindtap="onPickCapsule" hover-class="tb-btn-hv">
+                  <icon name="plus" size="15" />
+                  <text>选择胶囊</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- ⑤ 图片（★ 82 轮：从"紧跟待办信息"挪到"所属项目之后"；
+             ★★ 249 轮：闪念胶囊插到了它**上面**（用户口径「闪念胶囊模块要往上提一提，
+                放到图片模块上方」）—— 图片自己那条"在关联脑图之上"的约束没动；
+             ★★ 230 轮：**常显 ＋ 卡内直接加图**）——
+             用户口径（230 轮）：「目前添加图片的操作只能在待办编辑抽屉中看到，在详情页没法
+             顺畅的添加图片」＋「在待办详情页中，在关联脑图模块的上方始终显示『图片』模块，
+             当待办没有添加图片时提示从相册中选择，整个样式需要参照脑图的无关联状态样式」。
+
+             ⇒ 三条落点：
+               · 外层那个 `wx:if="{{detail.imgCount}}"` **摘掉** —— 区块常显（与「关联脑图」
+                 常显同一条理由：区块消失 ＝ 动作消失，用户就没地方加图了）；
+               · 空态**不另起一套皮肤**：`.blank-line`（一句虚线框说明）＋ 整宽
+                 `.tb-btn.lg` —— 与「关联脑图」无关联态**共用同一条规则**
+                 （`.img-empty` 与 `.mm-foot.is-empty` 写在同一个声明块里，见 wxss），
+                 所以"参照脑图样式"是**同一份实现**，不是照抄一遍数值；
+               · 有图时在格子末尾补一块「＋ 添加图片」占位格（160×112，与图片格同尺寸；
+                 皮肤照 `form-drawer` 的 `.sd-img-add`：白底 ＋ `--hairline` 描边 ＋ 灰字）。
+             ⚠️ 已删除的待办**不渲染加图入口**（`.op` 同理：那一档只剩「还原」）——
+                文案与守卫在 `mod-todo.js` 的 `onAddImage` 里也各有一道。
+             ⚠️ 图片**列数不算死**：`.imgs` 是 `flex-wrap` ＋ 160 宽的格子，横向能放几张由
+                容器宽（横屏卡内 728 / 竖屏 736）自己决定 —— 与改前逐像素一致。 -->
+        <view class="sec sec-img">
+          <view class="sec-head">
+            <icon name="album-b" size="16" />
+            <text class="sec-t">图片<text class="n" wx:if="{{detail.imgCount}}"> {{detail.imgCount}}</text></text>
+          </view>
+
+          <!-- ★ 卡面从 `.blk-card` 换成 `.side-card`：空态要与「关联脑图」那张卡**同一个内边距**
+               （12×14），而 `.imgs` 自己的 `padding: 12px 14px` 与它逐值相同 ⇒
+               有图时把 `.imgs` 的内边距收成 0 即可，几何与改前一个像素都不差
+               （见 wxss `.img-card .imgs`）。 -->
+          <view class="card side-card img-card">
+            <view class="imgs" wx:if="{{detail.imgCount}}">
+              <!-- ★★ 2026-09-30 修（别退回去）：这里原来**只画占位图标 ＋ 文件名**，从没有
+                   `<image>` ⇒ 传上去的图在详情页也显示不出来。`src` 由 `packDetail()` 现拼
+                   （相对 uri → 完整地址），模板不做拼接；没有 `src`（还在传 / 传失败 /
+                   mock 态）才退回原占位块。 -->
+              <!-- ★ 审查-02 S1（2026-10-15）：补 `hover-class`。
+                   ⚠️ 用 `opacity` 不用改底：格子里常铺着 `<image class="img-photo">`（绝对定位 100%×100%），
+                   改底会被真图盖住 ⇒ 有图时反而没反馈。见 wxss `.img-hv`。 -->
+              <view
+                class="img"
+                wx:for="{{detail.images}}"
+                wx:key="id"
+                data-i="{{index}}"
+                bindtap="onImgOpen"
+                hover-class="img-hv"
+              >
+                <image wx:if="{{item.src}}" class="img-photo" src="{{item.src}}" mode="aspectFill" />
+                <block wx:else>
+                  <icon name="album" size="24" opacity="0.34" />
+                  <text class="img-t">{{item.label}}</text>
+                </block>
+                <text class="img-no">{{item.no}} / {{detail.imgCount}}</text>
+                <!-- ★★ 247 轮（用户口径）：**加完图片没法取消** ⇒ 每格补一颗「✕」。
+                     用户原话「目前添加完图片之后没法取消……这两个流程要整理一下」。
+                     · 落点选在**格子右上角**：右下角已经有「n / N」角标，两个角各占一个，
+                       不会互相压；而"删这一张"与"这一张是哪张"本来就该贴着同一格。
+                     · `catchtap` 是必须的：`.img` 整格绑的是 `onImgOpen`（点开大图），
+                       用 `bindtap` 会**先删掉再看大图**（两个都触发，顺序还不保证）。
+                     · 已删除的待办不渲染（那一档只有「还原」，与「＋ 添加图片」同一条守卫）。
+                     · 皮肤与胶囊卡那颗「✕」（`.cap-del`）同一套：深色实心圆 ＋ 反白叉。
+                       它是"破坏性"的，但**不用红**：红在详情页只留给「删除」这一档动作
+                       （`.op-cell.danger`），图上这颗是小号、贴着内容的就地操作，
+                       红点会把每张图都变成"危险区"。
+                     ★★ 2026-10-23（247 轮追加）：叉从**文字字形**换成 `<icon name="w-close" size="14">`。
+                       用户口径「这个移除按钮，图标没有在圆形内居中」。字形做不到可靠居中：
+                       `✕`（U+2715）自带边距与基线，PingFang 与 Noto 的墨迹落点还差一档，
+                       靠 `line-height` / `line-height:1` ＋ flex 只是把偏差换个方向；
+                       而 `w-close.svg` 的几何在 24 网格里从 5.05 到 18.96（中心正好 12）
+                       ⇒ 圆是 24 时**天然居中**，两个平台一个像素都不差。
+                       ⚠️ 必须是 `w-` 反白版：浅色下这颗圆是 `--solid`（墨底），
+                          墨色叉＝看不见。`icon` 组件对 `w-` 名字**不加 `d-` 前缀**（见其文件头）。
+                       ★ 为什么是 **14** 而不是 12：叉的墨迹只占图标盒的 0.58（5.05→18.96），
+                         所以视觉大小≠`size`。无头渲染 + 像素量测（圆＝96 设备px 时为 4×）：
+                           字形 12 → 墨迹 34/96＝**0.35**，圆心偏移 **+2.5px（≈0.6 CSS px，偏下）**；
+                           图标 12 → 0.29（偏轻）；图标 **14 → 0.33 且偏移 0/0**。
+                         ⇒ 14 既保住原来的视觉分量，又第一次真正居中。 -->
+                <view
+                  wx:if="{{!detail.deleted}}"
+                  class="img-del"
+                  data-i="{{index}}"
+                  catchtap="onImgDel"
+                  hover-class="img-del-hv"
+                >
+                  <icon name="w-close" size="14" />
+                </view>
+              </view>
+
+              <!-- ★★ 230 轮：加图入口（有图态）。与上面每格**同尺寸** ⇒ 落在同一条网格线上，
+                   不会在格子末尾鼓出一个"半格"。`hover-class` 与图片格同族（改透明度）。 -->
+              <view
+                wx:if="{{!detail.deleted}}"
+                class="img img-add"
+                bindtap="onAddImage"
+                hover-class="img-hv"
+              >
+                <icon name="plus" size="22" opacity="0.5" />
+                <text class="img-t">添加图片</text>
+              </view>
+            </view>
+
+            <!-- 空态 —— 与「关联脑图」无关联态同一套：一句 `.blank-line` ＋ 一颗整宽大键。
+                 ⚠️ 那句话直说"下一步做什么"（从相册选），不只是"这里没有图"。 -->
+            <view class="img-empty" wx:else>
+              <view class="blank-line">这条待办还没有添加图片</view>
+              <view class="img-acts" wx:if="{{!detail.deleted}}">
+                <view class="tb-btn lg grow" bindtap="onAddImage" hover-class="tb-btn-hv">
+                  <icon name="plus" size="15" />
+                  <text>从相册选择</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- ⑥ 关联脑图（★ 82 轮重做 · ★★ 170 轮换卡面）——
+             ★ 82 轮（用户口径「关联脑图中需要增加关联和查看，点击关联按钮后弹出脑图选择抽屉
+             （该选择抽屉是直接在左侧展开，因此需要一个主抽屉，和待办编辑抽屉出发的脑图选择
+             不一致），该脑图选择抽屉中需要还有一个脑图创建按钮，点击之后可以创建脑图」）：
+             · **整块常显**（推翻 44 轮"无关联就整块不渲染"）—— 它带着"关联"这个**动作**，
+               区块消失就等于动作消失，用户没有任何地方能把这条待办挂到脑图上。
+               空态因此要给一句说明（`.blank-line`，L3），而不是留白。
+             · 「关联」开的是 **`drawer` 主弹窗**（kind=mindmap，宽 320，直接开在左侧 L1 位），
+               不是表单里那个三级副弹窗 —— 两者的差别用户自己点出了：编辑抽屉出发的选择
+               挤在 260 宽的三级里、且要经过"表单 → 选择"两层；详情页这里没有表单，
+               用一张正常的主弹窗列表更顺，里面还带「＋ 新建脑图」。这条路 170 轮原样保留。
+             ★ 83 轮（用户口径「项目卡片的查看项目按钮是一种样式，关联脑图中的关联和查看
+               又是另一种样式，这两个都是非操作类的按钮啊」）：
+               · 两颗键**从 `.op` 换成全局 `.tb-btn`** —— 与「查看项目」同一套皮肤。
+                 `.op` 是 44 高的**操作**键（完成/导出/编辑/删除那一族，会改数据）；
+                 而「查看 / 关联 / 查看项目」是**跳转**键（不改数据、只换一处视线）。
+               · 卡内那枚 **`chevron-right` 已删**（与「查看」是同一个动作的两个入口）。
+             ★ 170 轮——用户口径：「这块儿只是显示了一个这个名称，尽量应该是把**整个脑图**
+               显示在这上面，显示在这个关联脑图这个卡片中会比较好合适一些，但是不允许缩放、
+               不允许编辑，只能进行查看、只能显示；然后按钮上把那个查看就取消掉了，
+               点击这个脑图就直接跳到脑图详情页了；关联的按钮其实不是关联了，应该改为替换」：
+               ① **图顶上来当主角**；② 「查看」那颗键**整颗撤掉**（图本身就是入口）；
+               ③ 有图时「关联」改文案为**「替换」**（做的事一点没变：开同一张选择弹窗、
+                  另选一张），只是把"现在挂着一张，点它是换不是加"说清楚；
+               ④ 空态那颗键**加大**，见下面 `.link-acts` 与 app.wxss 的「卡内大键 40」。
+
+             ★★ 171 轮——用户口径（逐字）：「**不用再进行 svg 转换，就是将思维导图显示在
+               里面就可以了**，和脑图详情的区别是这个窗口看脑图**无法移动脑图位置、无法编辑、
+               也不能缩放**，就是单纯的看」。
+               ⇒ 170 轮那版是**另画的一套**（`utils/mindmap-preview.js` 用简化几何现算一张
+                  `data:image/svg+xml`）—— 形状像，但**不是同一份代码**：字号、圆角、
+                  连线走法全要各维护一遍，迟早漂。本轮整条撤掉，换成**直接把画布的内容层
+                  搬进来**（`.ro-canvas` → `.ro-vp` → `.links` ＋ `.mm-node` / `.mm-fold`）。
+               ⇒ 「同一种画法」因此是**同一份实现**：度量 / 排版 / 连线在
+                  `utils/mindmap-core.js`（脑图模块也是 require 它），
+                  节点皮肤在 `components/mod-mindmap/mm-canvas.wxss`（两个组件各自 @import）。
+               ⇒ 「只读」是**结构自带**的：这一段**一个手势处理器都没挂** ——
+                  脑图模块 `.mm-card` 上那串 `bindtouchstart` / `catchtouchmove` /
+                  `bindwheel` / `bindmousedown` 在这里**一条都没有**，
+                  节点上的 `sel` 恒为空串（`readOnlyView` 写死传 `''`）
+                  ⇒ 不能移、不能编、不能缩不是"拦"出来的，是压根没有可操作的东西。
+               ⇒ 点它 ＝ `onGoMindmap`（与点卡片同一个动作，去脑图详情）。
+                  ⚠️ 只有**图**可点，说明文字与键各管各的 —— 整卡**不绑** `bindtap`：
+                     卡里有"图 / 文字 / 键"三种东西，整卡可点会让点空白也静默跳走。 -->
+        <view class="sec sec-mind">
+          <view class="sec-head">
+            <icon name="mindmap-b" size="16" />
+            <text class="sec-t">关联脑图</text>
+          </view>
+
+          <view class="card side-card">
+            <block wx:if="{{detail.mindmap}}">
+              <!-- ★★ 171 轮：**整张脑图**就摆在这儿（只读 · 点它去脑图详情）。
+                   ⚠️ 这一层**没有任何手势绑定** —— 不能移 / 不能编 / 不能缩是结构自带的
+                      （见上面 171 那段口径），别顺手给 `.ro-canvas` 加 `bindtouch*`。
+                   ★★ 187 轮：闸门从 `.ro-canvas` **下移到 `.ro-vp`** ——
+                      "卡里有一块 240 高的画布"这件事必须**永远成立**。
+                      原先 `wx:if` 卡在画布层上，`view` 还没到位时**整块画布都不渲染**
+                      ⇒ 卡内少 240px、下面几块整体上移，下一帧图到了再撑回来：切一次模块
+                      抖一次（用户 187 轮口径「通过底部菜单切换到待办详情时脑图部分有显示
+                      抖动……会出现该区域闪烁」）。
+                      171 轮这段注释本来就写着"`.ro-canvas` 先渲染、`view` 后到位……
+                      图还没算出来时这里是一块空白底" —— 本轮把这句话**落成结构**。
+                      配合 `mod-todo.js` 的"`view` 同步算"，正常情况下连那一帧空白底都没有。
+                      ⚠️ 空白期点这块底照旧走 `onGoMindmap`（它就是"去看脑图"的入口），
+                         与"有图时点图"是同一个动作，不另加状态。 -->
+              <view class="ro-canvas" bindtap="onGoMindmap" hover-class="ro-canvas-hv">
+                <view wx:if="{{detail.mindmap.view}}" class="ro-vp" style="{{detail.mindmap.view.vpStyle}}">
+                  <view class="links"
+                        style="{{detail.mindmap.view.linksStyle}}background-image:url({{detail.mindmap.view.linksUri}})"></view>
+                  <view wx:for="{{detail.mindmap.view.nodes}}" wx:key="id"
+                        class="mm-node {{item.cls}}" style="{{item.style}}">
+                    <text wx:for="{{item.lines}}" wx:for-item="ln" wx:for-index="li"
+                          wx:key="i" class="mm-node-t">{{ln.t}}</text>
+                    <!-- ★★ 275 轮：节点挂图 —— 与画布**同一份皮肤**（mm-canvas.wxss 里那条
+                         `.mm-node-pic`，两个组件各自 @import）、**同一份载荷**（core 的 buildNodes）。
+                         ★ 275b：宽高走行内（`imgW`/`imgH`）、`aspectFit` —— 与画布逐像素同款；
+                         只读卡里它同样不可交互：整块画布只有外层 `.ro-canvas` 的 `onGoMindmap`。 -->
+                    <view class="mm-node-pic" wx:if="{{item.img}}" style="width:{{item.imgW}}px;height:{{item.imgH}}px">
+                      <image class="mm-node-pic-img" src="{{item.img}}" mode="aspectFit" lazy-load></image>
+                    </view>
+                  </view>
+                  <!-- 折叠徽标：说的是"这一支里还藏着几个"，**不可点**（wxss 里 pointer-events:none）。
+                       ⚠️ 与脑图模块同一个坑：`wx:for` 与 `wx:if` 混在一个标签上顺序不可靠
+                          ⇒ 外面套一层 `<block wx:for>`，让循环先发生。 -->
+                  <block wx:for="{{detail.mindmap.view.nodes}}" wx:key="id">
+                    <view wx:if="{{item.fold}}" class="mm-fold" style="{{item.foldStyle}}">{{item.fold}}</view>
+                  </block>
+                </view>
+              </view>
+            </block>
+
+            <!-- ★★ 172 轮：文字块与那颗键**同一行**（用户口径「那个替换按钮的位置，
+                 是否可以让其和左侧的文字在同一行」）—— 有图时这一行是"横向两栏"
+                 （左 名称/元信息、右 键，与项目卡 `.bs-row1` 里"名称 ＋ 查看项目"同一条口径）；
+                 空态（`.is-empty`）退回纵向两行，那颗键照旧**整宽**（170 轮那条没丢）。
+                 ⚠️ 键**仍然只有一颗**：两种态共用同一个节点，靠 `detail.mindmap` 三元切
+                    文案与图标 —— 不许为了"一行/两行"各写一份，否则这一段里会多出一颗键
+                    （判据数的是"这一段里恰有两处可点：图 → 脑图详情、这颗键 → 选图弹窗"）。 -->
+            <view class="mm-foot {{detail.mindmap ? '' : 'is-empty'}}">
+              <view class="mm-info" wx:if="{{detail.mindmap}}">
+                <text class="link-name">{{detail.mindmap.name}}</text>
+                <text class="link-meta">{{detail.mindmap.nodes}} 节点 · {{detail.mindmap.depth}} 层 · {{detail.mindmap.updated}}</text>
+              </view>
+              <view class="blank-line" wx:else>这条待办还没有关联脑图</view>
+
+              <!-- ★★ 170 轮：只剩**一颗**键 ——「关联 / 替换」。
+                   空态时它整宽（`.grow`）：这张卡里它是唯一的动作，触控目标给满。
+                   图标：空态 `plus`、有图 `refresh` —— 两枚都是 `#1C1C1E` 的**深色**版，
+                   与白底键上的字同色（只有黑底键才用 `w-*` 反白版）。
+                   ★★ 247 轮（用户口径）：**有图时变成两颗** —— 左「取消关联」＋ 右「替换」。
+                   用户原话「关联完脑图之后也没法取消关联……这两个流程要整理一下」。
+                   · 为什么不做成"替换弹窗里加一行『不关联』"：那张 `drawer` 是**列表类主弹窗**
+                     （`drawers.build('mindmap')`），为一个 picker 往它的行数据里塞一条
+                     "不是脑图"的行，会让同一个组件在两种语义之间打架；而详情页这里
+                     本来就有一行键位，多一颗键是最短的路径。
+                   · 为什么两颗**同款同高**（都 `.tb-btn.lg`）：83 轮定下的分层是
+                     「`.tb-btn` ＝ 跳转键 ／ `.op-cell` ＝ 操作键」，这两颗同属前者；
+                     主次靠**位置**（最右为主）与文案，不靠尺寸 —— 让「取消关联」矮一档，
+                     又会回到"同一行两套皮肤"的老毛病。
+                   · 已删除的待办**不渲染「取消关联」**（那一档只有「还原」；后端 `PATCH`
+                     也会拒）—— 与「＋ 添加图片」同一条守卫。
+                   ⚠️ 「替换」那颗本轮**没有**加已删除守卫：它的行为一个字没变，
+                      加不加是另一件事（已删除态下点它会被后端拒，是既有问题）。 -->
+              <view class="link-acts">
+                <view
+                  class="tb-btn lg"
+                  wx:if="{{detail.mindmap && !detail.deleted}}"
+                  bindtap="onUnlinkMindmap"
+                  hover-class="tb-btn-hv"
+                >
+                  <icon name="close" size="15" opacity="0.65" />
+                  <text>取消关联</text>
+                </view>
+                <!-- ★★ 2026-10-24（复审 P2-04）：**已删除态整颗不渲染** ——
+                     与上面「取消关联」同一条守卫。改前只有「取消关联」挡着，
+                     「替换 / 关联脑图」在已删除那一档照样能点：走完整个选择流程、
+                     触发一次 `updateTodo()`，最后被后端拒，再叠一条"保存失败，已还原"。
+                     用户这时候真正能做的只有一件事：还原。
+                     ⚠️ 用 `wx:if` 拿掉而不是 `display:none` —— 后者热区照吃事件。 -->
+                <view
+                  class="tb-btn lg {{detail.mindmap ? '' : 'grow'}}"
+                  wx:if="{{!detail.deleted}}"
+                  bindtap="onLinkMindmap"
+                  hover-class="tb-btn-hv"
+                >
+                  <icon name="{{detail.mindmap ? 'refresh' : 'plus'}}" size="15" />
+                  <text>{{detail.mindmap ? '替换' : '关联脑图'}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+      </view>
+
+      <!-- 空态（★ 本轮三处统一骨架：标识 44 → 标题 → 解释 → 主键。样式与结构说明见
+           app.wxss 的 `.blank` 那一段，组件内不再留副本） -->
+      <view class="blank" wx:if="{{!detail}}">
+        <view class="blank-ico"><icon name="todo" size="44" /></view>
+        <text class="blank-t">还没有打开过任何一条待办</text>
+        <text class="blank-s">从列表里挑一条，或者先记一条新的</text>
+        <view class="blank-btn" bindtap="onTitleTap" hover-class="blank-btn-hv">
+          <icon name="w-list" size="15" />
+          <text>打开待办列表</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图片查看层（FR-3.8 ② 点击放大 · 可左右翻） -->
+  <view class="viewer" wx:if="{{imgOpen}}">
+    <view class="viewer-mask" bindtap="onImgClose"></view>
+    <view class="viewer-box">
+      <view class="viewer-top">
+        <text class="viewer-t">图片 {{imgIndex + 1}} / {{detail.imgCount}}</text>
+        <!-- ★ 审查-02 A-1 订正（2026-10-15）：`hover-class` 只认 view / button / navigator，
+             `<text>` 挂了不生效 ⇒ 由 `<text>` 改 `<view>`。
+             父级 `.viewer-top` 是 `display: flex` ⇒ 它作为 **flex item 本来就被 blockify**
+             （inline 会被强制成 block）⇒ 元素类型换掉**几何零变化**。 -->
+        <view class="viewer-x" bindtap="onImgClose" hover-class="viewer-x-hv">✕</view>
+      </view>
+      <view class="viewer-img">
+        <!-- ★★ 2026-09-30 修：放大层原来画的也是占位图标 ⇒ 「点击图片放大也显示不出来」。
+             现在真的把当前那张铺进放大框（`mode="aspectFit"`：放大层要**看全**，
+             不裁切 —— 与格子里 `aspectFill` 的取舍不同）。 -->
+        <image
+          wx:if="{{detail.images[imgIndex].src}}"
+          class="viewer-photo"
+          src="{{detail.images[imgIndex].src}}"
+          mode="aspectFit"
+        />
+        <block wx:else>
+          <icon name="album" size="56" opacity="0.3" />
+          <text class="viewer-cap">{{detail.images[imgIndex].label}}</text>
+        </block>
+      </view>
+      <view class="viewer-nav">
+        <!-- ★ 审查-02 S1（2026-10-15）：两颗都补 `hover-class`（同类 `.tb-btn` 走改底 `.tb-btn-hv`）。 -->
+        <view class="vbtn" data-d="prev" bindtap="onImgStep" hover-class="vbtn-hv">
+          <icon name="chevron-left" size="13" opacity="0.65" />
+          <text>上一张</text>
+        </view>
+        <view class="vbtn" data-d="next" bindtap="onImgStep" hover-class="vbtn-hv">
+          <text>下一张</text>
+          <icon name="chevron-right" size="13" opacity="0.65" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 胶囊全文查看层（★★ 248 轮）——
+       用户口径第 3 条：「卡片信息**只能查看**不能编辑」⇒ 卡片上的 3 行是摘要，
+       点开这一层看全文。皮肤整条复用上面图片那套 `.viewer`（同一个遮罩 / 圆角 / 右上 ✕），
+       只有内容换成一段文字 —— "同一种模态"只有一份外观，不另起一套。
+       ⚠️ 不做左右翻：胶囊之间**没有顺序关系**（挂上来的是"哪几条"，
+          不是"第几张"），给两颗「上一张 / 下一张」会让用户以为漏了什么。
+       ⚠️ 正文区**可滚**（`max-height: 320` ＋ `overflow-y: auto`）：一条长口播能写满一屏，
+          模态层不能因为内容长就撑出屏幕。
+       ⚠️ 闸门带 `detail.capsules[capIndex]`：关掉详情（删了待办 / 切走）之后这一层必须
+          自动不渲染，否则会在空详情上留一张孤零零的模态框。 -->
+  <view class="viewer" wx:if="{{capOpen && detail.capsules[capIndex]}}">
+    <view class="viewer-mask" bindtap="onCapClose"></view>
+    <view class="viewer-box">
+      <view class="viewer-top">
+        <text class="viewer-t">闪念胶囊 {{capIndex + 1}} / {{detail.capCount}}</text>
+        <view class="viewer-x" bindtap="onCapClose" hover-class="viewer-x-hv">✕</view>
+      </view>
+      <view class="cap-view">
+        <text class="cap-view-t" selectable>{{detail.capsules[capIndex].text}}</text>
+        <!-- ★★ 263 轮（清单 C4/H4）· **这条胶囊挂的图** —— 点它看大图。
+             ★★ 277 轮：网格卡里**也已经画了图**（`.cap-pic`，88 高的一条），
+                但这一层仍然要留一张原尺寸的：
+                  · 格子那张是"有没有图"的提示（198×88，够认出是什么，读不清字）；
+                  · 这一层是"看"，图按卡宽原样铺（`.cap-view-img`），且能点开 `wx.previewImage`。
+                两处**不是重复**：一处在网格里占位、一处在全文里给全貌。
+             ⚠️ 这里用 `catchtap`：外层 `.cap-view` 没有 tap，但遮罩层有
+                （`viewer-mask` 是"点外面关掉"）—— 不 `catch` 的话点图等于关弹窗，
+                图永远看不到。`urls` 只放这一张（理由见 capsule.js 的 `onPreviewImg`）。 -->
+        <!-- ⚠️ `hover-class` 的宿主只认 `view` / `button` / `navigator`
+             （挂在 `<image>` 上**既不报错也不生效**，等于没改）⇒ 外面套一层 `view`
+             来挂按下态 ＋ 接 `catchtap`，`<image>` 只负责显示。 -->
+        <view
+          wx:if="{{detail.capsules[capIndex].img}}"
+          class="cap-view-pic"
+          data-src="{{detail.capsules[capIndex].img}}"
+          catchtap="onCapViewImg"
+          hover-class="cap-view-pic-hv"
+        >
+          <image
+            class="cap-view-img"
+            src="{{detail.capsules[capIndex].img}}"
+            mode="widthFix"
+            lazy-load
+          ></image>
+        </view>
+      </view>
+      <view class="cap-view-foot">
+        <text class="cap-view-time">{{detail.capsules[capIndex].time}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 列表类主弹窗（★ 47 轮：id 是给核验脚本 selectComponent 用的 —— 组件内绝对层
+       没法用页面选择器拿到；同时也是「待办筛选」副弹窗的父层） -->
+  <!-- ★★ 249 轮：这张抽屉的每一颗键都由**属性**决定，页面不绑 ⇒ 组件静默取默认值（空串），
+       那一颗键就整颗不渲染。本轮踩的就是这个：`drawers.build('capsule')` 早就给了
+       `confirmLabel: '保存'`，而这里漏绑了 `confirm-label` ⇒ 底部只剩「取消」。
+       ⚠️ 以后往 `drawers.build()` 里加任何"决定渲染"的字段，**同一次改动里必须回来补绑定**：
+          少绑不会报错、不会报警、判据也照样绿 —— 只有真机点开才看得见。
+       ⚠️ 注释只能写在这张标签**外面**：塞进属性列表中间会让整页白屏（217 轮实锤）。 -->
+  <drawer
+    id="todo-list"
+    open="{{drawer.open}}"
+    kind="{{drawer.kind}}"
+    title="{{drawer.title}}"
+    action="{{drawer.action}}"
+    create-label="{{drawer.createLabel}}"
+    filter-label="{{drawer.filterLabel}}"
+    filter-active="{{drawer.filterActive}}"
+    filter-open="{{drawerFilterOpen}}"
+    tf="{{drawer.tf}}"
+    active-id="{{drawer.activeId}}"
+    empty="{{drawer.empty}}"
+    groups="{{drawer.groups}}"
+    page-size="{{drawer.pageSize}}"
+    port="{{!landscape}}"
+    turned="{{drawerTurned}}"
+    multi="{{drawer.multi}}"
+    pick-map="{{drawer.pickMap}}"
+    confirm-label="{{drawer.confirmLabel}}"
+    picked-id="{{drawer.pickedId}}"
+    cancel-label="{{drawer.cancelLabel}}"
+    bind:close="onDrawerClose"
+    bind:pick="onDrawerPick"
+    bind:markmulti="onCapMark"
+    bind:cancel="onCapCancel"
+    bind:confirm="onCapConfirm"
+    bind:create="onDrawerCreate"
+    bind:openfilter="onDrawerOpenFilter"
+    bind:closefilter="onDrawerCloseFilter"
+    bind:filterchange="onDrawerFilterChange"
+    bind:filterreset="onDrawerFilterReset"
+  />
+
+  <!-- 一级表单抽屉：记一条待办 / 编辑待办 / 导出 agent 文本（mode=export） -->
+  <form-drawer
+    id="todo-form"
+    open="{{form.open}}"
+    mode="{{form.mode}}"
+    offset="{{form.offset}}"
+    edit-id="{{form.id}}"
+    title="{{form.title}}"
+    submit-label="{{form.submitLabel}}"
+    require-all="{{form.requireAll}}"
+    no-danger="{{form.noDanger}}"
+    hint="{{form.hint}}"
+    values="{{form.values}}"
+    urgencies="{{form.urgencies}}"
+    projects="{{form.projects}}"
+    mindmaps="{{form.mindmaps}}"
+    nodes="{{form.nodes}}"
+    agents="{{form.agents}}"
+    colors="{{form.colors}}"
+    formats="{{form.formats}}"
+    port="{{!landscape}}"
+    turned="{{formTurned}}"
+    child="{{form.child}}"
+    enh-text="{{enhView.text}}"
+    enh-state="{{enhView.state}}"
+    enh-error="{{enhView.error}}"
+    enh-notice="{{enhView.notice}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+    bind:enhance="onFormEnhance"
+  />
+
+  <!-- ⑫ 二级表单抽屉（★ 45 轮）：待办表单里点「＋ 新建项目」时，项目新建表单落在**右侧**，
+         本层（待办表单）侧转且不可点 —— 与「项目列表抽屉 → 新建项目」是同一套观感。
+         两个抽屉宽度都是 320，右移 270 后一级的左缘旋转 25° 正好让出 12px 缝。
+         ★ 278 轮起它还有一个用途：「信息增强」也落在这一层（`mode='enhance'`），
+           左侧导出抽屉侧转不可点 —— 与「新建项目」共用同一套几何，一个新 px 都不用写。 -->
+  <form-drawer
+    id="todo-form-l2"
+    open="{{form2.open}}"
+    mode="{{form2.mode}}"
+    offset="{{form2.offset}}"
+    edit-id="{{form2.id}}"
+    title="{{form2.title}}"
+    submit-label="{{form2.submitLabel}}"
+    require-all="{{form2.requireAll}}"
+    no-danger="{{form2.noDanger}}"
+    hint="{{form2.hint}}"
+    values="{{form2.values}}"
+    urgencies="{{form2.urgencies}}"
+    projects="{{form2.projects}}"
+    mindmaps="{{form2.mindmaps}}"
+    nodes="{{form2.nodes}}"
+    agents="{{form2.agents}}"
+    colors="{{form2.colors}}"
+    port="{{!landscape}}"
+    child="{{form2.child}}"
+    enh-text="{{enhView.text}}"
+    enh-state="{{enhView.state}}"
+    enh-error="{{enhView.error}}"
+    enh-notice="{{enhView.notice}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+    bind:enhance="onFormEnhance"
+  />
+<!-- /mod-todo -->

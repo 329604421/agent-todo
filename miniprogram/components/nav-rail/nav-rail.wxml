@@ -1,0 +1,106 @@
+<!-- navRail · 横屏左侧导轨（设计稿 726686551619462 组件 3:186）
+     09-21：与竖屏底栏同步，选中态改成**会移动的黄色滑块**（.rail-slab）。
+     导轨项 40×48、项距 8 ⇒ 步长 56，滑块只改 translateY。 -->
+<view class="rail">
+  <view class="rail-list">
+    <view class="rail-slab {{anim ? 'anim' : ''}}" style="transform:translateY({{slabY}}px)"></view>
+
+    <!-- ★★ 2026-10-24（复审 P2-19）：**给读屏一条能读的通路**。
+         改前这五项是纯 `view` + `bindtap`：TalkBack / VoiceOver 读不出"这是什么、现在在哪一页"，
+         只能靠用户自己摸位置。补的是**名称 + 位置 + 角色**三件事：
+           · `aria-label` 带"当前页"后缀 —— 小程序的读屏对 `aria-selected` 的支持不齐，
+             写进名称里最稳（改一处就够，不必赌某个属性的实现）；
+           · `aria-role="tab"` 让读屏把它读成导航项而不是普通文本。
+         ⚠️ 只加属性、不动结构与样式；`data-key` / `bindtap` 一个字没改。
+         ⚠️ 不换成原生 `button`：那会带来默认样式与点击态，整条导轨的尺寸要重算。 -->
+    <view
+      wx:for="{{items}}"
+      wx:key="key"
+      class="rail-item {{item.key === active ? 'on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onNav"
+      hover-class="rail-item-hv"
+      aria-role="tab"
+      aria-label="{{item.label}}{{item.key === active ? '，当前页' : ''}}"
+    >
+      <!-- ★186 `tone`：选中项的图标压在**黄色滑块**上（滑块两个主题下都是品牌黄，
+           恒亮）⇒ 恒墨。未选中时图标落在 `.rail` 的卡底上（深色下变暗）⇒ 跟着主题走。 -->
+      <icon name="{{item.icon}}" size="22" opacity="{{item.key === active ? 1 : 0.62}}"
+            tone="{{item.key === active ? 'ink' : ''}}" />
+      <text class="rail-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- 品牌块 —— ★ 本轮（FR-9）恢复可点：它是「闪念胶囊」的入口（82 轮曾定为纯装饰）。
+       三态都由壳页下发（`brandState`），这里只负责把它画出来：
+         'logo' 品牌图 ／ 'mic' 黑色麦克风（外框形状与品牌块一致，只换图案）／ 'rec' 倒计时＋闪烁。
+       ⚠️ 三种形态**占同一块 40×40 的坑**（不换容器、只换里面的内容）——
+          否则点下去时整块会跳一下位置，「同一个键换了个样子」这件事就说不清了。
+       ★ 135 轮（品牌 Logo 换版）：'logo' 那态的图案换成 V8「接住」标志 —— 40×40 恰是导出原生尺寸
+          （`Agent-ToDo-图标-40.png`，设计说明「文件」表里的「横屏导轨底部品牌入口」）。
+          40 方 / 12 圆角的容器一个字不动；新图四角透明 ⇒ 圆角仍由容器裁 ⇒ 三态外形仍逐字一致。
+       ★★ 138 轮（升配）：上面那条「40×40 恰是导出原生尺寸」**是 135 轮的错**——它恰恰是「糊」的成因。
+          @3x 屏要把 40 渲染成 120，源只有 40 ⇒ **放大 3 倍**（旧版那张是 88²，是**缩小** 2.2 倍，所以不糊）。
+          ⇒ 改用设计已导出的 `Agent-ToDo-图标-512.png`（**512²、零派生**，显示尺寸仍是 40）。
+          判定口径：**源 ≥ 显示尺寸 × 3**（本处 512 ÷ 40 = **12.8×**，@3x 只需 120 ⇒ 反而缩小 4.3 倍）。
+          ⚠️ 代价：解码 512² RGBA = **1.0MB**（旧 40² 只 6.4KB）；这是「清晰」换来的，见 `待拍板 §三 第 89 项`。
+       ★★ 178 轮（细线版）：「logo」那态的**图案换成细线版**（同一构图、笔画收细，逐像素差 3.2%）
+          —— 上面这两条（`src` ／ CSS 尺寸 40）**一个字都没动**：**同名覆盖** `assets/brand-logo-512.png`
+          ⇒ 三处引用零改动、判据 `check_brand_logo_round135.py` **11/0 零改动通过**。
+       ⚠️ 三条分支**必须紧邻**，别在中间塞注释（135 轮初版就干过一次，已改掉）。
+       ★★ 217 轮 · **`wx:if / wx:elif / wx:else` → 三层常驻 ＋ 交叉淡出** ───────
+       与平板竖屏那颗 `.fab`、手机端 `.cp-rec` 同一件事：停录那一刻原来是
+       **节点替换**（倒计时"啪"地没、麦克风"啪"地来）⇒ 读起来是"整块跳了一下"。
+       三层叠放之后是"数字缩回去、图案长回来"——同一个键的两种内容在交替。
+       ⚠️ 不写 `wx:if`（节点一删就没有过渡可播），也不并排（那就是「图标 ＋ 60」）。
+       ⚠️ 这块容器 40×40 / 12 圆角 / 黄底一个字不动 —— 三态本来就占同一块坑。 -->
+  <!-- ==========================================================================
+       ★★★ 274 轮 · **品牌块正上方那颗「写」**（用户口径第 2 条）
+       「在录音按键的上方同样的大小显示普通创建的按钮，图标要和移动端一致，无需文字」。
+       ── 与竖屏那颗 `.fab-write` 是同一件事的两个位置 ────────────────────────
+       横屏 / PC 的"录音按键"是导轨底部这块 `.rail-brand`（40×40），
+       所以「写」也取 40×40、同一圆角、同一条竖轴上，只隔 10 —— 读成一组。
+       ⚠️ 图标用 `edit`（＝手机端「写」那颗 `.cp-write` 的同一个名字、同一枚几何），
+          不写 `tone`：它落在 `--chip` 上（随主题明暗）⇒ 深色下会自动挂 `d-edit`。
+       ⚠️ 底色不是品牌黄：黄在这个应用里只属于"主动作"，两颗都黄就分不出主次。
+
+       ★★★ 274c（用户 2026-10-26 的两条）───────────────────────────────────
+       ①「pc 端（平板横版）普通创建按钮**目前还是一直显示**，应该是闪念胶囊抽屉
+          打开时显示」⇒ 闸门 `wx:if="{{brandState === 'mic'}}"`。
+          （274 轮漏了这道闸门：竖屏那颗已经跟着 `capBrand` 收放了，导轨这颗却
+            一直挂着 —— 同一个键在两个方向上两种脾气。）
+       ②「显示位置是在**我的下面**，应该是在**录音键上方**」⇒ 这两颗包进
+          `.rail-tail`（`margin-top: auto` 由它持有）。274 轮把「写」排在
+          `rail-list` 之后、靠 `margin-bottom: 10` 想与品牌块拉开 10 —— 但
+          `.rail-brand` 自己是 `margin-top: auto`，会把**中间那一整段空白**全吃掉
+          ⇒ 「写」留在列表末尾（也就是「我的」下面），离品牌块一整屏远。
+          ⚠️ 为什么是包一层、而不是把 `margin-top:auto` 挪到「写」身上：
+             抽屉关着时「写」被 `wx:if` 拿掉，那颗 auto 跟着消失 ⇒ 品牌块会
+             **弹到「我的」正下方**。auto 必须挂在一个**恒在**的节点上。
+          ⚠️ 也不要给两颗都写 auto：自由空白会在两条 auto 之间**对半分**，
+             品牌块就浮在导轨中段 —— 那比"在列表下面"更离谱。 -->
+  <view class="rail-tail">
+    <view
+      wx:if="{{brandState === 'mic'}}"
+      class="rail-write"
+      bindtap="onWrite"
+      hover-class="rail-write-hv"
+      aria-role="button"
+      aria-label="写一条闪念"
+    >
+      <icon name="edit" size="22" />
+    </view>
+
+    <view
+      class="rail-brand {{brandState === 'logo' ? '' : 'act'}} {{brandState === 'rec' ? 'rec' : ''}}"
+      bindtap="onBrand"
+      hover-class="rail-brand-hv"
+      aria-role="button"
+      aria-label="{{brandState === 'rec' ? '停止录音' : (brandState === 'mic' ? '开始录音' : '打开闪念胶囊')}}"
+    >
+      <text class="rail-brand-clock {{brandState === 'rec' ? 'is-in' : 'is-out'}}">{{brandClock}}</text>
+      <image class="rail-brand-mic {{brandState === 'mic' ? 'is-in' : 'is-out'}}" src="/assets/icons/voice.svg" mode="aspectFit" />
+      <image class="rail-brand-img {{brandState === 'logo' ? 'is-in' : 'is-out'}}" src="/assets/brand-logo-512.png" mode="aspectFill" />
+    </view>
+  </view>
+</view>

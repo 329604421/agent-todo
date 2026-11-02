@@ -1,0 +1,700 @@
+<!-- 表单抽屉 · 待办创建/编辑/导出（FR-3.6 / FR-3.9 / FR-3.11 · D-4 定案走抽屉）
+     另承载 个人资料 / 项目 / 脑图 / agent / token 的新建与编辑 —— 字段形态一致，共用一套壳
+     ★ 09-22 第四十二轮：补上黑色半透遮罩（与列表抽屉同款）
+     ★ 09-22 第四十三轮（待办页专项）：
+        · 归属项目改**一行一个**（最多 8 个，胶囊会挤成两三行，认不出选的是哪个）
+        · 关联脑图改「选择行 ＋ 右侧**三级抽屉**」（设计定案 §4：三级装选项与详情；
+          单选 · 当前值打勾 · 选中即回填自动收掉）；三级只列**归属项目下**的脑图
+        · 图片回显放大成**两个一行**
+        · 抽屉里只留字段 —— 所有解释说明小字（.sd-help / hint）整条去掉
+     ★ 09-22 第四十五轮（待办页专项·第三批）：
+        · 新增 **mode = export** —— 详情页的「适配 agent 文本」整块收进这里：
+          只读预览 ＋「不含图片」开关 ＋「复制到剪贴板」（FR-3.11）
+        · 三级（脑图）在竖屏也**开在表单右侧**了（之前盖在表单位上，见 wxss）
+        · 三级里的选项改**卡片式** ＋ 右侧单选框，让人一眼看出可以切换
+        · 支持**两层表单同时开**（.o2）：待办表单 L1 侧转 ／ 项目表单 L2 —— 见 mod-todo
+     ★ 09-23 第五十七轮（项目表单专项）：
+        · 「关联 agent」「项目色」两个字段由胶囊改**一行一个**（首行「不关联」＝ 一次平等的选择）
+        · 项目色 8 个各占一行；**被别的项目占用的置灰不可选**并写明占用者（`item.off` / `item.owner`）
+        · 行数据的 `wx:key` 改 `uid`（首行存储值是空串，`wx:key` 不接受空值）
+     ★ 09-23 第八十二轮（待办页专项 · 第六批）：
+        · **待办创建态不再渲染「关联脑图」**（只留编辑态）—— 用户口径「创建待办弹窗中删除
+          关联脑图的功能，这样就不用在此时展开三个抽屉了」。关联落点搬去详情页（见 mod-todo）。
+     ★ 09-26 第八十三轮（待办页专项 · 第七批）：
+        · **创建态也不再渲染「＋ 新建项目」** —— 用户口径「创建待办弹窗中，把『新建项目』去掉」。
+          与上一条同源：点它会开"待办表单 → 项目表单"**两级并排**（一级侧转不可点）。
+          ⇒ 待办表单在**创建态**从此只剩四个字段：内容 / 紧急程度 / 归属项目（只选不改）/ 图片。
+        · 详情页三颗跳转键的统一（`.tb-btn`）在 mod-todo，本组件一个字没改。
+     ★★ 2026-10-23 第二百四十七轮（用户口径 · 待办表单回归"标准信息"）：
+        · **「图片」与「关联脑图」两个字段整块从待办表单里删掉**。
+          用户原话：「编辑弹窗中应该去掉图片和关联脑图的编辑，因为图片的调整和关联脑图本身
+          就可以在详情页直接快速搞定，没必要在编辑弹窗中处理，编辑弹窗还是主要管待办的
+          正文、所属项目这两个标准信息」。
+          ⇒ 待办表单只剩三个字段：**待办内容 / 紧急程度 / 归属项目**（紧急程度是必填的
+            标准信息，不在这次要删的两类"附件"里，故保留）。
+          ⇒ 两类附件的**唯一编辑入口搬到详情页**（mod-todo）：图片卡能加也能删、
+            脑图卡能关联也能取消关联。这是本轮的另一半，两处必须一起看。
+          ⇒ **创建态也一起删**（不是只删编辑态）：同一个抽屉不该出现"新建时能加图、
+            编辑时不能"的两副面孔；而创建完那条待办就进详情页，加图在那儿一步就到。
+        · 连带删掉两样只有它们用得着的东西：
+          ① 文件末尾那个 `.sd3` **三级脑图抽屉**（选择 / 不关联 / 新建脑图）——
+             它在 43 轮为「关联脑图」而生；现存的 `.sd3` 只剩**项目副弹窗**一层
+             （246 轮那个「选择其他项目」），样式与几何一个字没动；
+          ② `.sd-imgs` 那一整块图片网格。
+          ⚠️ `.sd3` 那套 class **留着**（项目副弹窗在用），删的只是"脑图那一层"的实例。
+        · 表单**不再碰** `images` / `mindmapId` 这两个键 —— `forms.build()` 不再产出它们，
+          `forms.submit()` 也改成"有才写"（没有就不动）⇒ 编辑保存不会把已入库的图清空、
+          也不会把已关联的脑图解掉。**这一对是本次改动的命门**，见 forms.js 那两条注释。 -->
+
+<!-- 遮罩：黑 35% · 只压展示区，不盖 navRail。点任意处 ＝ 取消
+     ⚠️ 只在「本层独占」时出现：offset ≠ 0 说明底下压着列表抽屉或上一级表单，
+        那一层自己的遮罩已经在压暗展示区，再叠一层会重影。
+     ⚠️ 三级抽屉开着时，上面还有一层 .sd3-scrim（z93）先接走点击。 -->
+<view class="sd-mask {{port ? 'port' : ''}}" wx:if="{{open && !offset}}" bindtap="onCancel"></view>
+
+<view class="sd {{port ? 'port' : ''}} {{posClass}} {{turned ? 'turned' : ''}}" wx:if="{{open}}">
+  <view class="sd-head">
+    <text class="sd-title">{{title}}</text>
+    <!-- ★ 48 轮：「取消」与列表抽屉标题带的「筛选」统一成同一颗**抽屉按钮**
+         （28 高描边胶囊）⇒ 必须是 view 而不是 text。 -->
+    <view class="sd-cancel" catchtap="onCancel" hover-class="sd-cancel-hv">
+      <icon name="close" size="13" opacity="0.65" />
+      <text>取消</text>
+    </view>
+  </view>
+
+  <!-- ★ 49 轮：抽屉里的滚动容器一律**不显示滚动条**（能滚就够）：
+       enhanced ＋ show-scrollbar=false 是主手段，wxss 里再补一道 ::-webkit-scrollbar 兜底。
+       ★★ 150 轮：待办正文那个 **`<textarea>` 也在这条口径里**（它**没有** `enhanced` /
+         `show-scrollbar` 这类属性可用 ⇒ 只能吃 wxss 那两条：`::-webkit-scrollbar` ＋
+         `scrollbar-width: none`）。⚠️⚠️ 但**真机已否掉"CSS 能收掉它"** —— 用户复核
+         「**依旧还是会闪现一下滚动条**」⇒ 那条是**原生控件自己画的**。**解在尺寸上**：
+         js 的 `AREA_SAFE` 提到"一个行盒 ＋ 8"，让"内容 > 控件"那一瞬不发生（见 wxss）。
+       ★★ 145 轮：**把 144 轮摘掉的 `enhanced` / `show-scrollbar` 装回去** ——
+         144 轮摘它的理由是"官方说鸿蒙不支持 enhanced"（顺手清掉一处空转），
+         但那轮真机结果**更差**（"有滚动条且都不能滚动了"）⇒ 这是一处**没有收益、只有风险**的改动。
+         ★ 口径：**"官方标注不支持"不等于"摘掉它更安全"** —— 它对鸿蒙是空转，
+           对 WebView（IDE / PC，用户已验证没问题的两条路）却是**实打实在管事的**那个属性
+           （`show-scrollbar` 只在开 `enhanced` 时生效）⇒ 摘它 = **在好的平台上撤了一处生效的设置，
+           在坏的平台上什么都没换来**。
+         ⚠️ 这与 143 轮"只动坏掉的那一环"是同一条纪律 —— 144 轮违反了它。
+         ⇒ 本轮一律按「**没有证据表明它有害之前，不动它**」处理。 -->
+  <scroll-view class="sd-body" scroll-y enhanced show-scrollbar="{{false}}">
+  <!-- ★★ 2026-09-30：**表单区整段挂 `vReady` 闸门**（成因与修法见 form-drawer.js 的 observers 注释）。
+       一句话：`<textarea>` / `<input>` 是原生组件，`value` 只在**创建那一刻**生效；
+       抽屉由 `open` 的 `wx:if` 建出来时 `v` 还空着，随后 observer 再灌 `v` 已经晚了
+       ⇒ 真机上"编辑待办，正文框是空的"。
+       闸门与 `v` 在**同一次 `setData`** 里置真 ⇒ 原生控件**创建即带值**。
+       ⚠️ 用 `<block>`（不产生节点）而不是再包一层 `<view>`：`.sd-body` 的 `gap:16`
+         是按直接子元素算的，多一层 view 会把间距整片改掉。
+       ⚠️ 别把它挪到「只包有输入框的那几个 mode」上 —— 七个 mode 共用这一套壳，
+          `profile`/`project`/`mindmap`/`agent`/`token` 全都有 `<input>`，逐个挑必漏。 -->
+  <block wx:if="{{vReady}}">
+
+    <!-- ============ 个人资料（★ 42 轮：我的页资料卡右侧的「编辑」） ============ -->
+    <block wx:if="{{mode === 'profile'}}">
+      <view class="sd-field">
+        <text class="sd-label">头像</text>
+        <view class="sd-avatar-row">
+          <view class="sd-avatar-box">
+            <image wx:if="{{v.avatar}}" class="sd-avatar-img" src="{{v.avatar}}" mode="aspectFill" />
+            <icon wx:else name="mine" size="26" opacity="0.4" />
+          </view>
+          <view class="sd-avatar-acts">
+            <!-- ★ 审查-02 S1（2026-10-15）：两颗 `.sd-chip` 补 `hover-class`（与 `.tf-chip-hv` 同族：改底 `--chip`）。 -->
+            <view class="sd-chip" catchtap="onPickAvatar" hover-class="sd-chip-hv">
+              <icon name="album" size="13" opacity="0.65" />
+              <text>从相册选择</text>
+            </view>
+            <view class="sd-chip" wx:if="{{v.avatar}}" catchtap="onResetAvatar" hover-class="sd-chip-hv">
+              <icon name="refresh" size="13" opacity="0.65" />
+              <text>恢复默认</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">用户名<text class="sd-req">必填</text></text>
+        <input cursor-spacing="32" class="sd-input" value="{{v.name}}" placeholder="例如：我的工位" placeholder-class="sd-ph" bindinput="onName" />
+      </view>
+    </block>
+
+    <!-- ============ 待办 ============ -->
+    <block wx:if="{{mode === 'todo'}}">
+      <view class="sd-field">
+        <text class="sd-label">待办内容<text class="sd-req">必填</text></text>
+        <!-- ★★ 第一百四十七轮：**把高度的权威搬回"普通 view"**（真机读数定案）。
+             ── 第一份真机读数（144 轮临时取证口取的；★ 150 轮定案后该取证口已撤除）──
+                「ohos / OpenHarmonyOS 7.0.0 ｜ areaH 104 ｜ 外框 87 ｜ 输入区 71」
+             ★ 这三个数一次把六轮的猜测钉死：
+               · `areaH 104` —— **JS 侧完全正常**（这段文字 4 行 ⇒ 正好落在最小高度上）；
+               · `外框 87`   —— 屏幕上**没有任何东西是 104**：外框只有 87；
+               · `输入区 71` —— 最关键：内层下发的是 inline `min-height:84px`，实测只有 **71**
+                                 ⇒ **鸿蒙上原生 textarea 根本不认我们的 CSS 高度。**
+             ⇒ 144 / 145 那句"把高度交回原生"是个**错方向**：`auto-height` 一开，原生自己说了算
+               （既不认我们下发的 `min-height`／`max-height`，自己算的高还比它实际渲染的内容
+               矮一行）⇒ "框比字矮、字被裁"；而 145 又把外框的高度整个撤掉 ⇒ 连那条 104 的
+               保底都没了 ⇒ **框从 104 掉到 87**，正是用户说的「**越改越差**」。
+             ── 修法：**高度只有一个权威 —— 普通 `<view>`（它在所有平台都吃 CSS）** ──
+               · **外框** `.sd-area-box`：inline `min-height:{{areaH}}px`
+                 ＋ wxss `display:flex; flex-direction:column`
+                 —— **只托住、不夹住**（永远不写 `height` / `overflow`）
+                 ⇒ **边框一定跟着 `areaH` 长**，这是这条链上唯一处处成立的一层；
+               · **内层** `.sd-area-in`（textarea）：inline `height:{{areaH - 11}}px`
+                 （★ 150 轮：`20 → 11`，因为外框的**下内边距 9 让给了"一行余量"**）
+                 ＋ wxss `flex: 1 1 auto` —— 两道**独立**高度来源（绝对 px ／ 弹性拉伸），
+                 都从 `areaH` 推出来，哪个平台认哪道就用哪道；
+               · ★★ **原生控件的"字"要再单独乘一次 `s`**：inline 另下发
+                 `font-size:{{areaFs}}px;line-height:{{areaLh}}px`（＝ 14 / 21 × s）——
+                 `textarea` 是原生组件、**不吃祖先 `.stage` 的 `transform: scale(s)`**，
+                 不补这一下，字就比（缩过的）框大一圈（真机一行只排 16 个汉字、应为 19 个）。
+                 ⚠️ **普通 `<view>` 本来就缩，绝不跟着乘**（乘两次会变小）；
+               · **`auto-height` 本轮撤掉** —— 它就是"原生接管高度、我们的数全废"那个开关；
+               · `AREA_SAFE = AREA_LH + 8 = 29`（js 侧）—— ★★ **150 轮起它是"一个行盒的余量"**：
+                 一个行盒 21 用来让"换行那一瞬内容 > 控件"**根本不发生**（原生没理由画滚动条），
+                 另 8 是给原生自带那圈内边距的
+                 （`disable-default-padding` 官方只作用 iOS，wxss 的 `padding:0` 在鸿蒙够不到原生层）。
+                 ⚠️ 它长在控件**底部** ⇒ 外框下内边距 9 → 0 是这笔账的另一半（净增高只 ~12px）；
+             · ⚠️ **别再打开 `auto-height`**；
+             · ⚠️ **别给 `.sd-area-box` 加 `height` / `overflow`**（那会把"托住"变成"夹住"）。
+             —— ★★ 150 轮（换行瞬间那条滚动条）——
+               用户口径：「持续输入文字时，如果换行会突然显示一下滚动条，然后输入框高度增加以后
+               这个滚动条就没了」。**先试的是"用 CSS 把滚动条收掉"**（`::-webkit-scrollbar` ＋
+               `scrollbar-width:none`，与 `.sd-body` / `.sd3-body` 同一招）⇒ 真机复核
+               「**依旧还是会闪现一下滚动条**」⇒ **那条滚动条是原生控件自己画的，不吃 CSS**
+               （与"原生不认我们的 CSS 高度"同源）。⇒ 改走结构：**留足一个行盒**，见上。
+               两处 CSS 仍保留（对 WebView / PC 侧照样管事），但**别再把它们当成这个问题的解**。
+             · ⚠️ `{{areaH - 11}}` 里的 11 与 wxss `.sd-area-box`（上 padding 9 ＋ **下 padding 0**
+               ＋ border 1×2）是**同一口径**，`工具/check_area_autogrow.js` 会现读 wxss 复算比对。 -->
+        <!-- ── 147 轮之前的记录（**已作废**，留作"别再走回头路"的清单）────────────────
+             ★★ 第一百四十五轮：**把 144 轮加的天花板摘掉** —— "不长高"与"不能滚动"是同一个病。
+             用户口径不变：「以当前的输入框高度作为最小高度，如果文本长度过长，高度会随之增加，
+             最高增加到 2 倍最小高度」。
+             ── 用户第六次真机复核 ──
+             「**依旧不行，越改越差了，有滚动条且都不能滚动了**」。
+             ★★ **"越改越差"这四个字是这条链路上最有价值的一条证据**：
+               144 轮**改变了真机行为**（143 是"有滚动条但能滚"，144 变"有滚动条且不能滚"）
+               ⇒ 说明 144 轮动的那条机制**在鸿蒙上确实是生效的** —— 也就是 `auto-height`
+               （原生自己算高）；反过来也印证了 130–143 那种"推 px 给 DOM"**连行为都改变不了**。
+             ── 那么 144 错在哪：**错在又给它压了一条 `max-height:188px`** ──
+               `auto-height` 的原生语义是"控件高 = 内容高 ⇒ 我永远不需要滚动"；
+               我们在外面压一条 `max-height`，原生层并不知道 ⇒ **控件被夹在 188，
+               可它自己的滚动条没有被启用** ⇒ 正好是「**有滚动条 且 都滚动不了**」。
+             ── 本轮修法：**只留地板，摘掉天花板** ──
+               · `.sd-area-box`（view）      —— 仍然**没有任何高度**（纯外壳，高由里面撑）；
+               · `.sd-area-in`（textarea）   —— 仍然 **`auto-height`**（原生算高），
+                 但 inline **只剩 `min-height:{{areaH - 20}}px`（地板）**，
+                 `max-height:188px` **整条删掉**（内联与 wxss 两处都删）。
+               · `min-height` 只会"托住"、永远不会"夹住" ⇒ **框一定长得起来**，
+                 且内容高 == 控件高 ⇒ **根本不会出现滚动条，也就没有"滚不动"这回事**。
+             ── ⚠️ 因此本轮**暂时没有 2 倍上限**（用户口径「最高增加到 2 倍」）──
+               "夹住"与"让原生自己长"在鸿蒙上是**互斥**的（144 轮已用真机证过）。
+               先把"长高 ＋ 没有滚动条"这两件正事做对；上限下一轮单独上，
+               且**不能再靠 `max-height`**（只能靠"到顶时把 `auto-height` 关掉、换成固定高"那条路）。
+             ── 其余保持 144 轮的样子 ──
+               · `disable-default-padding`：去掉 textarea 自带内边距，保住"每行 19 字"的口径
+                 （官方说它只作用 iOS，所以 wxss 里另有 `padding:0` 兜底）；
+               · `bindlinechange="onLines"`：原生报的真实行数会回写 `areaH`（只抬地板）；
+               · `line-height:21px` 保留（设计口径）；`areaH` 也按 21px 行盒算 ⇒ 地板与原生同源。
+             · ⚠️ **不要再给内层加回 `max-height`**（144 轮的失败点；见 wxss 同处注释）；
+             · ⚠️ **也不要给 `.sd-area-box` 加 `height` / `overflow:hidden`** ——
+               它一旦有了自己的高度，就又变回"我们推高度"（130–143 的死路）。
+             · ⚠️ **内层不许出现 `height`（无论 px 还是百分比）** —— 与 `auto-height` 互斥。
+             · ⚠️ `{{areaH - 20}}` 里的 20 与 wxss 的 `.sd-area-box`（padding 9×2 ＋ border 1×2）
+               是**同一口径**，`工具/check_area_autogrow.js` 会现读 wxss 复算比对。 -->
+        <view class="sd-area-box {{v.text ? '' : 'ph'}}" style="min-height:{{areaH}}px">
+          <textarea cursor-spacing="32"
+            class="sd-area-in"
+            style="height:{{areaH - 11}}px;font-size:{{areaFs}}px;line-height:{{areaLh}}px"
+            value="{{v.text}}"
+            placeholder="用一句话说清要做什么"
+            placeholder-class="sd-ph"
+            maxlength="-1"
+            disable-default-padding="{{true}}"
+            bindinput="onText"
+            bindlinechange="onLines"
+          />
+        </view>
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">紧急程度<text class="sd-req">必填</text></text>
+        <view class="sd-chips">
+          <!-- ★★ 2026-10-22（审查 P2-03）· **选中态从"实心块"改成"浅底 ＋ 同色描边 ＋ 深字"**。
+               ── 改前的对比度（sRGB 相对亮度比，13px 小字参考 4.5:1）：
+                  · 浅色：白字压在档位主色上 —— 紧急 3.91、中等 **2.17**、不紧急 3.59、留置 3.13；
+                  · 深色：`--on-solid`（近白）压在**提亮过的**深色主色上 —— 最差 1.91。
+                  ⇒ 四档**全部**不达标，而"中等"是最常选的一档。
+               ── 现在的取值：底 `soft` ／ 描边 `main` ／ 字 `text`（这三支本来就在色板里，
+                  浅色是 5.39–7.16、深色另有一档，都是给"徽章 / 选中底"定的语义色）。
+                  ⚠️ 这也让表单里的**紧急度胶囊**与卡片上的**紧急度徽章**变成同一种画法
+                     （浅底 ＋ 深字），选中的语义仍然靠描边与底色立住，没有削弱。
+               ── 为什么不用「每档配一个 onColor」：那要为 4 档 × 2 主题新增 8 个令牌，
+                  而且 `.sd-chip.on` 是**全表单共用**的选中态（项目节点 / 厂商都在用），
+                  在这里单独换字色会让同一屏出现两种"选中"语言。
+               ⚠️ 内联 `color` 会压过 `.sd-chip.on` 的 `color: var(--on-solid)` —— 这是有意的
+                  （那一支服务的是黑底选中胶囊，本行不再走黑底）。 -->
+          <view
+            wx:for="{{o.urgencies}}"
+            wx:key="key"
+            class="sd-chip {{item.selected ? 'on' : ''}}"
+            style="{{item.selected ? 'background:' + item.soft + ';border-color:' + item.main + ';color:' + item.text : ''}}"
+            data-v="{{item.key}}"
+            catchtap="onPickUrgency"
+            hover-class="sd-chip-hv"
+          >{{item.name}}</view>
+        </view>
+      </view>
+
+      <!-- 归属项目：**只列有颜色的项目**（一行一个），尾部两行入口
+           ★★ 2026-10-23（用户口径·第 246 轮）：
+             · 主列表只画 `tinted`（真的着过色）的项目 —— 那一列里色点是**唯一的身份标记**，
+               没颜色的行既不提供信息、又把抽屉撑长（一行一个 ＋ 8 个项目已经很满）；
+               无颜色的项目改从下面「选择其他项目」的**副弹窗**里选（见本文件末尾）。
+             · 尾部第一行「选择其他项目」：常态是**墨字**（`.sd-row.pick` 走 `--primary`——
+               它是"一个当前值"，不是"新增动作"，所以刻意与下面「新建项目」的 `--slate` 灰字分开）
+               ＋ 右端 `>`（示意"点开还能改"）；
+               当前归属的**恰好是个没颜色的项目**时，它变成那个项目名 ＋ 黄底（`.on`，
+               与上面有颜色的行选中时完全同一种画法）—— 否则用户根本看不出自己选了谁。
+             · 再点回某个有颜色的项目 ⇒ 这一行退回常态（`otherName` 由当前值现算，见 js）。
+           ⚠️ 「循环」包在外层 block 上、「条件」落在行上：两者写进同一个标签时，
+              条件是按**每一次循环**求值的，判据读起来也容易误判成"整块不渲染"。 -->
+      <view class="sd-field">
+        <text class="sd-label">归属项目<text class="sd-req">必填</text></text>
+        <view class="sd-list">
+          <block wx:for="{{o.projects}}" wx:key="id">
+            <view
+              wx:if="{{item.tinted}}"
+              class="sd-row {{item.selected ? 'on' : ''}}" hover-class="sd-row-hv"
+              data-v="{{item.id}}"
+              catchtap="onPickProject"
+            >
+              <view class="sd-cdot" style="background:{{item.color}}"></view>
+              <text class="sd-row-t">{{item.name}}</text>
+              <icon wx:if="{{item.selected}}" name="check" size="14" />
+            </view>
+          </block>
+          <!-- 「选择其他项目」—— 点开右侧副弹窗（只列没颜色的项目）。
+               左端 `project` 图标取 **16**（不是 14）：上面那些项目行的左端是 16 宽的项目色点，
+               取 14 会让这一行的文字比上面的行**左移 1px** —— 三行是紧挨着读的一列，
+               这种 1px 会被看成"没对齐"。右端 `chevron-right` **必须保留**：
+               它是"这一行还能再改"的唯一提示。 -->
+          <view
+            class="sd-row pick {{otherName ? 'on' : ''}}"
+            catchtap="onOpenOtherProject"
+            hover-class="sd-row-hv"
+          >
+            <icon name="project" size="16" />
+            <text class="sd-row-t">{{otherName || '选择其他项目'}}</text>
+            <icon name="chevron-right" size="14" opacity="0.45" />
+          </view>
+          <!-- ★ 83 轮：「＋ 新建项目」也收成**只在编辑态**出现（与下面「关联脑图」同一口径）。
+               用户口径「创建待办弹窗中，把『新建项目』去掉」。
+               理由与 ⑯ 那条同源：创建待办时点它会开"待办表单 → 项目表单"**两级并排**
+               （一级侧转不可点），而用户手上正开着一张刚打开、正文还没写的表单。
+               项目本身有自己的一级入口（项目列表主弹窗底部的「＋ 新建项目」）。
+               ⚠️ 编辑态保留：改一条老待办时发现项目该补一个，不用退出重来。 -->
+          <view class="sd-row add" wx:if="{{editId}}" catchtap="onNewProject" hover-class="sd-row-hv">
+            <icon name="plus" size="14" opacity="0.6" />
+            <text class="sd-row-t">新建项目</text>
+          </view>
+        </view>
+      </view>
+
+    </block>
+
+    <!-- ============ 导出（★ 45 轮：原详情页的「适配 agent 文本」收进这里） ============
+         只读预览 —— 文本保真，一个字的改写都不许（FR-3.11 硬约束）；
+         预览与「复制到剪贴板」共用同一个纯函数 store.copyTodoText() ⇒ 看到的＝复制到的。 -->
+    <block wx:if="{{mode === 'export'}}">
+      <view class="ex-box">
+        <text class="ex-text" selectable>{{expText}}</text>
+      </view>
+
+      <!-- ★ 审查-02 S1（2026-10-15）：整行可点，补 `hover-class`（透明行 ⇒ 改底 `--chip` ＋ 圆角，见 wxss）。 -->
+      <view class="ex-sw {{v.noImage ? 'on' : ''}}" catchtap="onToggleNoImage" hover-class="ex-sw-hv">
+        <view class="ex-sw-box"><text class="ex-sw-ck" wx:if="{{v.noImage}}">✓</text></view>
+        <text class="ex-sw-t">不含图片</text>
+      </view>
+    </block>
+
+    <!-- ============ 信息增强（★ 278 轮）============
+         三态：loading / done / error。**没有 idle** —— 抽屉一开就是 loading（需求 4）。
+         ⚠️ 这一层**只做展示**：请求由**页面**发（form-drawer 被 wx:if 建/销，接不住"关掉抽屉后才回来的响应"；
+            属性下发比这层自己跑请求好收得多）。结果走 `enhText / enhState / enhError / enhNotice` 四个 property。
+         ⚠️ 文本只读：增强结果是**预览**，不是编辑区 —— 用户要改就复制出去改。
+            这样"看到的＝复制到的"那条承诺在这张抽屉里同样成立（与导出一致）。 -->
+    <block wx:if="{{mode === 'enhance'}}">
+
+      <!-- ① 生成中（非流式 ⇒ 只有"没有"和"全有"两态，中间不吐字） -->
+      <view class="enh-load" wx:if="{{enhState === 'loading'}}">
+        <view class="enh-spin"></view>
+        <text class="enh-load-t">正在增强提示词…</text>
+        <text class="enh-load-s">模型正在整理这条待办，通常 5–20 秒</text>
+      </view>
+
+      <!-- ② 失败：说清成因 ＋ 给一次重试（不要静默，也不要只靠一句一闪而过的 toast） -->
+      <view class="enh-err" wx:elif="{{enhState === 'error'}}">
+        <text class="enh-err-t">{{enhError}}</text>
+        <view class="enh-retry" catchtap="onEnhanceRetry" hover-class="enh-retry-hv">
+          <icon name="redo" size="14" opacity="0.7" />
+          <text>重试</text>
+        </view>
+      </view>
+
+      <!-- ③ 结果 -->
+      <block wx:else>
+        <!-- ★ 回填提示：只有在"有图片被挪到末尾 / 被去重 / 次序乱了"时才有内容。
+             正常情况 `enhNotice` 是空串 ⇒ 这个节点不渲染，**不占高度**（别给它留占位块）。 -->
+        <view class="enh-note" wx:if="{{enhNotice}}"><text>{{enhNotice}}</text></view>
+        <view class="ex-box">
+          <text class="ex-text" selectable>{{enhText}}</text>
+        </view>
+      </block>
+    </block>
+
+    <!-- ============ 项目 ============ -->
+    <block wx:if="{{mode === 'project'}}">
+      <view class="sd-field">
+        <text class="sd-label">项目名称<text class="sd-req">必填</text></text>
+        <input cursor-spacing="32" class="sd-input" value="{{v.name}}" placeholder="例如：彩票小助手" placeholder-class="sd-ph" bindinput="onName" />
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">项目节点</text>
+        <view class="sd-chips">
+          <view wx:for="{{o.nodes}}" wx:key="name" class="sd-chip {{item.selected ? 'on' : ''}}" data-v="{{item.name}}" catchtap="onPickNode" hover-class="sd-chip-hv">{{item.name}}</view>
+        </view>
+      </view>
+
+      <!-- 关联 agent —— ★ 57 轮：胶囊 → **一行一个**（与下面「项目色」同一形态）。
+           首行「不关联」＝ 一次平等的选择（用户口径「不选中为不关联」），
+           原来挤在胶囊行里会被读成"清空按钮"。
+           ⚠️ `wx:key` 用 `uid` 而不是 `id`：首行「不关联」的存储值就是空串，
+              而 `wx:key` 空值会报警告 —— 行数据里另给一个非空哨兵。 -->
+      <view class="sd-field">
+        <text class="sd-label">关联 agent<text class="sd-opt">可空</text></text>
+        <view class="sd-list">
+          <view
+            wx:for="{{o.agents}}"
+            wx:key="uid"
+            class="sd-row {{item.selected ? 'on' : ''}}" hover-class="sd-row-hv"
+            data-v="{{item.id}}"
+            catchtap="onPickAgent"
+          >
+            <text class="sd-row-t">{{item.name}}</text>
+            <icon wx:if="{{item.selected}}" name="check" size="14" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 项目色 —— ★ 57 轮：8 个颜色**每个占一行**（原来是一排色胶囊）。
+           两个状态各有说法：
+             · 被**别的项目**占用 ⇒ `.off` 置灰不可选，行尾写明被谁占了
+               （只写"不可用"会让人以为是 bug；写清占用者才可自查）
+             · 当前项目用着它 ⇒ 右侧打勾
+           首行「不关联」是**合法的选择**（项目可以不着色），不是"清空"。 -->
+      <view class="sd-field">
+        <text class="sd-label">项目色<text class="sd-opt">可空</text></text>
+        <view class="sd-list">
+          <view
+            wx:for="{{o.colors}}"
+            wx:key="uid"
+            class="sd-row {{item.selected ? 'on' : ''}} {{item.off ? 'off' : ''}}" hover-class="sd-row-hv"
+            data-v="{{item.key}}"
+            data-off="{{item.off}}"
+            catchtap="onPickColor"
+          >
+            <view class="sd-cdot" style="background:{{item.main}}"></view>
+            <text class="sd-row-t">{{item.name}}</text>
+            <!-- 占用提示拆成三段，**只让项目名那一段省略** ——
+                 整条一起 ellipsis 的话，长名字会把尾巴的「占用」吃掉，
+                 屏幕上只剩「已被「rockchip 工具链…」，反而读不出这是"不可选"。
+                 ⚠️ 三段之间 gap 为 0（见 wxss），否则会在标点前后裂出缝。 -->
+            <view class="sd-row-note" wx:if="{{item.off}}">
+              <text class="sd-row-note-k">已被「</text>
+              <text class="sd-row-note-n">{{item.owner}}</text>
+              <text class="sd-row-note-k">」占用</text>
+            </view>
+            <icon wx:elif="{{item.selected}}" name="check" size="14" />
+          </view>
+        </view>
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">备注<text class="sd-opt">选填</text></text>
+        <textarea cursor-spacing="32" class="sd-area" value="{{v.remark}}" placeholder="这个项目是干什么的" placeholder-class="sd-ph" maxlength="-1" bindinput="onRemark" />
+      </view>
+    </block>
+
+    <!-- ============ 脑图（★ 本轮：从"只能改名"扩成"名称 / 所属项目 / 格式"） ============ -->
+    <block wx:if="{{mode === 'mindmap'}}">
+      <view class="sd-field">
+        <text class="sd-label">脑图名称<text class="sd-req">必填</text></text>
+        <input cursor-spacing="32" class="sd-input" value="{{v.name}}" placeholder="例如：票据录入链路" placeholder-class="sd-ph" bindinput="onName" />
+      </view>
+      <view class="sd-field">
+        <text class="sd-label">所属项目<text class="sd-req">必填</text></text>
+        <view class="sd-list">
+          <!-- ★★ 2026-10-23：与待办表单的「归属项目」**同一套形态与同一套数据**
+               （只列有颜色的 · 尾部「选择其他项目」＋「新建项目」· 副弹窗选无颜色的）——
+               两处必须始终一样，用户口径是"统一优化"。改这里请连着上面那段一起看。 -->
+          <block wx:for="{{o.projects}}" wx:key="id">
+            <view
+              wx:if="{{item.tinted}}"
+              class="sd-row {{item.selected ? 'on' : ''}}" hover-class="sd-row-hv"
+              data-v="{{item.id}}"
+              catchtap="onPickProject"
+            >
+              <view class="sd-cdot" style="background:{{item.color}}"></view>
+              <text class="sd-row-t">{{item.name}}</text>
+              <icon wx:if="{{item.selected}}" name="check" size="14" />
+            </view>
+          </block>
+          <view
+            class="sd-row pick {{otherName ? 'on' : ''}}"
+            catchtap="onOpenOtherProject"
+            hover-class="sd-row-hv"
+          >
+            <icon name="project" size="16" />
+            <text class="sd-row-t">{{otherName || '选择其他项目'}}</text>
+            <icon name="chevron-right" size="14" opacity="0.45" />
+          </view>
+          <!-- 「新建项目」—— 与待办表单同一条口径：**只在编辑态**出现
+               （新建脑图时点它会开两级并排；项目本身有自己的一级入口）。
+               ⚠️ 与待办那段不同的是：这里 45 轮**从来没有**这个入口，
+                  本轮按用户要求补上，条件照待办那张抄（editId）。 -->
+          <view class="sd-row add" wx:if="{{editId}}" catchtap="onNewProject" hover-class="sd-row-hv">
+            <icon name="plus" size="14" opacity="0.6" />
+            <text class="sd-row-t">新建项目</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ★ 本轮新增 · 格式：六选一，默认「思维导图」（`store.formatKeyOf(null)`）。
+           形态与上面两条一致（一行一个 ＋ 黄底黄边 + 打勾），只在行首多一张 48×34 的结构缩略图 ——
+           与「格式」主弹窗、列表卡上的格式气泡**同一份图源**（utils/formats.js）。
+           说明文案不在这里给：这个小弹窗要的是"一眼认出结构"，逐条读描述是主弹窗的活。
+           ★★ 280 轮：完善态下它是**必填**，而且进来时可能**一个都没勾**
+               （语义转脑图的占位卡 `format=''`）—— 那是真实状态，不许兜底成默认键。 -->
+      <view class="sd-field">
+        <text class="sd-label">格式<text class="sd-req" wx:if="{{requireAll}}">必填</text><text class="sd-opt" wx:else>可空</text></text>
+        <view class="sd-list">
+          <view
+            wx:for="{{o.formats}}"
+            wx:key="key"
+            class="sd-row fmt {{item.selected ? 'on' : ''}}" hover-class="sd-row-hv"
+            data-v="{{item.key}}"
+            catchtap="onPickFormat"
+          >
+            <image class="sd-fthumb" src="{{item.thumb}}" mode="aspectFit" />
+            <text class="sd-row-t">{{item.label}}</text>
+            <icon wx:if="{{item.selected}}" name="check" size="14" />
+          </view>
+        </view>
+      </view>
+
+      <!-- ★★ 2026-10-27（用户口径）：**脑图表单没有「归属 agent」这一项** ——
+           "用户选择了归属项目就已经确定了归属 agent"。一个脑图属于哪个 agent，
+           完全由它的项目决定（项目表单里那一项才是唯一入口）。
+           ⚠️ 所以这里是**整块不存在**，不是"完善态下隐藏"：
+              两个态长得一样才不会让人问"为什么编辑时能改、完善时不能改"。
+              更要紧的是——若允许单独选，就会造出"项目是 A、agent 是 B"的矛盾数据，
+              而 agent 用量/额度是按 agent 归集的，那种数据谁来都解释不通。
+           落库那一侧（后端 `create` / `update`）也按项目推导，不假设客户端会传。 -->
+    </block>
+
+    <!-- ============ agent（★ 42 轮：手填字段 · 无「当前」、无备注、无色）
+         ★ 158 轮：「当前剩余」那一格删掉 ⇒ 现在只剩 名称 / 额度重置日 / 每月套餐额度 三个 ============ -->
+    <block wx:if="{{mode === 'agent'}}">
+      <view class="sd-field">
+        <text class="sd-label">agent 名称<text class="sd-req">必填</text></text>
+        <input cursor-spacing="32" class="sd-input" value="{{v.name}}" placeholder="例如：WorkBuddy 主工位" placeholder-class="sd-ph" bindinput="onName" />
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">额度重置日<text class="sd-opt">每月</text></text>
+
+        <!-- ★ 133 轮：只剩「日」一行 —— 各家 agent 都按自然月重置，月份那一行已删 -->
+        <view class="sd-step">
+          <view class="sd-step-ops">
+            <view class="sd-step-btn" data-d="-1" catchtap="onStepReset" hover-class="sd-step-btn-hv">−</view>
+            <view class="sd-step-v">
+              <text class="sd-step-n num">{{v.resetDay}}</text>
+              <text class="sd-step-u">日</text>
+            </view>
+            <view class="sd-step-btn" data-d="1" catchtap="onStepReset" hover-class="sd-step-btn-hv">＋</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- ★ 158 轮：这里原来还有一格「当前剩余」（余额）——
+           WorkBuddy / Trae 都没有取余额的 API，手填的数只会过期误导（157 轮已从两张 agent 卡上撤下）
+           ⇒ 输入项一并去掉，agent 只剩下面三个字段。数据层的 `quotaLeft` 字段先留着
+           （历史值不清空、后端 DTO 不动），但**表单不再写它**。 -->
+
+      <view class="sd-field">
+        <text class="sd-label">每月套餐额度</text>
+        <input cursor-spacing="32" class="sd-input" value="{{v.monthlyQuota}}" placeholder="例如：2000" placeholder-class="sd-ph" bindinput="onMonthlyQuota" />
+      </view>
+    </block>
+
+    <!-- ============ token（模型厂家 key · ★★ 2026-10-12 转真功能） ============
+         字段只剩两个：**模型厂商**（只能选）＋ **API Key**。
+         · 用户口径：「在添加 api 的时候先限定死，模型厂商改为下列菜单，目前只有 DeepSeek」
+           ⇒ 厂商走 `sd-chips` 单选（与「紧急程度」「项目节点」**同一画法** —— 单选在这个工程里
+             只有这一种形态），**没有输入框**，值取 `dataset.v`（＝ vendors.js 里的 `code`）。
+         · ❌ 「当前剩余额度」整格删掉：余额从本轮起由**后端代查厂家接口**回写，不是手填的。
+         · ⚠️ 编辑态**不回填 Key**（服务端只存密文、只回掩码）⇒ 输入框必然是空的。
+           所以 placeholder 要说明"留空 ＝ 不换"，并把当前那把 key 的掩码显示在下方 ——
+           否则用户会以为"我的 key 丢了"，然后重贴一遍（重贴本身没错，但是白做一次）。
+         · `password` 是**有意**的：key 是能直接花钱的凭证，不该在屏幕上明文摊着。 -->
+    <block wx:if="{{mode === 'token'}}">
+      <view class="sd-field">
+        <text class="sd-label">模型厂商<text class="sd-req">必填</text></text>
+        <view class="sd-chips">
+          <view
+            wx:for="{{o.vendors}}"
+            wx:key="code"
+            class="sd-chip {{item.selected ? 'on' : ''}}"
+            data-v="{{item.code}}"
+            catchtap="onPickVendor"
+            hover-class="sd-chip-hv"
+          >{{item.name}}</view>
+        </view>
+      </view>
+
+      <view class="sd-field">
+        <text class="sd-label">API Key<text class="sd-req" wx:if="{{!editId}}">必填</text></text>
+        <input cursor-spacing="32"
+          class="sd-input"
+          value="{{v.apiKey}}"
+          password
+          placeholder="{{v.keyMask ? '留空表示不更换已有的 Key' : '粘贴你的 API Key'}}"
+          placeholder-class="sd-ph"
+          bindinput="onApiKey"
+        />
+        <text class="sd-keymask" wx:if="{{v.keyMask}}">当前：{{v.keyMask}}</text>
+      </view>
+    </block>
+
+  </block><!-- /vReady 闸门 -->
+
+  </scroll-view>
+
+  <view class="sd-foot">
+    <!-- 卡片上只保留「编辑」按钮，删除 / 归档收进编辑抽屉（新建时不出现）
+         · agent / token ⇒「删除」
+         · project       ⇒「归档项目」（★ 55 轮：项目**只归档不删**，`FR-2.9`；
+           原来挂在卡片内的「···」上，第五十五轮该按钮撤掉后搬到这里 —— 与「删除」
+           同一个位置、同一套壳，用户不用学第二种"危险动作在哪"）
+         · mindmap       ⇒「删除这张脑图」（★ 71 轮：原来挂在画布顶部「⋯（更多）」上，
+           那颗键整条取消之后搬到这里 —— 同样复用这一个危险位，文案由页面传
+           `danger-label`，组件不预设）
+         ⚠️ 用 editId 而不是 id —— id 是 WXML 内置属性，做 property 会被吞掉 -->
+    <!-- ★★ 280 轮：`noDanger` 是**显式开关** —— 「完善脑图信息」不渲染这颗键。
+         ⚠️ 别指望"传空 dangerLabel"能藏住它：这条 `wx:if` 只看 `mode`，文案不参与判断
+            （279 轮的 `wx:else` 是同一类"靠内容推断显隐"的坑）。 -->
+    <view class="sd-del" wx:if="{{!noDanger && editId && (mode === 'project' || mode === 'mindmap')}}" catchtap="onDelete" hover-class="sd-del-hv">
+      <icon name="trash-red" size="14" />
+      <text>{{dangerLabel}}</text>
+    </view>
+    <view class="sd-del" wx:if="{{editId && (mode === 'agent' || mode === 'token')}}" catchtap="onDelete" hover-class="sd-del-hv">
+      <icon name="trash-red" size="14" />
+      <text>删除</text>
+    </view>
+    <!-- ★ 45 轮：导出的落点是剪贴板，不是"保存"，所以它不走进表单提交，自带一颗按钮。
+         ★★ 173 轮：复制成功后**这颗键自己变色**（`.ok` → `--success` 绿底 ＋ 反白勾 ＋「已复制」）。
+         成因与取舍见组件 js 里 `copied` 字段的注释；用户口径两点：
+           ① 「点击之后应该给个变色作为提示，要不总觉得没有起作用」⇒ 反馈落在键自己身上；
+           ② 「不用记住我是否已经导出，下次再进来重置即可」⇒ 不落 storage，关抽屉即复位。
+         ⚠️ 它只能变**自己**：预览区与「不含图片」开关一个字都不许动（FR-3.11 只读硬约束）。
+         ⚠️ 图标跟着文案换（`w-copy` → `check`），两颗都是 **15px**（字 14 ⇒ 图标 15 / gap 6，
+            167 轮定下的取档）⇒ 换图标不改变按钮宽度。
+         ⚠️ 成功态那颗是**墨版** `check`（不是 `w-` 反白版）—— 173 轮当日返工后键底是
+            亮绿 `--success` ＋ 墨字，图标必须跟**字色**同色（167 轮）。 -->
+    <!-- ★★ 279 轮：「增强」挪到「复制到剪贴板」**右侧**（用户口径：它要在这颗键右边）。
+         ⚠️⚠️ 必须在 `.sd-submit` 的 `wx:if` 与下面那颗 `wx:else` **这一对之后**：
+            `wx:else` 只认紧挨着它的那一颗 `wx:if`。中间插一个节点，普通表单的保存键
+            判据就变成 `mode !== 'export'` —— `enhance` 态那颗主键当场消失。
+         ⚠️ 顺序靠 **DOM 顺序**（`.sd-foot` 是 flex row ＋ gap 10），不给它写 `order`
+            也不写 `left` —— 第二条几何口径就是下一轮返工的起点。
+         ⚠️ 宽度由内容定（`flex:0 0 auto`），主键 `.sd-submit` 吃 `flex:1` ⇒ 主键自动变窄，
+            不用给两颗键写死 px（写死就是第二条宽口径，换个文案就崩）。
+         ⚠️ **黄底墨字**：走 `.tb-btn.yellow` / `.sec-btn.yellow` 那条「品牌动作」口径
+            （app.wxss 令牌段：`--yellow` 只落在"选中"与"品牌动作"上）。它是特色功能，
+            要一眼被认出来；黑底主键反而退成"常规动作"。
+         ⚠️ 禁用与 `onCopy` **同一条闸门**（都读 `expText` 是否为空）—— 空文本点它只是白烧一次模型调用。
+            两条闸门一旦分叉，就会出现"空预览也能点增强"。
+         ⚠️ 这颗键**不改任何数据、自己不发请求**：只 `triggerEvent('enhance')` 给页面，
+            由页面决定什么时候开二层抽屉、什么时候调接口（见 js:onEnhance 与 mod-todo:onFormEnhance）。
+            ⇒ 需求「仅在用户点击时调用大模型」的落点就在这一条链上，判据 E4 守着。 -->
+    <!-- ★★ 278 轮：`enhance` 态复用这颗主键（动作完全相同：把眼前这段只读文本放进剪贴板）。
+         ⚠️ `enhState !== 'done'` 时压暗 —— loading / error 状态下没有可复制的东西，
+            亮着一颗能点的键只会让人以为"点了会有反应"。真点击也会被 onCopy 拦住并给一句 toast。 -->
+    <view class="sd-submit {{copied ? 'ok' : ''}} {{(mode === 'enhance' && enhState !== 'done') ? 'off' : ''}}" wx:if="{{mode === 'export' || mode === 'enhance'}}" catchtap="onCopy" hover-class="sd-submit-hv">
+      <!-- ★186 `tone`：成功态键底是亮绿 `--success`（深色下更亮 `#60B886`）＋ 墨字
+           ⇒ 勾必须跟**字色**同色、保持墨版；`w-copy` 那一态是黑底键，名字本身就是反白版。 -->
+      <icon name="{{copied ? 'check' : 'w-copy'}}" size="15" tone="{{copied ? 'ink' : ''}}" />
+      <text>{{copied ? '已复制' : submitLabel}}</text>
+    </view>
+    <!-- ★ 2026-10-13（改造清单 R22）：普通保存键**原来没有按下反馈**（导出那颗有）——
+         补上 `.sd-submit-hv`（与导出键同一颗按下态类，`opacity .7`）。禁用态由
+         `.sd-submit.off` 的 `opacity` 兜住（特异性压过 `-hv`），所以"补反馈 ⇒ 禁用态也变暗"不会发生。 -->
+    <view wx:else class="sd-submit {{canSubmit ? '' : 'off'}}" catchtap="onSubmit" hover-class="sd-submit-hv">
+      <icon name="w-check" size="15" />
+      <text>{{submitLabel}}</text>
+    </view>
+    <!-- ★★ 279 轮：「增强」（特色动作 · 黄底墨字 · 在「复制到剪贴板」**右侧**） -->
+    <view class="sd-alt {{expText ? '' : 'off'}}" wx:if="{{mode === 'export'}}"
+          catchtap="onEnhance" hover-class="sd-alt-hv">
+      <!-- 167 轮的取档：字 14 ⇒ 图标 15 / gap 6。
+           ⚠️ **必须 `tone="ink"`**：这颗图标画在品牌黄（`--yellow` 两套令牌恒值）上，
+              默认 `tone=''` 会跟着主题换 `d-bolt`（柔白）⇒ 深色下变成「白图标压黄底」，
+              对比只剩 1.6:1。与导出键「已复制」那颗勾同一条理由（186 轮立的口径）。 -->
+      <icon name="bolt" size="15" tone="ink" />
+      <text>增强</text>
+    </view>
+  </view>
+</view>
+
+<!-- ==========================================================================
+     项目副弹窗（★★ 2026-10-23）· 「选择其他项目」—— 与「关联脑图」那个三级**同一套壳**
+     （`.sd3` / `.sd3-head` / `.sd3-body` / `.sd3-item`，位置、宽度、圆角、投影、z-index 全部复用，
+      246 轮的用户口径是「样式参照脑图关联的副弹窗抽屉」）。
+     · 只装**没有颜色**的项目：有颜色的那些在表单主列表里一行一个，靠色点认身份；
+       没颜色的项目挤在同一列既不提供信息、又把抽屉撑长 ⇒ 分两层放。
+     · 单选 · 当前值右侧黄底打勾 · **点一行即回填、自动收掉**（不留「确定」）。
+     ★★ 247 轮：脑图那层三级删掉之后，**`.sd3` 这一档几何只剩本实例**在用了 ——
+       当年那句"两层副弹窗互斥、同时开会叠成一片"的问题因此**不再存在**
+       （js 的 `onOpenOtherProject` 里那句收 `pickMap` 也随之删掉）。
+       ⚠️ `.sd3*` 这组样式**别跟着清掉**：它们现在的唯一调用点就是这块。
+     ⚠️ 不开「不关联 / 清空」行：项目是必填项，没有"不选"这个合法状态。
+     ========================================================================== -->
+<view class="sd3-scrim" wx:if="{{open && pickProj}}" bindtap="onCloseOtherProject"></view>
+
+<view class="sd3 {{port ? 'port' : ''}} {{offset ? 'o1' : ''}}" wx:if="{{open && pickProj}}">
+  <view class="sd3-head">
+    <text class="sd3-title">选择其他项目</text>
+    <view class="sd-cancel" catchtap="onCloseOtherProject" hover-class="sd-cancel-hv">
+      <icon name="close" size="13" opacity="0.65" />
+      <text>取消</text>
+    </view>
+  </view>
+
+  <scroll-view class="sd3-body" scroll-y enhanced show-scrollbar="{{false}}">
+    <view
+      wx:for="{{projRows}}"
+      wx:key="id"
+      class="sd3-item {{item.selected ? 'on' : ''}}" hover-class="sd3-item-hv"
+      data-v="{{item.id}}"
+      catchtap="onPickOtherProject"
+    >
+      <text class="sd3-name">{{item.name}}</text>
+      <view class="sd3-radio"><text class="sd3-ck" wx:if="{{item.selected}}">✓</text></view>
+    </view>
+
+    <view class="sd3-empty" wx:if="{{!projRows.length}}">还没有未着色的项目</view>
+  </scroll-view>
+</view>

@@ -1,0 +1,374 @@
+/* 组件宿主（★ 52+ 轮）：项目页把待办铺进网格，**同一行的卡要等高**。
+   机制：外层 `.tg-cell`（display:flex）把宿主拉到行高 ⇒ 这里让 `.tc` 撑满宿主。
+   ⚠️ 不写这两条的话，`align-items:stretch` 只把**宿主**拉高，白底卡还是自己的内容高，
+      一行的卡就会「外面等高、里面的白块参差」，看起来像没对齐。 */
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+.tc {
+  flex: 1 1 auto;
+  /* ★★ 166 轮：卡面成了确认层的**定位上下文**（`.tc-cf` 绝对铺在它上面）。
+     ⚠️ 只加 `position`，不动任何几何 —— 布局零变化。
+     ⚠️ 绝对定位的包含块是**内边距盒** ⇒ 那 1px 描边不会被盖住，
+        卡片仍然有一圈完整的边（"这张卡被蒙上了"，而不是"这张卡消失了"）。 */
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  /* ★ 44 轮：浅投影 —— 白卡落在浅底上，投影比描边更能把卡片"抬"起来
+     ★ 118 轮：第一段接上 `--sh-card` —— 与它的值**逐字相同**（`0 1px 2px rgba(28,28,30,.06)`）
+       ⇒ 换成 var() 是**零视觉变化**的收口，让"卡片微影"有唯一真源。
+       第二段（`.06 黑 / 12px 扩散`）仍是这张卡的专属层，没并进去。 */
+  box-shadow: var(--sh-card), 0 4px 12px rgba(28, 28, 30, 0.06);
+}
+/* ★★ 199 轮 · 项目页待办卡：「刚从胶囊转过来」的提示色（`cls` 里的 `fresh`）
+   ── 与待办列表抽屉的 `.dw-card.fresh` **同一条口径**（同两个令牌、同样是"填充＋描边"）──
+   同一条待办在这两个面上必须长成一个样子：抽屉里亮紫、项目页网格里不亮，
+   用户只会读成"这里的数据不对"。两处的类名、令牌、以及"只改底色不动几何"三条都对齐。
+   ⚠️ 排在 `.tc-hv` **之前**：两个类同特异性（0,2,0）⇒ 按下时该显示 `.tc-hv` 的灰底
+      （＝它自己的按下反馈），松手回到紫底。反过来排的话，按下等于**没有反馈**。
+   ⚠️ 与 `.tc.done` / `.tc.hold` 都不冲突：那两个改的是文字与左条，本条只改卡底与描边。
+   ⚠️ 只写 `background` / `border-color` —— **不碰几何**（`.tc` 的 padding / 圆角 / 边框宽度
+      一字不动），网格里同一行的卡仍然等高（52+ 轮那条口径）。 */
+.tc.fresh {
+  background: var(--fresh-bg);
+  border-color: var(--fresh);
+}
+
+/* ★ 94 轮：原来是裸写的 #FCFCFD —— 与白卡的差只有 3/255，按下**等于看不出反馈**；
+   同角色的 `.mm-tile`（项目页脑图卡）走的是 `--surface` ⇒ 统一到 `--surface`。
+   ⚠️ 这是 94 轮**唯一一处可见变化**（按下从"几乎看不见"变成"看得出"），详见 §15.75。
+   ★ 118 轮：`:active` → `hover-class="tc-hv"`（微信体验评分要求；真机 `:active` 不保证生效）。 */
+.tc-hv { background: var(--surface, #F7F8FA); }
+
+/* ★ 57 轮：原来这里有一条 `.tc.hold { border-color: var(--stone) }` —— **已删除**。
+   「留置」的独立性质改由左端那条**灰色竖条**表达（`.tc-bar` 取 `u.main` = #8E91A0，
+   与其余三档同一套机制），卡片描边回到全局 `--hairline`。
+   用户口径：「紧急程度为留置的待办卡片的边框颜色和其他的不一致，要统一」——
+   深一号的描边把留置卡从一屏卡里"抠"出来，读作"这张卡有问题"，
+   而它要表达的其实是"这件事先搁着"，性质不同但不该靠边框抢注意力。 */
+
+/* 已完成：弱化配色 = 标题转灰 ＋ 划掉（★ 44 轮改用这套，
+   原来整卡 opacity .58 会把状态徽章的绿一起灰掉，反而看不出"已完成"）。
+   ★★ 94 轮：卡底那层 #FAFAFB **删掉，回收成纯白** ——
+   抽屉的待办卡在第 48 轮就按同一条口径改了（原话：完成态已由「绿色状态图标 ＋ 文字转灰划掉」
+   表达完整，再压一层灰底只是让卡片**显脏**，也破坏「**所有卡同一底色**」那条），
+   当时**漏了这一个组件**。两处口径现已一致。 */
+.tc.done .tc-text { color: var(--stone, #8E91A0); text-decoration: line-through; }
+.tc.done .tc-bar { opacity: 0.45; }
+
+.tc-main {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tc-bar {
+  width: 4px;
+  min-width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  margin-top: 1px;
+  flex: 0 0 4px;
+}
+
+.tc-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--primary, #1C1C1E);
+}
+/* ★ 118 轮：「⋯」热区 28 → **44**（P-6 建议值）。
+   外层是 44×44 的**透明热区**，内层 `.tc-more-i` 仍是 28×28，
+   `opacity:.5` 与 hover 底色都在它身上 ⇒ 视觉与原来**逐像素相同**
+   （负 margin 把多出来的 16px 补平：上下左右各 8，内层盒子的落点分毫未动）。
+   ⚠️ 左边多探出的 8px 会盖住正文尾部一小段 —— 正文本来不可点，没有功能影响。 */
+.tc-more {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin: -12px -14px -8px -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tc-more-i {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+}
+.tc-more-hover { background: var(--chip, #F1F2F5); opacity: 0.9; }
+
+/* 标签行：只说「属于谁」—— 归属项目 ＋ 关联脑图 ＋ 图片（状态与时间在底行） */
+.tc-tags {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* 底行（★ 45 轮）：创建9-21 ｜ 未完成 ｜ 更新9-22 */
+.tc-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--chip, #F1F2F5);
+  flex: 0 0 auto;
+}
+/* 项目气泡里的色点 —— ★ 57 轮：6 → **8**（气泡内文案 11px，8 是"小"这一档的统一值，
+   与抽屉待办卡的 `.dw-td-dot`、「我的」页的 `.dot-sm` 同值）。
+   ⚠️ 再大就撑不动了：气泡高 ＝ 3+15+3 ＝ 21，色点超过 10 会把 pill 顶高。 */
+.tchip-dot { width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; }
+.tchip-t {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--slate, #555A6A);
+  white-space: nowrap;
+}
+/* 项目气泡与脑图气泡必须一眼可分：项目＝实心色点，脑图＝白底描边（FR-3.7） */
+.tchip.map { background: var(--card); border: 1px solid var(--muted, #A5A8B5); }
+.tchip.img { background: var(--card); border: 1px solid var(--hairline, #E0E2E8); }
+
+/* ★ 44 轮：状态徽章（气泡组首位）—— 未完成＝白底描边灰字；已完成＝浅绿底绿字 ＋ 勾 */
+/* 完成状态图标（★ 47 轮 · 与待办列表主弹窗同一套）
+   未完成 ＝ 空心圆；已完成 ＝ 圆里含对勾（文字 ✓，不做 SVG —— 16px 下矢量勾更容易糊） */
+.tc-st {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--hairline-strong, #C7CAD5);
+  background: var(--card);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tc-st-ck {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--on-success);
+  font-weight: 600;
+}
+.tc-st.on {
+  background: var(--success, #2E9E64);
+  border-color: var(--success, #2E9E64);
+}
+/* ★ 审查-02 S1（2026-10-15）：完成圆圈的按下反馈。
+   ⚠️ 它是**独立热区**（`catchtap`）⇒ 拿不到整卡 `.tc-hv` 那层反馈，必须自己有。
+   16px 的小圆点压 `opacity` 最稳（改底会与 `.on` 的绿底打架）；
+   与 `.tc-cf-b-hv`（确认层两颗键）同值 0.7。 */
+.tc-st-hv { opacity: 0.7; }
+/* ★★ 2026-10-24（复审 P2-17）：**16px 的圆补出 44×44 的命中区**，外观一个像素不动。
+   ── 病根：它是独立热区（`catchtap`），而可见直径只有 16 —— 缩放后（小屏 ≈0.73）
+      实际只剩 12 左右，点不中是常态；点偏了还会落到整卡的 `bindtap` 上**打开详情**
+      （用户读作"点勾却打开了卡片"）。
+   ── 做法：`::after` 铺一层透明的 44×44（16 + 14×2）。它属于圆圈自己，
+      所以点在这圈里命中的是"勾选"，不会漏给卡片。
+   ⚠️ 比 44 再大就会压到左边的「更新于 X」与卡边 —— 那一段是纯文本，压过去没有收益。
+   ⚠️ 不用 `::before + z-index:-1`（本工程踩过：会被父级背景盖住）。 */
+.tc-st { position: relative; }
+.tc-st::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: -14px;
+  bottom: -14px;
+  border-radius: 999px;
+}
+
+.tchip-arch {
+  font-size: 11px;
+  line-height: 15px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--u-hold-bg, #F3F4F6);
+  color: var(--stone, #8E91A0);
+  white-space: nowrap;
+}
+
+.tc-meta-t {
+  font-family: var(--font-num);
+  font-size: 13px;
+  line-height: 17px;
+  /* ★ 2026-10-24（复审 P2-15）：13px 的"更新于 X"是卡上唯一的时间线索，走可读档。
+     原来 `--muted`（浅色 2.37:1）几乎读不出来。 */
+  color: var(--text-2);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   紧凑态 `.mini`（★ 52+ 轮 · 项目页的网格小卡）
+   与抽屉卡同一套语言（色条 ／ 正文 ／ 标签行 ／ 底行），只收紧尺度：
+     · 内距 12/14 → 10，行距 gap 10 → 8
+     · 正文 16 → 14（★ 审查-02 P2-16：原注释写"15 → 13"是笔误）
+     · 底行时间 12 → 10（网格里它只是辅助信息，不承担"扫时间线"的职责 ——
+       那个职责在「查看全部」弹出来的抽屉里）
+   两条「网格专属」的对齐规则（列表里不需要、网格里缺了就散）：
+     ① 正文 **夹三行且占满三行高**（`-webkit-line-clamp` ＋ `min-height`）。
+        只夹不占的话，"一行"的卡比"三行"的卡矮两行 ⇒ 同一行里
+        **标签行和底行都对不上**，四张卡各说各的。
+     ② 底行 `margin-top:auto` 钉在卡底 —— 卡高由同一行最高的那张决定（stretch），
+        正文短的卡把余量全留在底行之前，于是整行的「更新时间 ＋ 完成圆圈」落在同一条基线上。
+   ⚠️ `.tc-more` 在模板上就整颗不渲染（紧凑态没有「⋯」），这里不必再藏。
+   ========================================================================== */
+.tc.mini {
+  padding: 10px;
+  gap: 8px;
+}
+
+.tc.mini .tc-text {
+  font-size: 14px;
+  line-height: 1.4;
+  /* 三行夹断 —— `-webkit-box` ＋ `line-clamp` 是 WebView 里唯一可靠的多行省略组合 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  /* 三行高 ＝ 3 × 13 × 1.4 ≈ 55（对齐上面那条规则 ①） */
+  min-height: 55px;
+}
+
+.tc.mini .tc-bar { height: 16px; }
+
+.tc.mini .tc-foot {
+  /* 见规则 ② */
+  margin-top: auto;
+  gap: 4px;
+}
+.tc.mini .tc-meta-t { font-size: 11px; line-height: 15px; }
+
+/* ==========================================================================
+   ★★ 166 轮：完成确认层（紧凑态 · 项目页网格小卡）
+   ==========================================================================
+   用户口径：「点击那个圆圈的图标可以直接完成这个待办，但这个过程容易误操作……
+   点击之后整个卡片被那个半透明给覆盖，然后整个卡片上层出现两个按钮，
+   一个就是已完成、一个就是取消……避免点击一下不操作」。
+
+   为什么是"蒙在卡上"而不是弹窗/系统模态：卡片就在原位，上下文不用重建；
+   一张白卡被自己那层白纱蒙住 ⇒ 读起来就是"这张卡正在等你决定"。
+   为什么不复用 55 轮那类 `wx.showModal`：那是**系统模态**，压住整屏、
+   把用户从他正在扫的那片网格里拽出来；这件事只值一张卡的面积。
+
+   ⚠️ 两颗键**底座只有两档**（161 轮那条不变量：一排键只有两档底座才读得成一组）：
+      `已完成` 主墨实心 ＝ "会改变状态的那一颗"、`取消` 白底 ＋ `--hairline-strong` 描边。
+      ⚠️ 别给「已完成」配绿色 —— 绿是 `.tc-st.on` 那个**状态圈**的色，
+         键上再绿一次就同一件事说两遍（"绿=已完成"已经由那张圈的落点说完了）。
+   ★★ 167 轮：两颗键各加一枚 **13px** 小图标（`w-check` 反白勾 ／ `close` 取消叉）。
+      选型与尺寸档位见 wxml 那段注释（逐个同源、**一枚都没新造**）。
+      ★ 口径：**图标与各自的字同色** —— `w-check` 是 `#FFFFFF`、与白字同色 ⇒ 不压；
+        `close` 是 `#1C1C1E`、压 `opacity=".65"` 后 ≈ `--slate` 与灰字同色（112 轮那条）。
+        ⇒ "压不压"不是随手给的，是为了把图标拉回它那颗键的**字色**上。
+   ⚠️ 半透明层的底色**不用黑纱**：本工程的白卡语言里没有深色遮罩（深底只有
+      `mod-mine` 那个诊断浮层），压一层黑会把"暂时蒙住"读成"这张卡出事了"。
+   ⚠️ 按下态统一 `opacity: .7`（与 161 轮那三处危险键同一口径）。
+   ========================================================================== */
+.tc-cf {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: var(--frost-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.tc-cf-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  /* ★★ 167 轮（用户口径）：两键间距 8 → **12**。原话「这两个按钮的间距也要拉大一些，
+     这样平板上不容易点错」。
+     取值链：抽屉底部那两颗等大操作键（`.sd-foot`）是 **10** —— 本键也在"两颗并列的
+     操作键"这一族，但它在**卡内**、且用户点名"平板上"，所以在 10 之上再抬一档到 12
+     （＝本工程"卡内并列元素"的档位，见 `.bs-cols` / `.t-area`）。
+     ⚠️ `gap` 同时是**行距** ⇒ 下面那段 `flex-wrap` 真折行时，两行之间也是 12，不需要另写一条。 */
+  gap: 12px;
+  min-width: 0;
+}
+/* ⚠️ `flex-wrap: wrap` 是**兜底**不是设计。167 轮加图标后两颗键加起来约 **161px**
+   （已完成 87 ＝ 13 图标 ＋ 5 图文距 ＋ 39 三字 ＋ 28 内距 ＋ 2 描边；取消 74），
+   加 12 间距 = **173**；两档卡内宽的实测是
+   横屏四列 ≈ 256、竖屏两列 ≈ 345（＝ 768 内容宽 − 24 网格内距 − 10 格间距，
+   再除 2，减去卡片自身 20 内距 ＋ 2 描边）⇒ 现值离阈值还差得远，**不会折行**。
+   留着它只为"将来列数再加"：折成上下两行也好过把键挤出卡外。
+   ⚠️ 键**等高**（都 30）靠的是同一份 `height` ＋ `border` 一律显式给
+      （`.yes` 也写 `border: 1px solid transparent`）—— 少写一边就会差 2px。 */
+.tc-cf-b {
+  /* ★ 167 轮：`flex: 0 1 auto` → **`0 0 auto`**（不伸不缩）。
+     加图标让两颗键变宽，这才把原来那处隐患露出来：键内是 `white-space: nowrap`
+     ⇒ 允许收缩（`1`）时，flex 会先把键压窄、内容直接**溢出卡外**；
+     而不许缩（`0`）时它会触发上面那条 `flex-wrap` 折行 —— 同一处境下"折行"永远优于"溢出"。
+     ⚠️ 因此 `min-width: 0` 一并去掉：那条的意义正是"允许缩到内容宽以下"，与 `0 0 auto` 相冲。
+     ⚠️ 别改回 `0 1 auto`：它不是"更宽容"，是把兜底从"折行"降级成"溢出"。 */
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* ★ 167 轮：图标与文字的间距 = **5** —— 与 `.cp-hbtn` / `.sd-cancel` 逐值相同。
+     ⚠️ 「按钮里图标 ↔ 文字」在本工程有**两档、按字号取**（不是只有一个值）：
+        字 13 那一档 ＝ **5**，字 14–15 那档 ＝ 6（`.sd-submit`／`.ep-btn`／`.dw-foot-btn`／`.mf-act`）。
+        本键字号 13 ⇒ 走 5。**别因为"看着有点紧"就抬到 6** —— 那是把字 13 那一档
+        按字 14 的样子画，同屏并排时这两族会看得出不一样。 */
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+.tc-cf-b.yes {
+  /* ① 主位（要发生事）—— 与 `.op.primary` / `.tb-btn.dark` 同一档：黑底 ＋ 白字 */
+  background: var(--solid, #1C1C1E);
+  border: 1px solid var(--solid, #1C1C1E);
+  color: var(--on-solid);
+}
+.tc-cf-b.no {
+  /* ② 次位（退回去）—— 与 `.tb-btn` 同一档：白底 ＋ 描边 ＋ `--slate` 字 */
+  background: var(--card);
+  border: 1px solid var(--hairline-strong, #C7CAD5);
+  color: var(--slate, #555A6A);
+}
+.tc-cf-b-hv { opacity: 0.7; }
+

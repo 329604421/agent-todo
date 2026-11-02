@@ -1,0 +1,3129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-ToDo 操作手册 · 三端功能与图文指南</title>
+<meta name="description" content="Agent-ToDo 是给 FDE（Forward Deployed Engineer，前沿部署工程师）的多项目工作台：把客户现场各方来的需求、bug 反馈与方向研讨收在一条线上，归位成待办、摆成方案，再导出成 Agent 能直接执行的规格。每家客户独立一套实例，数据互不可见；终端可选微信小程序、H5 或原生 App。">
+<meta name="theme-color" content="#FFD02F">
+<meta property="og:title" content="Agent-ToDo · 给 FDE 的多项目工作台">
+<meta property="og:description" content="接住 · 归位 · 出方案 · 派活 · 收尾 —— 几个项目同时开着，别让哪一条断在半路。每家客户独立一套，终端可选小程序 / H5 / 原生 App。">
+<meta property="og:type" content="website">
+<link rel="icon" href="img/favicon.png" sizes="64x64">
+<link rel="apple-touch-icon" href="img/brand-logo-512.png">
+<style>
+
+:root{
+  --ink:#1C1C1E;
+  --slate:#555A6A;
+  --slate-strong:#3C3C43;
+  --stone:#8E91A0;
+  --muted:#A5A8B5;
+  --line:#E0E2E8;
+  --line-soft:#EEF0F4;
+  --page:#F7F8FA;
+  --card:#FFFFFF;
+  --chip:#F1F2F5;
+  --yellow:#FFD02F;
+  --yellow-deep:#E5A400;
+  --yellow-soft:#FFF8DC;
+  --yellow-warm:#FFE9A8;
+  --yellow-line:#EFE0A6;
+  --u-urgent:#E5484D; --u-urgent-bg:#FDEDEE; --u-urgent-t:#A3232A;
+  --u-mid:#EF9F27;    --u-mid-bg:#FDF3E2;    --u-mid-t:#8A5A00;
+  --u-low:#378ADD;    --u-low-bg:#EAF2FB;    --u-low-t:#1F5189;
+  --u-hold:#8E91A0;   --u-hold-bg:#F3F4F6;   --u-hold-t:#5A5D6B;
+  --p-qing:#0E9E8E;   --p-qing-l:#E5F4F2;
+  --p-lv:#3E9B4F;     --p-lv-l:#E9F4EA;
+  --p-ganlan:#7E9B2C; --p-ganlan-l:#F2F5E2;
+  --p-zong:#9A6B45;   --p-zong-l:#F6EFE7;
+  --p-zi:#8A63D2;     --p-zi-l:#F1ECFA;
+  --p-pinhong:#B85C9E;--p-pinhong-l:#F8ECF4;
+  --p-dian:#6360C4;   --p-dian-l:#EAEAF8;
+  --p-song:#1E7F8C;   --p-song-l:#E4F1F3;
+  --font:"Inter","Noto Sans SC","PingFang SC","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans SC",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:0}
+body{
+  margin:0;background:var(--page);color:var(--ink);
+  font:400 16px/1.72 var(--font);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+img{max-width:100%}
+a{color:inherit}
+h1,h2,h3,h4,p,ul,ol,dl,dd{margin:0}
+ul,ol{padding-left:0}
+.num{font-family:var(--font);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---------- 布局 ---------- */
+.layout{
+  max-width:1264px;margin:0 auto;padding:26px 24px 90px;
+  display:grid;grid-template-columns:232px minmax(0,1fr);gap:30px;
+  align-items:start;
+}
+@media (max-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:16px;padding:16px 16px 72px}
+}
+main{min-width:0}
+
+/* ---------- 目录 ---------- */
+.toc{
+  position:sticky;top:76px;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:10px;max-height:calc(100vh - 100px);overflow:auto;
+}
+.toc-title{
+  font-size:11.5px;font-weight:600;letter-spacing:.08em;color:var(--muted);
+  padding:6px 10px 8px;text-transform:uppercase;
+}
+.toc a{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:10px;text-decoration:none;
+  font-size:14px;color:var(--slate-strong);line-height:1.35;
+  transition:background .16s ease,color .16s ease;
+  -webkit-user-drag:none;
+}
+.toc a span.n{
+  font-size:11px;font-weight:700;color:var(--muted);
+  width:16px;flex:0 0 16px;text-align:center;transition:color .16s ease;
+}
+.toc a:hover{background:var(--chip)}
+.toc a.on,.toc a.on:hover{background:var(--yellow);color:var(--ink);font-weight:600}
+.toc a.on span.n{color:rgba(28,28,30,.55)}
+.toc-sep{height:1px;background:var(--line-soft);margin:8px 10px}
+
+/* 窄屏：目录变成顶部一条可横滑的胶囊条 */
+@media (max-width:980px){
+  .toc{
+    top:59px;z-index:40;max-height:none;border-radius:14px;
+    padding:8px;display:flex;gap:6px;
+    overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    overscroll-behavior-x:contain;
+    cursor:grab;
+    /* 两侧渐隐：有被藏住的条目时，边缘才淡出去 */
+    --fade-l:0px;--fade-r:0px;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fade-l),#000 calc(100% - var(--fade-r)),transparent 100%);
+    mask-image:linear-gradient(90deg,transparent 0,#000 var(--fade-l),#000 calc(100% - var(--fade-r)),transparent 100%);
+  }
+  .toc.dragging{cursor:grabbing;-webkit-user-select:none;user-select:none}
+  .toc::-webkit-scrollbar{display:none}
+  .toc-title,.toc-sep{display:none}
+  .toc a{white-space:nowrap;padding:7px 12px;font-size:13px;flex:0 0 auto}
+  .toc a span.n{display:none}
+}
+
+/* ---------- Hero ---------- */
+.hero{
+  background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:34px 34px 30px;position:relative;overflow:hidden;
+  background-image:linear-gradient(180deg,#FFFDF3 0%,#FFFFFF 62%);
+}
+.hero::after{
+  content:"";position:absolute;right:-70px;top:-70px;width:220px;height:220px;
+  border-radius:50%;background:var(--yellow-soft);
+}
+.hero>*{position:relative;z-index:1}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;color:#8A6B00;background:var(--yellow-soft);
+  border:1px solid var(--yellow-line);border-radius:999px;padding:4px 11px;
+}
+.hero h1{
+  font-size:32px;line-height:1.25;letter-spacing:-.02em;font-weight:700;
+  margin:14px 0 8px;
+}
+.hero .kicker{font-size:16px;color:var(--slate);letter-spacing:.02em}
+.hero .kicker b{
+  color:var(--ink);background:var(--yellow);
+  border-radius:5px;padding:1px 6px;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;
+}
+.hero p.lead{margin-top:16px;font-size:15.5px;color:var(--slate);max-width:60ch}
+.hero-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+@media (max-width:640px){
+  .hero{padding:24px 20px 22px;border-radius:16px}
+  .hero h1{font-size:25px}
+  .hero .kicker{font-size:14.5px}
+  .hero p.lead{font-size:15px}
+}
+
+/* ---------- 通用小标签 ---------- */
+.end,.tag,.stage{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11.5px;font-weight:600;line-height:1;
+  padding:4px 9px;border-radius:999px;background:var(--chip);color:var(--slate);
+  white-space:nowrap;
+}
+.end.mob{background:var(--yellow-soft);color:#8A6B00}
+.end.tab{background:var(--p-dian-l);color:#403D93}
+.end.pc{background:var(--p-song-l);color:#14626D}
+.tag{background:var(--chip);color:var(--slate-strong);font-weight:600}
+.stage{background:var(--chip);color:var(--slate-strong)}
+.stage i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* ---------- 模块 ---------- */
+.mod{
+  background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:30px 32px 32px;margin-top:22px;scroll-margin-top:76px;
+}
+/* 窄屏顶部多了一条目录胶囊，落点要再让出它的高度 */
+@media (max-width:980px){ .mod{scroll-margin-top:118px} }
+@media (max-width:640px){
+  .mod{padding:22px 16px 24px;border-radius:16px;margin-top:14px}
+}
+.mod-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.mod-no{
+  width:36px;height:36px;border-radius:11px;background:var(--yellow);
+  display:grid;place-items:center;font-size:14px;font-weight:700;flex:0 0 auto;
+  font-variant-numeric:tabular-nums;
+}
+.mod-head h2{font-size:23px;line-height:1.3;letter-spacing:-.015em;font-weight:700}
+.mod-head .sub{font-size:13.5px;color:var(--stone);margin-top:2px}
+.mod-ends{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;padding-top:4px}
+@media (max-width:640px){
+  .mod-head h2{font-size:20px}
+  .mod-ends{margin-left:0;width:100%;padding-top:2px}
+  .mod-no{width:32px;height:32px;border-radius:10px;font-size:13px}
+}
+.lead{margin-top:16px;font-size:15.5px;color:var(--slate)}
+.lead b{color:var(--ink);font-weight:600}
+
+.h3{
+  display:flex;align-items:center;gap:8px;
+  font-size:14px;font-weight:700;color:var(--ink);
+  margin:26px 0 12px;letter-spacing:.01em;
+}
+.h3::before{
+  content:"";width:3px;height:14px;border-radius:2px;background:var(--yellow);
+}
+.h4{
+  font-size:13.5px;font-weight:700;color:var(--slate-strong);
+  margin:18px 0 8px;
+}
+
+/* ---------- 步骤 ---------- */
+.steps{counter-reset:s;list-style:none;display:grid;gap:9px;margin:0}
+.steps>li{
+  position:relative;padding:12px 16px 12px 50px;
+  background:#FCFCFD;border:1px solid var(--line-soft);border-radius:12px;
+  font-size:15px;color:var(--slate);
+}
+.steps>li::before{
+  counter-increment:s;content:counter(s);
+  position:absolute;left:13px;top:11px;width:24px;height:24px;border-radius:8px;
+  background:var(--yellow-soft);border:1px solid var(--yellow-line);
+  color:#8A6B00;font-size:12.5px;font-weight:700;
+  display:grid;place-items:center;
+}
+.steps>li b{color:var(--ink);font-weight:600}
+.steps>li .where{
+  font-size:12px;color:var(--stone);display:block;margin-top:3px;
+}
+@media (max-width:640px){
+  .steps>li{font-size:14.5px;padding:11px 13px 11px 46px}
+  .steps>li::before{left:11px}
+}
+
+/* ---------- 提示 ---------- */
+.note{
+  margin-top:16px;padding:13px 16px 13px 17px;
+  background:var(--card);border:1px solid var(--line-soft);
+  border-left:3px solid var(--yellow);border-radius:10px;
+  font-size:14.5px;color:var(--slate);
+}
+.note .nt{
+  display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;
+  color:#8A6B00;margin-bottom:3px;
+}
+.note b{color:var(--ink)}
+.note.warn{border-left-color:var(--u-urgent)}
+.note.warn .nt{color:var(--u-urgent-t)}
+
+/* ---------- 截图卡 ---------- */
+.figures{display:grid;gap:18px;margin-top:4px}
+.figures.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:820px){ .figures.two{grid-template-columns:minmax(0,1fr)} }
+
+figure.shot{
+  margin:0;background:var(--card);border:1px solid var(--line);
+  border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+  scroll-margin-top:80px;
+}
+.shot-stage{
+  padding:16px 16px 14px;
+  background:linear-gradient(180deg,#FBFCFD 0%,#F3F4F6 100%);
+  border-bottom:1px solid var(--line-soft);
+  display:flex;justify-content:center;
+}
+.shot-stage img{
+  display:block;width:100%;height:auto;border-radius:12px;
+  border:1px solid var(--line);
+  box-shadow:0 8px 22px rgba(28,28,30,.10),0 1px 0 rgba(255,255,255,.8) inset;
+  cursor:zoom-in;background:#fff;
+}
+.phone .shot-stage img{max-width:248px}
+.tablet .shot-stage img{max-width:356px}
+.pc .shot-stage img{max-width:100%;border-radius:10px}
+@media (max-width:820px){
+  .tablet .shot-stage img{max-width:300px}
+}
+@media (max-width:640px){
+  .shot-stage{padding:12px 12px 10px}
+  .tablet .shot-stage img{max-width:100%}
+  table.tbl{min-width:500px}
+  .tbl-wrap{box-shadow:inset -16px 0 14px -14px rgba(28,28,30,.16)}
+}
+figcaption{padding:14px 16px 16px;display:flex;flex-direction:column;flex:1}
+.fig-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+.fig-no{
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+  background:var(--ink);color:#fff;border-radius:6px;padding:3px 7px;
+}
+.fig-title{font-size:15px;font-weight:700;line-height:1.4}
+.fig-cap{font-size:13.5px;color:var(--stone);margin-top:2px}
+
+.els{margin:12px 0 0;display:grid;gap:0;border-top:1px solid var(--line-soft)}
+.els dt,.els dd{margin:0}
+.el{
+  display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--line-soft);align-items:start;
+}
+.el:last-child{border-bottom:0}
+.el .k{
+  font-size:12px;font-weight:600;color:var(--slate-strong);
+  background:var(--chip);border-radius:6px;padding:3px 6px;text-align:center;
+  line-height:1.5;
+}
+.el .v{font-size:13.5px;color:var(--slate);line-height:1.62}
+.el .v b{color:var(--ink);font-weight:600}
+@media (max-width:400px){
+  .el{grid-template-columns:74px minmax(0,1fr);gap:8px}
+  .el .k{font-size:11.5px}
+  .el .v{font-size:13px}
+}
+
+/* ---------- 表格 ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+table.tbl th{
+  background:var(--chip);font-size:12px;font-weight:700;color:var(--slate);
+  text-align:left;padding:10px 14px;white-space:nowrap;
+  border-bottom:1px solid var(--line);
+}
+table.tbl td{padding:11px 14px;border-top:1px solid var(--line-soft);vertical-align:top;color:var(--slate)}
+table.tbl tr:first-child td{border-top:0}
+table.tbl td b{color:var(--ink);font-weight:600}
+table.tbl td.c{white-space:nowrap}
+
+/* ---------- 代码 ---------- */
+/* 行内片段（md 语法、文件名）—— 与下面那块黑底 .code 区分开：轻底、等宽、稍小 */
+code{
+  font:12.5px/1.6 var(--mono);background:var(--chip);color:var(--slate-strong);
+  border-radius:5px;padding:1px 5px;word-break:break-word;
+}
+.code{
+  background:#1C1C1E;color:#EDEEF1;border-radius:12px;
+  padding:15px 17px;font:13px/1.78 var(--mono);
+  overflow-x:auto;white-space:pre;margin-top:10px;
+}
+.code .h{color:var(--yellow)}
+
+/* ---------- 图例 / 色板 ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
+.lg{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--slate)}
+.lg i{width:11px;height:11px;border-radius:3px;display:block}
+.palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pl{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--slate);
+  background:#FCFCFD;border:1px solid var(--line-soft);border-radius:999px;padding:4px 10px}
+.pl i{width:9px;height:9px;border-radius:50%}
+.hm{display:flex;gap:3px;align-items:center}
+.hm i{width:12px;height:12px;border-radius:3px;display:block}
+
+/* ---------- 索引 ---------- */
+.idx{display:grid;gap:8px;margin-top:6px}
+.idx-item{
+  display:grid;grid-template-columns:52px 72px minmax(0,1fr) 212px;
+  gap:10px;align-items:center;
+  padding:10px 12px;border:1px solid var(--line-soft);border-radius:10px;
+  background:#FCFCFD;font-size:13.5px;
+}
+.idx-item .i-no{font-weight:700;font-size:12px;color:#8A6B00}
+.idx-item .i-end{font-size:12px;color:var(--stone)}
+.idx-item .i-name{font-weight:600;color:var(--ink);font-size:13.5px}
+.idx-item .i-file{font-family:var(--mono);font-size:11.5px;color:var(--muted);word-break:break-all}
+@media (max-width:640px){
+  .idx-item{grid-template-columns:44px minmax(0,1fr);column-gap:10px;row-gap:2px}
+  .idx-item .i-no{grid-area:1/1/2/2;align-self:center}
+  .idx-item .i-end{grid-area:1/2/2/3;justify-self:start;align-self:center;font-size:11.5px}
+  .idx-item .i-name{grid-area:2/2/3/3}
+  .idx-item .i-file{grid-area:3/2/4/3}
+}
+
+/* ---------- 页脚 ---------- */
+.foot{
+  margin-top:22px;background:var(--card);border:1px solid var(--line);
+  border-radius:20px;padding:28px 32px;display:flex;gap:24px;
+  align-items:center;justify-content:space-between;flex-wrap:wrap;
+}
+.foot h3{font-size:16px;font-weight:700}
+.foot p{font-size:13.5px;color:var(--stone);margin-top:6px;max-width:52ch}
+.foot .qr{display:flex;gap:12px;align-items:center}
+.foot .qr img{width:96px;height:96px;border-radius:10px;border:1px solid var(--line);display:block}
+.foot .qr span{font-size:12.5px;color:var(--stone);line-height:1.6}
+@media (max-width:640px){ .foot{padding:22px 18px;border-radius:16px} }
+
+/* ---------- 灯箱 ---------- */
+.lb{
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(20,20,22,.86);padding:24px;
+  align-items:center;justify-content:center;
+}
+.lb.on{display:flex}
+.lb img{max-width:min(94vw,760px);max-height:88vh;width:auto;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.lb .close{
+  position:absolute;top:16px;right:18px;width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.14);color:#fff;border:0;font-size:20px;cursor:pointer;
+  display:grid;place-items:center;line-height:1;
+}
+@media (max-width:640px){ .lb{padding:12px} .lb img{max-height:82vh} }
+
+/* ---------- 小工具 ---------- */
+.mt8{margin-top:8px}
+.mt14{margin-top:14px}
+.dim{color:var(--stone)}
+.kbd{
+  font:600 12px/1 var(--mono);background:var(--chip);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:2px 5px;color:var(--slate-strong);
+}
+
+</style>
+<style>
+/* ==========================================================================
+   Agent-ToDo · 官网补丁层
+   叠加在上面的手册样式之后 —— 只做「新增区块 + 少量覆盖」，不改手册本体
+   ========================================================================== */
+
+:root{
+  --nav-h:64px;
+  --wrap:1264px;
+  --radius-card:20px;
+  --shadow-sm:0 1px 2px rgba(28,28,30,.05),0 4px 14px rgba(28,28,30,.05);
+  --shadow-md:0 2px 6px rgba(28,28,30,.06),0 14px 34px rgba(28,28,30,.08);
+  --shadow-lg:0 8px 20px rgba(28,28,30,.10),0 30px 70px rgba(28,28,30,.14);
+}
+
+body{padding-top:0}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+@media (max-width:640px){ .wrap{padding:0 16px} }
+
+/* ---------- 顶部导航 ---------- */
+.nav{
+  position:sticky;top:0;z-index:60;height:var(--nav-h);
+  background:rgba(255,255,255,.82);
+  -webkit-backdrop-filter:saturate(180%) blur(16px);
+  backdrop-filter:saturate(180%) blur(16px);
+  border-bottom:1px solid rgba(224,226,232,.9);
+}
+.nav-in{
+  max-width:var(--wrap);margin:0 auto;padding:0 24px;height:100%;
+  display:flex;align-items:center;gap:28px;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:0 0 auto}
+.nav-logo{
+  width:34px;height:34px;border-radius:10px;overflow:hidden;flex:0 0 auto;display:block;
+  box-shadow:0 1px 2px rgba(28,28,30,.10);
+}
+.nav-logo img{width:100%;height:100%;display:block}
+.nav-word{display:flex;flex-direction:column;line-height:1.1}
+.nav-word b{font-size:15.5px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.nav-word span{font-size:10.5px;color:var(--muted);letter-spacing:.06em;margin-top:2px}
+.nav-links{display:flex;align-items:center;gap:2px;margin-left:12px}
+.nav-links a{
+  font-size:14px;color:var(--slate);text-decoration:none;
+  padding:7px 12px;border-radius:9px;transition:background .15s ease,color .15s ease;
+}
+.nav-links a:hover{background:var(--chip);color:var(--ink)}
+.nav-links a.on{color:var(--ink);font-weight:600}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:36px;padding:0 16px;border-radius:999px;
+  font-size:13.5px;font-weight:600;text-decoration:none;
+  transition:background .15s ease,transform .15s ease,color .15s ease;
+}
+.nav-btn.ghost{color:var(--slate-strong);border:1px solid var(--line)}
+.nav-btn.ghost:hover{background:var(--chip)}
+.nav-btn.solid{background:var(--ink);color:#fff}
+.nav-btn.solid:hover{background:#000}
+.nav-btn:active{transform:translateY(1px)}
+@media (max-width:940px){ .nav-links{display:none} }
+@media (max-width:760px){
+  :root{--nav-h:56px}
+  .nav-in{gap:12px;padding:0 16px}
+  .nav-btn{height:32px;padding:0 13px;font-size:12.5px}
+  .nav-word span{display:none}
+  .nav-word b{font-size:15px}
+}
+
+/* ---------- 首页 Hero ---------- */
+.home-hero{
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(900px 520px at 88% -12%, #FFF6D4 0%, rgba(255,246,212,0) 62%),
+    radial-gradient(680px 420px at 4% 106%, #FFFBF0 0%, rgba(255,251,240,0) 58%),
+    #FFFFFF;
+  border-bottom:1px solid var(--line-soft);
+}
+.home-hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(28,28,30,.05) 1px, transparent 0);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(760px 420px at 78% 42%, #000 0%, transparent 72%);
+  mask-image:radial-gradient(760px 420px at 78% 42%, #000 0%, transparent 72%);
+}
+.hero-grid{
+  position:relative;
+  max-width:var(--wrap);margin:0 auto;padding:64px 24px 68px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);
+  gap:44px;align-items:center;
+}
+.hero-copy{min-width:0}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  height:29px;padding:0 13px;border-radius:999px;
+  background:var(--yellow-soft);border:1px solid var(--yellow-line);
+  font-size:12.5px;font-weight:600;color:#7A5F00;
+}
+.hero-badge i{
+  width:6px;height:6px;border-radius:50%;background:var(--yellow-deep);
+  box-shadow:0 0 0 3px rgba(229,164,0,.14);
+}
+.hero-h1{
+  margin:20px 0 0;
+  font-size:45px;line-height:1.17;letter-spacing:-.028em;font-weight:800;
+  color:var(--ink);
+}
+.hero-h1 em{
+  font-style:normal;
+  background:linear-gradient(180deg,transparent 62%,var(--yellow) 62%,var(--yellow) 92%,transparent 92%);
+  padding:0 3px;
+}
+.hero-sub{
+  margin-top:20px;font-size:16.5px;line-height:1.78;color:var(--slate);max-width:56ch;
+}
+.hero-sub b{color:var(--ink);font-weight:600}
+.hero-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  height:46px;padding:0 22px;border-radius:999px;
+  font-size:15px;font-weight:600;text-decoration:none;border:1px solid transparent;
+  transition:background .16s ease,transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+.btn svg{width:16px;height:16px;flex:0 0 auto}
+.btn.yellow{background:var(--yellow);color:var(--ink);box-shadow:0 4px 14px rgba(229,164,0,.24)}
+.btn.yellow:hover{background:#FFC400;box-shadow:0 6px 20px rgba(229,164,0,.30)}
+.btn.line{background:#fff;color:var(--ink);border-color:var(--line-strong, #C7CAD5)}
+.btn.line:hover{background:#FCFCFD;border-color:var(--stone)}
+.btn:active{transform:translateY(1px)}
+.hero-meta{
+  display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:30px;
+  font-size:13px;color:#71717A;
+}
+.hero-meta span{display:inline-flex;align-items:center;gap:6px}
+.hero-meta i{width:5px;height:5px;border-radius:50%;background:var(--yellow-deep);flex:0 0 auto}
+
+/* 首屏视觉：横屏工作台 + 竖屏平板，并排底部对齐（不叠、不遮内容） */
+.hero-visual{position:relative;min-width:0;padding:6px 0 20px}
+/* 对齐基准＝两张卡的底边（同一水平线）。两卡相对宽度按 28.5% 取值，
+   使 pad 高度 = 宽度/0.625 ≈ pc 高度 = 宽度/1.51（各尺寸下相差 ≤4px），
+   所以底边齐平时顶边也基本齐平；★不要再给 pad 加 translateY 错位。 */
+.hv-stage{position:relative;display:flex;align-items:flex-end;gap:13px}
+.hv-shot{
+  position:relative;display:block;border-radius:12px;overflow:hidden;
+  background:#fff;border:1px solid rgba(28,28,30,.10);
+  box-shadow:var(--shadow-lg);
+}
+.hv-shot img{display:block;width:100%;height:auto}
+.hv-pc{flex:1 1 auto;min-width:0}
+.hv-pad{
+  flex:0 0 28.5%;min-width:0;
+  border-radius:9px;
+  border-color:rgba(28,28,30,.13);
+  box-shadow:0 8px 18px rgba(28,28,30,.10),0 22px 46px rgba(28,28,30,.13);
+}
+.hv-glow{
+  position:absolute;right:-4%;bottom:-10%;width:58%;height:62%;
+  background:radial-gradient(circle,rgba(255,208,47,.38) 0%,rgba(255,208,47,0) 70%);
+  filter:blur(2px);pointer-events:none;z-index:-1;
+}
+@media (max-width:1000px){
+  .hero-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;padding:48px 24px 56px}
+  .hero-h1{font-size:36px}
+  .hero-sub{max-width:none;font-size:15.5px}
+}
+@media (max-width:880px){
+  .hero-grid{grid-template-columns:minmax(0,1fr);gap:34px}
+  .hero-h1{font-size:36px}
+  .hero-visual{max-width:600px;width:100%;margin:0 auto}
+}
+@media (max-width:640px){
+  .hero-grid{padding:34px 16px 42px;gap:26px}
+  .hero-h1{font-size:29px;line-height:1.24;letter-spacing:-.02em}
+  .hero-sub{font-size:15px;margin-top:16px}
+  .hero-acts{margin-top:22px;gap:10px}
+  .btn{height:43px;padding:0 18px;font-size:14.5px}
+  .btn.grow{flex:1 1 auto;justify-content:center}
+  .hero-meta{margin-top:22px;gap:6px 16px;font-size:12.5px}
+  .hv-stage{gap:9px}
+  .hv-pad{border-radius:7px}
+  .hv-pc{border-radius:9px}
+}
+
+/* ---------- 四步流程 ---------- */
+.flow-sec{background:#fff;border-bottom:1px solid var(--line-soft);padding:52px 0 56px}
+.sec-head{max-width:64ch}
+.sec-kicker{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:11.5px;font-weight:700;letter-spacing:.1em;color:#8A6B00;
+  text-transform:uppercase;margin-bottom:10px;
+}
+.sec-kicker::before{content:"";width:16px;height:2px;border-radius:2px;background:var(--yellow)}
+.sec-h2{font-size:29px;line-height:1.28;letter-spacing:-.022em;font-weight:700;color:var(--ink);text-wrap:balance}
+.sec-h2 em{
+  font-style:normal;
+  background:linear-gradient(180deg,transparent 62%,var(--yellow) 62%,var(--yellow) 92%,transparent 92%);
+  padding:0 2px;
+}
+.sec-lead{margin-top:12px;font-size:15.5px;line-height:1.75;color:var(--slate);max-width:62ch}
+.sec-lead b{color:var(--ink);font-weight:600}
+
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:34px}
+.flow-item{position:relative;padding:0 20px 0 0;display:flex;flex-direction:column}
+.flow-item:not(:last-child)::after{
+  content:"";position:absolute;right:8px;top:23px;width:24px;height:1px;
+  background:repeating-linear-gradient(90deg,var(--line-strong,#C7CAD5) 0 3px,transparent 3px 6px);
+}
+.flow-n{
+  display:flex;align-items:center;gap:9px;
+  font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;
+}
+.flow-n b{
+  width:28px;height:28px;border-radius:9px;background:var(--yellow);
+  display:grid;place-items:center;color:var(--ink);font-size:13px;font-weight:800;
+  font-variant-numeric:tabular-nums;letter-spacing:0;
+}
+.flow-item h3{
+  font-size:18px;font-weight:700;color:var(--ink);margin:14px 0 7px;letter-spacing:-.01em;
+}
+.flow-item p{font-size:13.8px;line-height:1.72;color:var(--slate);padding-right:8px;margin-bottom:11px}
+.flow-item p b{color:var(--ink);font-weight:600}
+/* 「主力：xx」贴到卡片底沿 —— 否则哪张卡文案多一行，四个标签就高低不齐 */
+.flow-item .fl-end{
+  display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:auto;
+  font-size:11.5px;font-weight:600;color:var(--stone);
+  background:var(--chip);border-radius:999px;padding:3px 9px;
+}
+@media (max-width:920px){
+  .flow{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 0}
+  .flow-item:nth-child(2)::after{display:none}
+  .flow-item{padding-right:26px}
+}
+@media (max-width:560px){
+  .flow-sec{padding:38px 0 40px}
+  .sec-h2{font-size:23px}
+  .sec-lead{font-size:14.5px}
+  .flow{grid-template-columns:minmax(0,1fr);gap:0;margin-top:24px}
+  .flow-item{
+    padding:0 0 18px;margin-bottom:18px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .flow-item:last-child{padding-bottom:0;margin-bottom:0;border-bottom:0}
+  .flow-item::after{display:none!important}
+  .flow-item h3{font-size:17px;margin-top:9px;margin-bottom:5px}
+  .flow-item p{padding-right:0}
+  .flow-item .fl-end{margin-top:9px}
+}
+
+/* ---------- 功能模块 ---------- */
+.feat-sec{background:var(--page);padding:60px 0 64px}
+.feat-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;margin-top:34px;
+}
+.feat{
+  position:relative;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius-card);padding:24px 22px 22px;
+  display:flex;flex-direction:column;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.feat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#D6D8E0}
+.feat-ico{
+  width:38px;height:38px;border-radius:11px;background:var(--yellow);
+  display:grid;place-items:center;flex:0 0 auto;
+}
+.feat-ico svg{width:19px;height:19px;display:block}
+.feat h3{font-size:16.5px;font-weight:700;color:var(--ink);margin:15px 0 6px;letter-spacing:-.01em}
+.feat p{font-size:13.8px;line-height:1.72;color:var(--slate);flex:1}
+.feat p b{color:var(--ink);font-weight:600}
+.feat-foot{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:15px;padding-top:13px;border-top:1px solid var(--line-soft);
+}
+.feat-foot span{
+  font-size:11.5px;font-weight:600;color:var(--slate);
+  background:var(--chip);border-radius:999px;padding:3px 9px;
+}
+.feat-foot a{
+  margin-left:auto;font-size:12.5px;font-weight:600;color:var(--slate);
+  text-decoration:none;display:inline-flex;align-items:center;gap:3px;
+  transition:color .15s ease;
+}
+.feat-foot a:hover{color:var(--ink)}
+/* 「语音编辑」角标：只在脑图卡上，把核心卖点从模块列表里挑出来 */
+.feat-foot .feat-hot{
+  margin-left:auto;padding:3px 9px;font-size:11.5px;
+  color:#7A5F00;background:var(--yellow-soft);
+  border:1px solid var(--yellow-line);border-radius:999px;
+}
+.feat-foot .feat-hot + a{margin-left:8px}
+@media (max-width:920px){ .feat-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:600px){
+  .feat-sec{padding:40px 0 44px}
+  .feat-grid{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:26px}
+  .feat{padding:20px 18px 18px}
+}
+
+/* ---------- 三端分工 ---------- */
+/* 三张实拍的长宽比差得太远（手机 .46 / 平板 .63 / PC 1.51）。并排三等分时必然要裁切，
+   裁完就成了"看不出是哪个端"的碎片 ⇒ 改「一个端一行」：左文右图，图用 max-height 等比缩，
+   整张都露出来（手机、平板各两张，能同时说明"长什么样 + 干什么"）。 */
+.ends-sec{background:#fff;border-top:1px solid var(--line-soft);padding:60px 0 64px}
+.ends-rows{display:grid;gap:14px;margin-top:34px}
+.end-row{
+  --h:340px;
+  display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+  gap:34px;align-items:center;
+  background:var(--page);border:1px solid var(--line);
+  border-radius:var(--radius-card);padding:26px 26px;
+}
+.end-row.mob{--c:#FFD02F;--cl:#FFF8DC;--ct:#7A5F00}
+.end-row.tab{--c:#6360C4;--cl:#EAEAF8;--ct:#403D93}
+.end-row.pc{--c:#1E7F8C;--cl:#E4F1F3;--ct:#14626D}
+.end-txt{position:relative;min-width:0;padding-left:17px}
+.end-txt::before{
+  content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--c);
+}
+.end-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:700;letter-spacing:.04em;
+  background:var(--cl);color:var(--ct);border-radius:999px;padding:4px 10px;
+}
+.end-txt h3{font-size:19px;font-weight:700;color:var(--ink);margin:13px 0 9px}
+.end-txt p{font-size:14px;line-height:1.75;color:var(--slate)}
+.end-txt ul{list-style:none;margin:15px 0 0;padding:14px 0 0;border-top:1px solid var(--line);display:grid;gap:7px}
+.end-txt li{
+  font-size:13.2px;color:var(--slate);display:flex;gap:7px;align-items:flex-start;line-height:1.6;
+}
+.end-txt li::before{
+  content:"";width:5px;height:5px;border-radius:50%;background:var(--c);
+  flex:0 0 auto;margin-top:7px;
+}
+.end-txt li b{color:var(--ink);font-weight:600}
+/* 图床：整张露出、等比缩放，绝不裁切。
+   手机/平板是竖图 ⇒ 由「高」定宽（height:var(--h) ＋ width:auto）；
+   PC 是横图 ⇒ 由「宽」定高（width:100%），否则窄屏会被 max-width 压扁成信箱框。
+   两种都能保证「盒子尺寸 = 图片真实长宽比」，既不变形、也不留白边。 */
+.end-shots{display:flex;align-items:flex-end;justify-content:center;gap:14px;min-width:0}
+.end-shot{
+  display:block;height:var(--h);width:auto;max-width:100%;
+  border:1px solid rgba(28,28,30,.10);border-radius:10px;
+  background:#fff;box-shadow:var(--shadow-sm);
+}
+.end-row.pc .end-shot{height:auto;width:100%;max-width:calc(var(--h) * 1.51)}
+@media (max-width:1080px){
+  .end-row{--h:310px;gap:28px}
+}
+@media (max-width:800px){
+  .end-row{grid-template-columns:minmax(0,1fr);gap:22px;--h:300px}
+}
+@media (max-width:640px){
+  .ends-sec{padding:40px 0 44px}
+  .ends-rows{margin-top:26px;gap:12px}
+  .end-row{padding:20px 18px;--h:290px}
+  .end-shots{gap:10px}
+}
+
+/* ---------- 语音编辑（核心卖点） ---------- */
+/* 左边三条主张、右边两张同尺寸实拍并列 —— 一眼就能对比"键盘"与"语音"的差别。
+   两张图长宽比相同（0.625），直接用 flex 等分宽度 ⇒ 高度自然一致，不需要定高。 */
+.voice-sec{background:#FFFBEF;border-top:1px solid var(--yellow-line);padding:64px 0 68px}
+.voice-wrap{display:grid;grid-template-columns:minmax(0,.96fr) minmax(0,1.04fr);gap:44px;align-items:center}
+.voice-copy{min-width:0}
+.voice-list{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:16px}
+.voice-list li{position:relative;padding-left:18px}
+.voice-list li::before{
+  content:"";position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:2px;background:var(--yellow-deep);
+}
+.voice-list li b{display:block;font-size:15.5px;font-weight:700;color:var(--ink)}
+.voice-list li span{display:block;margin-top:3px;font-size:14px;line-height:1.72;color:var(--slate)}
+.voice-alt{
+  margin:24px 0 0;padding:12px 14px;background:#fff;
+  border:1px dashed var(--yellow-line);border-radius:11px;
+  font-size:13.5px;line-height:1.65;color:var(--slate);
+}
+.voice-shots{display:flex;gap:16px;align-items:flex-start;min-width:0}
+.voice-shot{margin:0;flex:1 1 0;min-width:0}
+.voice-shot img{
+  display:block;width:100%;height:auto;
+  border:1px solid rgba(28,28,30,.10);border-radius:10px;background:#fff;
+  box-shadow:var(--shadow-sm);
+}
+.voice-shot figcaption{margin-top:9px;font-size:12.5px;line-height:1.5;color:#71717A;text-align:center}
+.voice-shot.is-on img{border-color:rgba(229,164,0,.42);box-shadow:0 6px 20px rgba(229,164,0,.18),0 1px 2px rgba(28,28,30,.05)}
+.voice-shot.is-on figcaption{color:#7A5F00;font-weight:600}
+@media (max-width:880px){
+  .voice-sec{padding:48px 0 52px}
+  .voice-wrap{grid-template-columns:minmax(0,1fr);gap:28px}
+  .voice-shots{max-width:560px;width:100%;margin:0 auto}
+  .voice-list{margin-top:22px;gap:14px}
+}
+
+/* ---------- 导出演示 ---------- */
+.exp-sec{background:var(--page);padding:60px 0 64px}
+.exp-wrap{
+  display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+  gap:44px;align-items:center;margin-top:8px;
+}
+.exp-copy .sec-h2{margin-top:0}
+.exp-list{list-style:none;margin:24px 0 0;display:grid;gap:14px}
+.exp-list li{display:flex;gap:11px;align-items:flex-start}
+.exp-list .n{
+  width:22px;height:22px;border-radius:7px;background:var(--yellow-soft);
+  border:1px solid var(--yellow-line);color:#7A5F00;
+  font-size:11.5px;font-weight:700;display:grid;place-items:center;flex:0 0 auto;margin-top:2px;
+}
+.exp-list div{font-size:14px;line-height:1.7;color:var(--slate)}
+.exp-list b{color:var(--ink);font-weight:600;display:block;margin-bottom:1px}
+
+.exp-card{
+  background:#1C1C1E;border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.06);
+}
+.exp-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 15px;border-bottom:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.03);
+}
+.exp-bar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.16);display:block}
+.exp-bar span{
+  margin-left:6px;font-size:11.5px;font-weight:600;color:rgba(255,255,255,.52);
+  letter-spacing:.04em;
+}
+.exp-bar .exp-copy-btn{
+  margin-left:auto;font-size:11px;font-weight:700;color:var(--ink);
+  background:var(--yellow);border-radius:999px;padding:3px 9px;letter-spacing:0;
+}
+.exp-body{
+  margin:0;padding:17px 18px 19px;
+  font:12.5px/1.85 var(--mono);color:#E6E7EA;
+  white-space:pre-wrap;word-break:break-word;
+}
+.exp-body .md-h{color:var(--yellow);font-weight:600}
+.exp-body .md-i{color:#8FB4FF}
+.exp-body .md-m{color:rgba(255,255,255,.56)}
+.exp-note{
+  display:flex;align-items:center;gap:7px;margin-top:13px;
+  font-size:12.5px;color:#71717A;
+}
+.exp-note svg{width:13px;height:13px;flex:0 0 auto;opacity:.7}
+@media (max-width:960px){
+  .exp-wrap{grid-template-columns:minmax(0,1fr);gap:28px}
+  .exp-sec{padding:40px 0 44px}
+}
+@media (max-width:600px){
+  .exp-body{font-size:11.5px;padding:14px}
+  .exp-list{margin-top:18px;gap:12px}
+}
+
+/* ---------- 手册区 ---------- */
+.manual-sec{
+  background:var(--page);border-top:1px solid var(--line);
+  padding:0 0 20px;
+}
+.manual-head{
+  max-width:var(--wrap);margin:0 auto;padding:56px 24px 0;
+}
+.manual-head .mh-row{
+  display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;
+  padding-bottom:22px;
+}
+.manual-head .mh-badge{
+  display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 11px;
+  background:var(--ink);color:#fff;border-radius:999px;
+  font-size:11.5px;font-weight:700;letter-spacing:.04em;
+}
+.manual-head .mh-meta{
+  margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:2px;
+}
+@media (max-width:760px){
+  .manual-head{padding:36px 16px 0}
+  .manual-head .mh-row{padding-bottom:16px;gap:12px}
+  .manual-head .mh-meta{margin-left:0}
+}
+/* 手册区里的 .layout 顶部留白收一点 */
+.manual-sec .layout{padding-top:22px}
+@media (max-width:980px){
+  .manual-sec .layout{padding-top:12px;padding-bottom:56px}
+}
+
+/* ---------- FAQ ---------- */
+.faq-sec{background:#fff;border-top:1px solid var(--line-soft);padding:58px 0 62px}
+.faq-grid{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  gap:10px;margin-top:32px;max-width:940px;align-items:start;
+}
+.faq{
+  background:var(--page);border:1px solid var(--line);border-radius:14px;
+  padding:0;overflow:hidden;transition:border-color .16s ease,background .16s ease;
+}
+.faq[open]{background:#fff;border-color:#D6D8E0;box-shadow:var(--shadow-sm)}
+.faq summary{
+  list-style:none;cursor:pointer;
+  padding:15px 17px;display:flex;align-items:flex-start;gap:10px;
+  font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.55;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{background:#FCFCFD}
+.faq summary .q{
+  flex:0 0 auto;width:18px;color:var(--yellow-deep);font-weight:800;
+}
+.faq summary .plus{
+  margin-left:auto;flex:0 0 auto;width:16px;height:16px;position:relative;top:2px;
+  transition:transform .2s ease;
+}
+.faq summary .plus::before,.faq summary .plus::after{
+  content:"";position:absolute;background:var(--stone);border-radius:1px;
+}
+.faq summary .plus::before{left:0;right:0;top:7px;height:1.6px}
+.faq summary .plus::after{top:0;bottom:0;left:7px;width:1.6px;transition:opacity .2s ease}
+.faq[open] summary .plus{transform:none}
+.faq[open] summary .plus::after{opacity:0}
+.faq .ans{
+  padding:0 17px 16px 45px;font-size:13.8px;line-height:1.78;color:var(--slate);
+}
+.faq .ans b{color:var(--ink);font-weight:600}
+.faq .ans code{font-size:12px}
+@media (max-width:820px){ .faq-grid{max-width:none} }
+@media (max-width:600px){
+  .faq-sec{padding:38px 0 42px}
+  .faq-grid{margin-top:24px;gap:10px}
+  .faq summary{font-size:14px;padding:14px 15px}
+  .faq .ans{padding:0 15px 15px 43px;font-size:13.5px}
+}
+
+/* ---------- 底部 CTA ---------- */
+.cta-sec{padding:0 0 56px;background:#fff}
+.cta-box{
+  position:relative;overflow:hidden;
+  background:var(--yellow);border-radius:24px;
+  padding:44px 44px 46px;
+  display:flex;align-items:center;gap:36px;flex-wrap:wrap;
+}
+.cta-box::before{
+  content:"";position:absolute;right:-60px;bottom:-90px;width:300px;height:300px;
+  border-radius:50%;background:rgba(255,255,255,.24);
+}
+.cta-box::after{
+  content:"";position:absolute;right:96px;top:-110px;width:220px;height:220px;
+  border-radius:50%;background:rgba(255,255,255,.16);
+}
+.cta-txt{position:relative;z-index:1;min-width:0;flex:1 1 320px}
+.cta-txt h2{font-size:28px;line-height:1.3;letter-spacing:-.022em;font-weight:800;color:var(--ink)}
+.cta-txt p{margin-top:10px;font-size:14.5px;line-height:1.7;color:rgba(28,28,30,.84);max-width:52ch}
+.cta-txt p b{color:var(--ink);font-weight:600}
+.cta-side{position:relative;z-index:1;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.cta-qr{
+  display:flex;align-items:center;gap:11px;
+  background:rgba(255,255,255,.94);border-radius:14px;padding:9px 14px 9px 9px;
+  box-shadow:0 6px 18px rgba(28,28,30,.10);
+}
+.cta-qr img{width:92px;height:92px;border-radius:8px;display:block;background:#fff}
+.cta-qr span{font-size:11.5px;line-height:1.5;color:var(--slate);max-width:11em}
+.cta-qr span b{display:block;font-size:12.5px;color:var(--ink);font-weight:700;margin-bottom:1px}
+@media (max-width:760px){
+  .cta-sec{padding:0 0 38px}
+  .cta-box{padding:28px 22px 30px;border-radius:18px;gap:20px}
+  .cta-txt h2{font-size:22px}
+  .cta-txt p{font-size:13.8px}
+  .cta-side{width:100%}
+  .cta-qr{flex:1 1 auto}
+}
+
+/* ---------- 站点页脚 ---------- */
+.site-foot{background:var(--page);border-top:1px solid var(--line);padding:44px 0 34px}
+.sf-grid{
+  display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,.6fr)) minmax(0,1.6fr);
+  gap:32px;align-items:start;
+}
+.sf-brand{display:flex;gap:11px;align-items:flex-start}
+.sf-brand .sf-logo{
+  width:34px;height:34px;border-radius:10px;overflow:hidden;flex:0 0 auto;
+}
+.sf-brand .sf-logo img{width:100%;height:100%;display:block}
+.sf-brand b{font-size:15px;font-weight:700;color:var(--ink);display:block;letter-spacing:-.01em}
+.sf-brand p{margin-top:7px;font-size:12.8px;line-height:1.7;color:#6E7280;max-width:34ch}
+.sf-col h4{
+  font-size:11.5px;font-weight:700;letter-spacing:.09em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:11px;
+}
+.sf-col a{
+  display:block;font-size:13.2px;color:var(--slate);text-decoration:none;
+  padding:4px 0;transition:color .15s ease;
+}
+.sf-col a:hover{color:var(--ink)}
+.sf-col p{font-size:12.8px;line-height:1.75;color:#6E7280}
+.sf-about p + p{margin-top:9px}
+.sf-about b{color:var(--ink);font-weight:700}
+.sf-about p{text-wrap:pretty}
+.sf-about p.sf-meta{
+  margin-top:13px;padding-top:11px;border-top:1px solid var(--line);
+  font-size:11.6px;line-height:1.7;color:#8A8E9B;
+}
+/* 关注公众号（2026-10-29）：独立一条，上下各一条线夹住，与四列、版权条同 34px 节奏 */
+/* 用 grid 不用 flex：minmax(0,1fr) 把文字列显式压成"可收缩"，
+   中文无空格断行，只靠 flex + min-width:0 时收缩行为依浏览器，不如 grid 确定。
+   ⚠️ 验窄屏别只信 --window-size：Edge/Chrome 无头有 ~500px 最小窗口，
+   写 390 实际按 504 渲染再裁成 390 图 ⇒ 看到的"右侧被截断"是截图裁切，不是页面溢出。
+   要确认是否真溢出，量 p 的 clientWidth 与 scrollWidth 是否相等。 */
+.sf-qrbar{
+  margin-top:34px;padding-top:24px;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;
+}
+/* ★ 二维码底必须恒白：页脚是 --page 底色，深色/换肤下光有图会被压暗，必须自带白底 */
+.sf-qrbar img{
+  width:88px;height:88px;border-radius:10px;display:block;flex:0 0 auto;
+  background:#fff;border:1px solid var(--line);
+}
+/* 文字列拿剩余宽度。文案已用 <br> 固定成两行短句（各 13～14 字），
+   不再靠 max-width 控制折行 —— 靠宽度折行时，504px 下会折成「30 字＋2 字」的孤行。 */
+.sf-qrbar > div{min-width:0}
+.sf-qrbar b{display:block;font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.sf-qrbar p{font-size:12.8px;line-height:1.7;color:#6E7280}
+.sf-bottom{
+  margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  font-size:12px;color:#6E7280;
+}
+.sf-bottom .sf-dot{width:3px;height:3px;border-radius:50%;background:var(--line-strong,#C7CAD5)}
+.sf-bottom .right{margin-left:auto}
+@media (max-width:920px){
+  .sf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}
+  .sf-brand{grid-column:1/-1}
+}
+@media (max-width:600px){
+  .site-foot{padding:32px 0 26px}
+  .sf-qrbar{margin-top:24px;padding-top:18px;gap:12px}
+  .sf-qrbar img{width:76px;height:76px}
+  .sf-bottom{margin-top:24px;font-size:11.5px}
+  .sf-bottom .right{margin-left:0;width:100%}
+}
+
+/* ---------- 覆盖手册原布局（导航变高、去掉旧 bar） ---------- */
+/* 锚点落点只由 html 的 scroll-padding-top 管 ——
+   ⚠️ 别再给 .mod 加 scroll-margin-top：两者会叠加，点目录会多空一截 */
+.toc{top:calc(var(--nav-h) + 12px);max-height:calc(100vh - var(--nav-h) - 34px)}
+.mod{scroll-margin-top:0}
+html{scroll-padding-top:calc(var(--nav-h) + 14px)}
+@media (max-width:980px){
+  /* 贴住导航：滚动时无缝衔接，不会从缝里露出下面的内容 */
+  .toc{
+    top:calc(var(--nav-h) - 1px);
+    border-radius:0 0 14px 14px;border-top:0;
+    box-shadow:0 8px 18px -14px rgba(28,28,30,.35);
+  }
+  .mod{scroll-margin-top:0}
+  .manual-sec .layout{padding-top:0}
+  /* 顶部多了一条目录胶囊：落点再让出它的高度 */
+  html{scroll-padding-top:124px}
+}
+
+/* 深色设备外框在浅底上的细节 */
+.hv-shot img{background:#fff}
+
+/* ==========================================================================
+   v2.0 · FDE 定位新增两块：为什么（.why）与一个客户的四周（.case）
+   背景节奏：hero(黄) → why(灰) → flow(白) → case(灰) → track(白) → features(灰)
+             → ends(白) → exp(灰) → voice(暖白) → manual(灰) → faq(白) → cta(白)
+   ========================================================================== */
+
+.why-sec{background:var(--page);border-top:1px solid var(--line);padding:60px 0 64px}
+
+/* 五步流程：列数变 5，原四步竖线在换行处会错位 ⇒ 一律去掉，靠 gap 分隔 */
+.flow.is-five{grid-template-columns:repeat(5,minmax(0,1fr));gap:0 20px}
+.flow.is-five .flow-item{padding-right:0}
+.flow.is-five .flow-item::after{display:none}
+
+.why-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;margin-top:34px;
+}
+.why{
+  background:#fff;border:1px solid var(--line);border-radius:16px;
+  padding:19px 18px 21px;min-width:0;
+  display:flex;flex-direction:column;
+}
+.why-n{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--yellow-deep);font-variant-numeric:tabular-nums}
+.why h3{font-size:15px;line-height:1.45;font-weight:700;color:var(--ink);margin-top:9px;text-wrap:balance}
+.why p{margin-top:8px;font-size:13px;line-height:1.72;color:var(--slate)}
+.why p b{color:var(--ink);font-weight:600}
+.why-quote{
+  margin-top:24px;padding:18px 20px;border-radius:14px;
+  background:var(--yellow-soft);border:1px solid var(--yellow-line);
+  font-size:15px;line-height:1.7;color:var(--slate-strong);max-width:78ch;
+}
+.why-quote b{color:var(--ink);font-weight:700}
+
+/* —— 目标用户与交付形态 —— */
+.fit-sec{background:#fff;border-top:1px solid var(--line-soft);padding:60px 0 64px}
+.fit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:32px}
+.fit{
+  background:var(--page);border:1px solid var(--line);border-radius:16px;
+  padding:20px 19px 22px;display:flex;flex-direction:column;min-width:0;
+}
+.fit-k{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--yellow-deep)}
+.fit h3{font-size:15px;line-height:1.45;font-weight:700;color:var(--ink);margin-top:9px;text-wrap:balance}
+.fit p{margin-top:8px;font-size:13px;line-height:1.72;color:var(--slate)}
+.fit p b{color:var(--ink);font-weight:600}
+.fit-deploy{
+  margin-top:26px;border:1px solid var(--line);border-radius:16px;
+  background:var(--page);padding:22px 24px 20px;
+}
+.fit-deploy h3{font-size:15px;font-weight:700;color:var(--ink)}
+.fit-deploy .fd-sub{margin-top:6px;font-size:13px;line-height:1.72;color:var(--slate)}
+.fit-deploy .tbl-wrap{margin-top:14px}
+@media (max-width:980px){.fit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .fit-sec{padding:44px 0 48px}
+  .fit-grid{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:24px}
+  .fit-deploy{padding:17px 15px 16px}
+  /* 这张表在手机上要能整屏读完，不能靠横向拖 */
+  .fit-deploy table.tbl{min-width:0;font-size:12.5px}
+  .fit-deploy table.tbl th{padding:8px 9px;white-space:normal}
+  .fit-deploy table.tbl td{padding:9px 8px}
+}
+
+/* —— 交付追踪：能力表 —— */
+.track-sec{background:#fff;border-top:1px solid var(--line-soft);padding:60px 0 64px}
+.track-sec .tbl-wrap{margin-top:30px}
+.track-note{
+  margin-top:18px;font-size:13px;line-height:1.7;color:var(--stone);
+  display:flex;align-items:flex-start;gap:8px;
+}
+.track-note svg{width:15px;height:15px;flex:0 0 15px;margin-top:2px;color:var(--stone)}
+
+/* —— 案例：一个客户的四周 —— */
+.case-sec{background:var(--page);border-top:1px solid var(--line);padding:60px 0 64px}
+.case-list{margin-top:32px;border-top:1px solid var(--line)}
+.case-row{
+  display:grid;grid-template-columns:136px minmax(0,1fr);gap:24px;
+  padding:20px 0 21px;border-bottom:1px solid var(--line-soft);
+}
+.case-when{display:flex;flex-direction:column;gap:5px;min-width:0}
+.case-when b{
+  font-size:13px;font-weight:700;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:.01em;
+}
+.case-when i{
+  font-style:normal;font-size:11.5px;line-height:1.5;color:var(--stone);
+}
+.case-body{min-width:0}
+.case-body h3{
+  font-size:15.5px;line-height:1.5;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+}
+.case-body p{margin-top:7px;font-size:13.5px;line-height:1.74;color:var(--slate)}
+.case-body p b{color:var(--ink);font-weight:600}
+.case-body code{
+  font-family:var(--mono);font-size:12.5px;
+  background:var(--chip);border-radius:5px;padding:1px 5px;color:var(--slate-strong);
+}
+.case-ui{
+  margin-top:10px;display:flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--stone);
+}
+.case-ui svg{width:14px;height:14px;flex:0 0 14px}
+.case-tail{
+  margin-top:22px;padding:16px 18px;border-radius:12px;
+  background:#fff;border:1px solid var(--line);
+  font-size:13.5px;line-height:1.72;color:var(--slate);
+}
+.case-tail b{color:var(--ink);font-weight:600}
+
+/* 五步流程的断点必须写全 `.flow.is-five`：它的基础规则特异性 (0,2,0) 高于
+   原四步在媒体查询里的 `.flow`(0,1,0)，不重写就永远停在 5 列。 */
+@media (max-width:1180px){
+  .flow.is-five{grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 22px}
+}
+@media (max-width:700px){
+  .flow.is-five{grid-template-columns:minmax(0,1fr);gap:0;margin-top:24px}
+  .flow.is-five .flow-item{
+    padding:0 0 18px;margin-bottom:18px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .flow.is-five .flow-item:last-child{padding-bottom:0;margin-bottom:0;border-bottom:0}
+}
+
+@media (max-width:980px){
+  .why-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .case-row{grid-template-columns:108px minmax(0,1fr);gap:16px}
+}
+@media (max-width:640px){
+  .why-sec,.track-sec,.case-sec{padding:44px 0 48px}
+  .why-grid{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:24px}
+  .why-quote{padding:14px 15px;font-size:14px}
+  .case-list{margin-top:24px}
+  .case-row{grid-template-columns:minmax(0,1fr);gap:7px;padding:16px 0}
+  .case-when{flex-direction:row;align-items:baseline;gap:8px}
+}
+
+/* —— 三个位置：手机极简的说明块（与 track-note 同款，白底区块内用） —— */
+.ends-note{
+  margin-top:24px;padding:16px 18px;border-radius:12px;
+  background:var(--yellow-soft);border:1px solid var(--yellow-line);
+  font-size:13.5px;line-height:1.74;color:var(--slate-strong);
+  display:flex;align-items:flex-start;gap:9px;
+}
+.ends-note svg{width:15px;height:15px;flex:0 0 15px;margin-top:3px;color:var(--yellow-deep)}
+.ends-note b{color:var(--ink);font-weight:600}
+
+/* —— 接下来：深色预告区 —— */
+.next-sec{background:var(--ink);padding:64px 0 68px}
+.next-sec .sec-kicker{color:var(--yellow)}
+.next-sec .sec-h2{color:#fff}
+.next-sec .sec-h2 em{background:none;color:var(--yellow);padding:0}
+.next-sec .sec-lead{color:rgba(255,255,255,.66)}
+.next-sec .sec-lead b{color:#fff;font-weight:600}
+
+.next-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;margin-top:32px;
+}
+.next{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:16px;padding:22px 22px 24px;
+  min-width:0;display:flex;flex-direction:column;
+}
+.next-tag{
+  display:inline-flex;align-items:center;align-self:flex-start;
+  background:var(--yellow);color:var(--ink);
+  font-size:11px;font-weight:800;letter-spacing:.06em;
+  border-radius:20px;padding:4px 11px;
+}
+.next h3{
+  margin-top:14px;font-size:17px;line-height:1.5;font-weight:700;
+  color:#fff;text-wrap:balance;
+}
+.next p{
+  margin-top:9px;font-size:13.5px;line-height:1.76;
+  color:rgba(255,255,255,.72);
+}
+.next p b{color:#fff;font-weight:600}
+.next ul{
+  margin-top:16px;padding-top:15px;
+  border-top:1px solid rgba(255,255,255,.13);
+  display:flex;flex-direction:column;gap:9px;
+}
+.next li{
+  position:relative;padding-left:16px;
+  font-size:13px;line-height:1.66;color:rgba(255,255,255,.62);
+}
+.next li::before{
+  content:"";position:absolute;left:1px;top:7px;
+  width:5px;height:5px;border-radius:50%;background:var(--yellow);
+}
+.next-note{
+  margin-top:20px;font-size:12.5px;line-height:1.72;
+  color:rgba(255,255,255,.46);max-width:78ch;
+}
+
+@media (max-width:980px){
+  .next-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .next-sec{padding:44px 0 48px}
+  .next-grid{margin-top:24px;gap:12px}
+  .next{padding:18px 17px 20px}
+  .next h3{font-size:16px}
+  .ends-note{padding:14px 15px;font-size:13px}
+}
+
+.manual-body{min-width:0}
+/* v3.0 独立手册：键盘可读性与窄屏表格修正 */
+.shot-stage img:focus-visible{outline:3px solid rgba(229,164,0,.5);outline-offset:4px}
+@media (max-width:640px){table.tbl{min-width:500px}.fit-deploy table.tbl{min-width:0}}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a class="nav-brand" href="index.html#top" aria-label="Agent-ToDo 首页"><span class="nav-logo"><img src="img/brand-logo-512.png" alt="Agent-ToDo"></span><span class="nav-word"><b>Agent-ToDo</b><span>OPERATION MANUAL</span></span></a>
+    <nav class="nav-links" aria-label="手册导航"><a href="#m0">读法</a><a href="#m1">概览</a><a href="#m2">胶囊</a><a href="#m3">项目</a><a href="#m4">待办</a><a href="#m5">脑图</a><a href="#m7">流程</a><a href="#m8">名词</a></nav>
+    <div class="nav-right"><a class="nav-btn ghost" href="index.html">返回官网</a><a class="nav-btn solid" href="index.html#download">扫码使用</a></div>
+  </div>
+</header>
+<main id="top">
+  <!-- ============ 操作手册 ============ -->
+  <section class="manual-sec" id="manual">
+    <div class="manual-head">
+      <div class="mh-row">
+        <div>
+          <span class="mh-badge">OPERATION MANUAL · v3.0</span>
+          <h2 class="sec-h2" style="margin-top:14px">完整操作手册</h2>
+          <p class="sec-lead" style="margin-top:10px">
+            按功能模块组织的十节手册：每节先讲“这一步在解决什么”，再讲按什么顺序点，
+            最后把截图里的每一块界面元素逐条解释清楚。图号写作“图 4-3”，表示第 04 节第 3 张图。
+          </p>
+        </div>
+        <div class="mh-meta">
+          <span class="end mob">手机 4 张</span>
+          <span class="end tab">平板 27 张</span>
+          <span class="end pc">PC 5 张</span>
+          <span class="tag">点图可放大</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="toc" id="toc">
+        <div class="toc-title">目录</div>
+        <a href="#m0"><span class="n">00</span>三端分工与读法</a>
+        <a href="#m1"><span class="n">01</span>概览</a>
+        <a href="#m2"><span class="n">02</span>闪念胶囊</a>
+        <a href="#m3"><span class="n">03</span>项目</a>
+        <a href="#m4"><span class="n">04</span>待办</a>
+        <a href="#m5"><span class="n">05</span>脑图</a>
+        <a href="#m6"><span class="n">06</span>我的</a>
+        <div class="toc-sep"></div>
+        <a href="#m7"><span class="n">07</span>跨端标准流程</a>
+        <a href="#m8"><span class="n">08</span>名词与手势</a>
+        <a href="#m9"><span class="n">09</span>截图索引</a>
+        <div class="toc-sep"></div>
+        <a href="index.html#faq"><span class="n">＋</span>常见问题</a>
+      </aside>
+
+      <div class="manual-body">
+  <!-- ============ 00 ============ -->
+  <section class="mod" id="m0">
+    <div class="mod-head">
+      <span class="mod-no">00</span>
+      <div>
+        <h2>三端分工与读法</h2>
+        <div class="sub">先知道自己手上这个端该干哪一段</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end mob">手机</span><span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      在同一个客户的实例里，三个端连的是同一份数据，但当前功能边界不同。手机只提供闪念胶囊与左滑操作；
+      平板和 PC 是完整工作台，平板把“列表 + 详情”并排放，PC 再宽一档、卡片排成四列。
+      同一个“项目列表”，在平板上是左侧浮出的抽屉，在 PC 上也是抽屉，只是背后的详情页更宽。
+    </p>
+
+    <h3 class="h3">交付链路与三端分工</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>步骤</th><th>你在这里做什么</th><th>主力端</th><th>对应模块</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="c"><b>接住</b></td><td>走在路上想起一句，按住「说」说一条；不能出声的场合点「写」打字。都不选项目、不标紧急度</td><td class="c"><span class="end mob">手机</span></td><td><a href="#m2">02 闪念胶囊</a></td></tr>
+          <tr><td class="c"><b>归位</b></td><td>把胶囊转成待办，选对应项目、定一档紧急程度</td><td class="c"><span class="end tab">平板</span> <span class="end pc">PC</span></td><td><a href="#m3">03 项目</a> · <a href="#m4">04 待办</a></td></tr>
+          <tr><td class="c"><b>出方案</b></td><td>把碎片摆成一张有层级的脑图，拖节点改父子关系</td><td class="c"><span class="end tab">平板</span> <span class="end pc">PC</span></td><td><a href="#m5">05 脑图</a></td></tr>
+          <tr><td class="c"><b>派活</b></td><td>待办正文（连图片一起）＋ 挂载的脑图 ＋ 客户原话，导出成一段 Markdown，粘进 Agent 的输入框</td><td class="c"><span class="end tab">平板</span> <span class="end pc">PC</span></td><td><a href="#m4">04 待办 · 导出</a></td></tr>
+          <tr><td class="c"><b>收尾</b></td><td>勾完成、推项目阶段；在概览回看这个周期交了多少，给客户的说明从记录里导</td><td class="c"><span class="end tab">平板</span> <span class="end pc">PC</span></td><td><a href="#m1">01 概览</a> · <a href="#m3">03 项目</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="h3">先认清三种“壳”</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>端</th><th>导航壳</th><th>列表怎么出现</th><th>详情怎么出现</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c"><span class="end mob">手机</span></td>
+            <td>单列全屏，一个页面一件事</td>
+            <td>直接就是整页内容</td>
+            <td>进入下一页，返回键回列表</td>
+          </tr>
+          <tr>
+            <td class="c"><span class="end tab">平板</span></td>
+            <td>底部五个 tab：概览 / 项目 / 待办 / 脑图 / 我的</td>
+            <td>从左侧浮出<b>抽屉</b>，盖住详情但不满屏</td>
+            <td>右侧常驻，切换列表项时右侧跟着换</td>
+          </tr>
+          <tr>
+            <td class="c"><span class="end pc">PC</span></td>
+            <td>最左一条<b>图标栏</b>（只有图标＋小字）</td>
+            <td>同样是左侧抽屉，宽度固定、高度铺满</td>
+            <td>同样在右侧，卡片排四列</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="nt">读图约定</span>
+      本手册的图号写作“图 2-3”，表示第 02 个模块的第 3 张图；每张图下方的
+      <b>界面元素</b> 一栏，按“元素名 → 它是什么 / 点了会怎样”逐条对照。截图里的内容来自演示实例中的测试数据，
+      项目名、待办正文不必照抄，看位置和结构即可。
+    </div>
+
+    <div class="note">
+      <span class="nt">截图里的两个“外来件”</span>
+      手机和平板截图右上角那个 <b>「···」＋圆点</b> 是微信小程序自己的胶囊菜单，不是应用的功能，手册不再单独解释；
+      PC 端顶部是应用窗口的标题栏（最小化 / 最大化 / 关闭），同样属于宿主环境。
+    </div>
+
+    <div class="note">
+      <span class="nt">这份手册对应哪一套实例</span>
+      文中截图取自<b>公开上架的演示实例</b>，数据可随时清空。正式交付时，每家客户<b>独立布设一套</b> ——
+      自己的实例与数据，与演示实例、与其他客户都不相通；当前公开入口是微信小程序，
+      H5 或原生 App 作为正式交付时的终端选项，具体形态与操作以项目交付版本为准。
+    </div>
+
+    <h3 class="h3">全局只有一个悬浮入口</h3>
+    <p class="lead" style="margin-top:0">
+      平板与 PC 的每个页面右下角都挂着同一枚<b>黄色徽标按钮</b>（圆角方形的勾选框图标）。
+      点它，闪念胶囊的抽屉会盖到最前，键面同时换成黑色麦克风——<b>再点一次就开始录音</b>。
+      手机端没有这枚按钮：那一端的整屏就是胶囊流，底部那颗「说」本身就是入口，不需要第二个。
+    </p>
+  </section>
+  <!-- ============ 01 ============ -->
+  <section class="mod" id="m1">
+    <div class="mod-head">
+      <span class="mod-no">01</span>
+      <div>
+        <h2>概览</h2>
+        <div class="sub">今天在忙什么 · 一眼看到节奏与分布</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      概览是唯一一个“只看不改”的页面：上半屏用一张热力日历回答“最近我到底干了多少”，
+      下半屏把每个项目的待办按四档紧急度摊开，回答“活堆在哪个项目里”。要区分<b>周期累计</b>与<b>当前存量</b>：累计活动用于回看，未完成数与四档积压会随完成、删除和改档变化，
+      所以它更像体温计，不像待办清单。
+    </p>
+
+    <h3 class="h3">操作流程</h3>
+    <ol class="steps">
+      <li>
+        <b>进入概览</b>：平板点底部第一个 tab「概览」，PC 点最左侧图标栏第一项（图标下方写着“概览”）。
+        <span class="where">对应图 1-1、图 1-2</span>
+      </li>
+      <li>
+        <b>先看右下那行日期</b>：它把“今天”和“今天产出”写在一行里——日期星期、第几周，以及当天
+        <b>创建 / 完成 / 胶囊</b>三个计数和它们的合值。
+      </li>
+      <li>
+        <b>再看日历的颜色</b>：一格是一天，颜色越深当天越忙。当前这一天的格子带一个虚线角标；
+        想看更早的日子就<b>向左滑动</b>日历，右下角那行小字会告诉你“共 30 周 · 当前显示最近 14 周”。
+      </li>
+      <li>
+        <b>往下滚到「项目待办统计」</b>：每个项目一张小卡，卡上四档数字分别是紧急 / 中等 / 不紧急 / 留置的条数。
+        哪一格红得多，活就堵在哪儿。
+      </li>
+      <li>
+        <b>要看细节就点项目卡</b>：进入该项目详情页（见 <a href="#m3">03 项目</a>），那边才是能改的地方。
+      </li>
+    </ol>
+
+    <h3 class="h3">界面元素</h3>
+    <div class="figures two">
+
+      <figure class="shot tablet" id="f1-1">
+        <div class="shot-stage">
+          <img src="img/pad-01-overview.jpg" alt="平板端概览页：上半屏活跃度日历，下半屏项目待办统计" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 1-1</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">概览：活跃度日历 ＋ 项目待办统计</div>
+          <div class="fig-cap">上半屏是日历，下半屏按项目分卡；平板两列，一屏能看到七八个项目。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">区块头</dt><dd class="v">小图标＋「活跃度日历」/「项目待办统计」。图标只是分组标记，不可点。</dd></div>
+            <div class="el"><dt class="k">列号 30–43</dt><dd class="v">顶部的数字是<b>周序号</b>（第 30 周到第 43 周），一列一周。</dd></div>
+            <div class="el"><dt class="k">周一…周日</dt><dd class="v">左侧纵轴是星期。横看是“同一周过得怎么样”，竖看是“每周几最忙”。</dd></div>
+            <div class="el"><dt class="k">颜色格子</dt><dd class="v">一格一天，共 5 档：越深越忙。当前这天带<b>虚线角标</b>。</dd></div>
+            <div class="el"><dt class="k">色阶图例</dt><dd class="v">左下「少 → 多」五个小方块，对应 5 档热度，用来校准深浅。</dd></div>
+            <div class="el"><dt class="k">周范围说明</dt><dd class="v">右下小字：「共 30 周 · 当前显示最近 14 周 · 向左滑动看更早」——这是日历可以横滑的提示。</dd></div>
+            <div class="el"><dt class="k">日期统计行</dt><dd class="v">「2026-10-20 周二 · 第 43 周 · 创建 3 条 / 完成 5 条 / 胶囊 1 条 · 合值 9」。<b>合值＝三项相加</b>（3＋5＋1＝9），是日历格子的着色依据。</dd></div>
+            <div class="el"><dt class="k">项目卡</dt><dd class="v">色点＋项目名＋阶段标签；第二行「0 张脑图 · workbuddy」是脑图数与所属 agent。</dd></div>
+            <div class="el"><dt class="k">四档数字</dt><dd class="v">紧急（红）/ 中等（橙）/ 不紧急（蓝）/ 留置（灰）。这里只读，不能直接勾完成。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot pc" id="f1-2">
+        <div class="shot-stage">
+          <img src="img/pc-01-overview.png?v=20261028" alt="PC 端概览页：日历横向拉长到 26 周，项目卡四列" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 1-2</span><span class="end pc">PC 端</span></div>
+          <div class="fig-title">同一页放到 PC：日历变长，卡片变四列</div>
+          <div class="fig-cap">这是不同日期的布局对照：PC 横向展示 26 周，项目卡从两列变四列，并增加 Agent 概况区块。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">左侧图标栏</dt><dd class="v">纵向五个图标：概览 / 项目 / 待办 / 脑图 / 我的。当前页用<b>黄色方块＋墨色图标</b>标出。</dd></div>
+            <div class="el"><dt class="k">窗口标题栏</dt><dd class="v">顶部「Agent-ToDo」＋右侧最小化 / 最大化 / 关闭，属于宿主窗口，不是应用功能。</dd></div>
+            <div class="el"><dt class="k">列号 19–44</dt><dd class="v">PC 更宽，默认直接露出 26 周；平板是 14 周。</dd></div>
+            <div class="el"><dt class="k">项目卡 4 列</dt><dd class="v">一屏能扫完所有项目，找“哪个项目最红”比平板上快。</dd></div>
+            <div class="el"><dt class="k">右下徽标</dt><dd class="v">黄色圆角方块（勾选框图标）＝<b>闪念胶囊</b>的全局入口，任何页面都在。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+    </div>
+
+    <div class="note">
+      <span class="nt">怎么读这张日历</span>
+      <b>纵向看列</b>＝同一周七天的活动；<b>横向看行</b>＝同一星期几在这 14 周的变化；<b>单个格子</b>才是一天三项活动的合值。
+      最右边几列通常最深——那是你最近在干活的日子，不是“数据出问题”。
+    </div>
+  </section>
+
+  <!-- ============ 02 ============ -->
+  <section class="mod" id="m2">
+    <div class="mod-head">
+      <span class="mod-no">02</span>
+      <div>
+        <h2>闪念胶囊</h2>
+        <div class="sub">接住：一条 60 秒，不选项目、不标紧急度</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end mob">手机</span><span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      这是一个<b>先收进来、暂不归类的收集箱</b>：记录时不用想项目、紧急度与归属，之后再编辑、导出、转待办或转脑图。
+      进来有两条入口：<b>说</b>——一条最长 60 秒，到点自动收，说不完就再录第二条；<b>写</b>——开会、地铁、
+      孩子睡了这类不能出声的场合，打字记下来，最多再挂一张截图。
+      列表是<b>正序</b>的——越早的越靠上，因为它是流水账，顺序本身带信息。整理留给后面三个出口：转待办、转脑图、删掉。
+    </p>
+
+    <h3 class="h3">手机上：说一条</h3>
+    <ol class="steps">
+      <li><b>点底部那条黄色的「说」</b>开始录——条面平时写着“点击开始录音”，一按下就变成倒计时。</li>
+      <li><b>说完再点一次</b>（或点屏幕任意位置，或等 60 秒到点自动收）——气泡落在列表<b>最下方</b>，右下角带日期时间。</li>
+      <li><b>要改就左滑这一条</b>：往左拖，右侧顶出三颗竖排的键——导出 / 编辑 / 删除。</li>
+      <li><b>“导出”拿到的是这条气泡的文字</b>，粘到哪儿都行；“编辑”改错别字（语音识别最容易错人名、项目名）；“删除”只从列表移除，不弹二次确认。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot phone" id="f2-1">
+        <div class="shot-stage">
+          <img src="img/mobile-01-capture.jpg?v=20261028" alt="手机端闪念胶囊列表：三段气泡正序排列，底部一条黄色「说」与一颗白色「写」" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-1</span><span class="end mob">手机端</span></div>
+          <div class="fig-title">常态：一颗「说」，一颗「写」</div>
+          <div class="fig-cap">手机端没有 tab 栏，打开就是这张流水账；记下来有两颗键，先按场景挑一颗。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">说</dt><dd class="v">底部左侧那条长黄键：麦克风＋一个「说」字，靠右写着“点击开始录音”。走路、在车上、刚想到一句话时走这条。</dd></div>
+            <div class="el"><dt class="k">写</dt><dd class="v">黄条右侧那颗白底「写」。开会、地铁、旁边有人睡了就走这条（图 2-3）。</dd></div>
+            <div class="el"><dt class="k">气泡</dt><dd class="v">淡黄底卡片，左侧一道<b>黄色竖引线</b>，正文成段；右下灰色小字是记录时间。</dd></div>
+            <div class="el"><dt class="k">正序</dt><dd class="v">越早的记录越靠上，往下读就是“我当时的想法怎么一步步长出来的”。</dd></div>
+            <div class="el"><dt class="k">右上胶囊</dt><dd class="v">「···」与圆点是微信小程序原生菜单，不属于本应用。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot phone" id="f2-2">
+        <div class="shot-stage">
+          <img src="img/mobile-02-recording.jpg?v=20261028" alt="手机端录音中：底部整条变黄，左侧 00:59 倒计时，右侧“轻点任意处停止”" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-2</span><span class="end mob">手机端</span></div>
+          <div class="fig-title">录音中：底部条变成倒计时</div>
+          <div class="fig-cap">倒计时从左往右走，右侧一句“轻点任意处停止”——停这件事不该需要瞄准。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">00:59</dt><dd class="v">秒数从 60 往下走，这就是全部进度反馈——没有波形、没有时长条。</dd></div>
+            <div class="el"><dt class="k">轻点任意处</dt><dd class="v">整屏都是停止层，点哪儿都停，连状态栏那一带也算。不用对准某颗键。</dd></div>
+            <div class="el"><dt class="k">再点一次</dt><dd class="v">提前结束录音，立刻开始转写；不用等倒计时走完。</dd></div>
+            <div class="el"><dt class="k">录音态</dt><dd class="v">「说」「写」两颗键这一帧都收起来，屏幕上的唯一动作是“停”。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h3 class="h3">手机上：写一条（不能出声的场合）</h3>
+    <p class="lead" style="margin-top:0">
+      闪念偏偏最常发生在不能开口的时候。这条入口让“记下来”不必先有声音，也不必等到能说话才记 ——
+      <b>写的和说的进同一条流水账</b>，后面照样转待办、转脑图，没有第二条账本。
+    </p>
+    <ol class="steps">
+      <li><b>点底部那颗白胶囊「写」</b>，面板从下面升起，标题「记一条闪念」。</li>
+      <li><b>想到什么就写什么</b>：占位提示“想到什么就写什么，回头再整理…”，上限 600 字，字多了框内自己滚。</li>
+      <li><b>要留住现场就加截图</b>：点虚线坑「加截图」选一张——<b>一条胶囊最多挂 1 张</b>；挂上后缩略图右下角是「更换」、右上角是 ✕。</li>
+      <li><b>写到一半想改成说</b>：点「改成说」——已经写下的半句<b>先存成一条</b>再起录。切换输入方式不该丢字，代价是多出一条胶囊，这个取舍是有意的。</li>
+      <li><b>点「记下来」</b>落进列表最下方。正文空着时这颗键是灰的。</li>
+      <li><b>写了字又想放弃</b>：第一次点「取消」只算<b>武装</b>——键面变「丢弃」、升起一句“这段还没存下”，再点一次才真丢；三秒多不理它，自己退回「取消」。</li>
+    </ol>
+
+    <figure class="shot phone" id="f2-3">
+      <div class="shot-stage">
+        <img src="img/mobile-04-compose.jpg" alt="手机端「记一条闪念」面板：输入区、加截图坑、改成说、取消与记下来" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 2-3</span><span class="end mob">手机端</span></div>
+        <div class="fig-title">「记一条闪念」：一句话 ＋ 一张截图</div>
+        <div class="fig-cap">面板从底部升起，背后那条流水账还看得见——写的时候知道自己记在哪儿。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">标题</dt><dd class="v">「记一条闪念」。改已有的那条叫「编辑闪念」——“产生”与“修改”用两个词分开。</dd></div>
+          <div class="el"><dt class="k">输入区</dt><dd class="v">固定高度、框内自己滚。不留自适应高度：否则一句话写到第三行，下面的键就被顶出屏幕。</dd></div>
+          <div class="el"><dt class="k">加截图</dt><dd class="v">虚线坑，右边一句「最多挂 1 张图，留住截图里的现场」。挂上后变成缩略图：右下「更换」、右上 ✕。</dd></div>
+          <div class="el"><dt class="k">改成说</dt><dd class="v">左侧白底黑框那颗，不抢主键的位。点了先存半句再起录（见上面第 4 条）。</dd></div>
+          <div class="el"><dt class="k">取消 / 记下来</dt><dd class="v">右两颗。正文为空时「记下来」置灰；有内容时点「取消」先武装成「丢弃」。</dd></div>
+        </dl>
+        </figcaption>
+      </figure>
+
+    <h3 class="h3">手机上：改一条、删一条</h3>
+    <figure class="shot phone" id="f2-4">
+      <div class="shot-stage">
+        <img src="img/mobile-03-swipe.jpg?v=20261028" alt="手机端左滑一条胶囊，右侧竖排露出导出、编辑、删除三颗键，底部为说/写入口" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 2-4</span><span class="end mob">手机端</span></div>
+        <div class="fig-title">左滑：三颗键竖着顶出来</div>
+        <div class="fig-cap">被滑的那一条往左收窄，右侧让出三颗墨色胶囊键，删除是唯一的红。<br>
+          <span>这一屏的底部同框带上了新版入口——左边黄色「说」、右边白色「写」（图 2-1）。</span></div>
+        <dl class="els">
+          <div class="el"><dt class="k">导出</dt><dd class="v">把这条的文字放进剪贴板，可以直接粘给 Agent 或别的应用。</dd></div>
+          <div class="el"><dt class="k">编辑</dt><dd class="v">改正文，用于修语音识别错字（人名、项目名、自造缩写最常错）。</dd></div>
+          <div class="el"><dt class="k">删除</dt><dd class="v">红底白字，从列表移除；误删可到平板 / PC 抽屉顶部的「已删除胶囊」里捞回来。</dd></div>
+          <div class="el"><dt class="k">为什么竖排</dt><dd class="v">一条气泡可能很长，三颗键横排会挤掉正文；竖着叠还让最重的<b>删除</b>落在最下面——离手指滑完的位置最远。</dd></div>
+          <div class="el"><dt class="k">只收窄一条</dt><dd class="v">上下邻居仍是满宽卡片；滑错方向移开手指就复位，不用点任何东西。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>点右下角黄色徽标</b>唤出抽屉，标题带写着「闪念胶囊-6」，数字是当前条数。</li>
+      <li><b>点一条气泡</b>，抽屉右缘竖起五颗动作键：<b>删除 / 编辑 / 导出 / 转待办 / 转脑图</b>（图 2-6）。点空白处收回。</li>
+      <li><b>转待办</b>会开出“记一条待办”，<b>正文已预填这段口述</b>；补完项目与紧急度保存，这条气泡才从名单里消失（表单里点取消，口述原样留着）。</li>
+      <li><b>转脑图</b>：弹出「选择脑图」抽屉（图 2-8）。里面的靶子分两类：最上面那张<b>「语义转脑图」</b>（让模型重组成一张新图），和下面已有的脑图（原样挂成节点）。</li>
+      <li><b>要多选就点右上「✓ 多选」</b>：五颗键照样在，但<b>编辑与转待办压灰</b>——一张待办只有一个正文框，多选无从合并。多选只剩<b>删除</b>与<b>转脑图</b>。</li>
+      <li><b>「已删除胶囊」在列表顶部</b>那张虚框卡里，右边写着条数。点进去是删除名单（标题一起变成「已删除胶囊-N」），选中一条才轮到「还原」。</li>
+      <li><b>点抽屉外的遮罩</b>关闭抽屉，右侧页面回到可操作状态。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f2-5">
+        <div class="shot-stage">
+          <img src="img/pad-02-capsule.jpg?v=20261028" alt="平板端闪念胶囊抽屉：标题带、多选按钮、顶部已删除胶囊虚框卡、气泡列表" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-5</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">抽屉：浮在详情之上，不满屏</div>
+          <div class="fig-cap">右侧是被遮罩压暗的页面；抽屉宽度固定，留出上下文。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">标题带</dt><dd class="v">浅黄底＋「闪念胶囊-N」。数字随条数变化，也是“抽屉里有多少东西”的唯一提示。</dd></div>
+            <div class="el"><dt class="k">✓ 多选</dt><dd class="v">进入多选模式；再次点击退出。多选只开放<b>删除</b>与<b>转脑图</b>。</dd></div>
+            <div class="el"><dt class="k">已删除胶囊</dt><dd class="v">列表<b>顶部</b>的虚框卡（虚线读作“这里本来有一条”），右边带条数。点它把抽屉切成删除名单，底部换成「返回」与「还原」。</dd></div>
+            <div class="el"><dt class="k">气泡列表</dt><dd class="v">样式与手机端一致：淡黄底、左引线、右下时间。可滚，条数多也不分页。</dd></div>
+            <div class="el"><dt class="k">写 / 说</dt><dd class="v">抽屉外右下角悬着的两颗：铅笔「写」在上、麦克风「说」在下。写的那一支见图 2-7。</dd></div>
+            <div class="el"><dt class="k">遮罩</dt><dd class="v">抽屉外的区域变暗且不可点，点一下即关闭抽屉。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f2-6">
+        <div class="shot-stage">
+          <img src="img/pad-03-capsule-picked.jpg?v=20261028" alt="平板端闪念胶囊抽屉：一条被选中，右侧竖排删除、编辑、导出、转待办、转脑图" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-6</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">点一条气泡：右缘竖起五颗键</div>
+          <div class="fig-cap">选中态用整块黄底标记，比一个勾选框更容易在一屏气泡里认出来；动作排在抽屉右缘，拇指够得着、也不压住正文。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">五颗键</dt><dd class="v">删除 / 编辑 / 导出 / 转待办 / 转脑图，竖排从上到下。次序是用户点的单，照抄；与手机端左滑那三颗（导出 / 编辑 / 删除）故意不同。</dd></div>
+            <div class="el"><dt class="k">删除</dt><dd class="v">第一颗，红字。删掉的进「已删除胶囊」，可以还原。</dd></div>
+            <div class="el"><dt class="k">编辑</dt><dd class="v">就地改正文，修识别错字——不用先转待办再改。</dd></div>
+            <div class="el"><dt class="k">导出</dt><dd class="v">把这条的文字复制走。</dd></div>
+            <div class="el"><dt class="k">转待办/转脑图</dt><dd class="v">转待办只认单条；多选时它压灰，但批量语义转脑图仍可使用。</dd></div>
+            <div class="el"><dt class="k">选中态</dt><dd class="v">黄底＋黄描边，时间戳变浅，与未选中的淡黄底拉开一档。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h3 class="h3">平板 / PC 上：写一条</h3>
+    <p class="lead" style="margin-top:0">
+      同一块面板，换了个站位：录音块<b>正上方</b>那颗铅笔「写」，点开是开在胶囊抽屉右侧的副抽屉。
+      名单一直可读，所以打字时也知道这一条会插在哪一份流水账里。
+    </p>
+    <figure class="shot tablet" id="f2-7">
+      <div class="shot-stage">
+        <img src="img/pad-19-capsule-compose.jpg" alt="平板端：胶囊抽屉右侧弹出「记一条闪念」副抽屉，含输入区、加截图、取消与记下来" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 2-7</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">副抽屉：名单留在左边，面板开在右边</div>
+        <div class="fig-cap">不是“替换”而是“并排”——左边那份名单在打字期间一直看得见。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">位置与宽度</dt><dd class="v">260 宽的副抽屉，贴开在胶囊抽屉右侧，顶部对齐。与手机「从下升起」是同一块模板的两种站位。</dd></div>
+          <div class="el"><dt class="k">入口</dt><dd class="v">抽屉外右下角那颗铅笔「写」，就在录音块正上方。</dd></div>
+          <div class="el"><dt class="k">无「改成说」</dt><dd class="v">手机端那颗键这儿不出现——“说”那颗悬浮块就在面板外面，不必在同一块面板里再放一颗同义的键。</dd></div>
+          <div class="el"><dt class="k">挂图区</dt><dd class="v">与手机同一条：最多 1 张；缩略图右下「更换」、右上 ✕。</dd></div>
+          <div class="el"><dt class="k">点别处</dt><dd class="v">面板外的整屏是透明挡板：点一下先关面板（同样有那道“再点一次丢弃”），不会误触后面的键。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">转脑图有两条路：原样挂，还是让模型重排</h3>
+    <p class="lead" style="margin-top:0">
+      同样是“把胶囊送到脑图”，其实是两件事：<b>挂到已有的树上</b>（同步、免费、一条胶囊一个节点），
+      和<b>新建一张让模型重组</b>（异步、计费、可能失败）。两条路都在同一个「选择脑图」抽屉里，靠选哪张卡区分。
+    </p>
+    <ol class="steps">
+      <li><b>选中几条 → 点「转脑图」</b>：弹出「选择脑图」，最上面那张卡是「语义转脑图」，下面是已有脑图。</li>
+      <li><b>选一张已有的图</b>：这条是同步的——每条胶囊变成一个节点挂到那张图下，切过去就能看见。</li>
+      <li><b>选「语义转脑图」</b>：这条是异步的——胶囊交给模型按语义重组，几秒到几十秒出结果。</li>
+      <li><b>确定之后胶囊离开列表</b>，但<b>不进「已删除胶囊」</b>：它不是被删，是被搬走。名单独占一档，只收手动删除的那些。</li>
+      <li><b>图不会凭空出现</b>：脑图列表最前面立刻多一张卡，名字先叫「语义转脑中」，节点数还是 0；生成完自动改名、补上节点与层数。</li>
+      <li><b>同一时间只受理一张</b>：上一张还在生成时再发，会被挡下并提示稍等——并行两份会让“哪条胶囊去哪张图”变得难说清。</li>
+      <li><b>失败也不丢东西</b>：卡上写「语义转脑图失败」，可以重试；被带走的胶囊<b>自动回到胶囊列表</b>，不用重新口述。</li>
+      <li><b>生成完的那张图还不能直接派活</b>：归属项目与格式都是空的，打开时会先让你补（图 5-7）。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f2-8">
+        <div class="shot-stage">
+          <img src="img/pad-20-mindmap-pick.jpg" alt="平板端「选择脑图 6」抽屉：顶部语义转脑图 lead 卡，下面六张已有脑图" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-8</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">「选择脑图」：第一张卡不是已有的图</div>
+          <div class="fig-cap">两张靶子放在同一个抽屉里：新建一张（模型重组），或者挂到某张现成的图上。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">标题数字</dt><dd class="v">「选择脑图 6」＝你<b>已有</b>几张脑图，不数最上面那张卡。与「脑图-N」同一条口径。</dd></div>
+            <div class="el"><dt class="k">语义转脑图</dt><dd class="v">lead 卡，副标题「把选中的胶囊交给模型，按语义重组成一张新脑图」。一张脑图都没有时它也照样在——新用户第一次用，正是最该用起来的时刻。</dd></div>
+            <div class="el"><dt class="k">已有脑图</dt><dd class="v">一路同款：项目标签、格式（逻辑图 / 树形图 / 思维导图）、节点数·层数、更新时间。</dd></div>
+            <div class="el"><dt class="k">当前</dt><dd class="v">黄色小标，指右侧画布正在编辑的那张。</dd></div>
+            <div class="el"><dt class="k">被锁的卡</dt><dd class="v">生成中 / 生成失败 / 待完善这三种<b>照旧画出来但选不了</b>（压暗），点了给一句“为什么”：「这张脑图还在生成中，稍后再选」「生成失败，重试生成后再选」「还没完善（归属项目 / 格式），完善后再选」。<b>不把它们藏起来</b>——直接消失会被读成“我刚建的那张没了”。</dd></div>
+            <div class="el"><dt class="k">确定</dt><dd class="v">底部通栏。没选任何一张时置灰；按下去那一刻还会复检一次靶子是否刚变成不可选。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f2-9">
+        <div class="shot-stage">
+          <img src="img/pad-21-mindmap-ai-card.jpg" alt="平板端脑图抽屉：最前面多了一张新脑图卡，项目显示未归属项目、格式显示未设置" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 2-9</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">结果卡落在列表最前：名字有了，归属还是空的</div>
+          <div class="fig-cap">图名是模型按内容起的，节点数与层数也是它给的；<b>「未归属项目 / 未设置」</b>是真实状态，不是加载中。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">卡名</dt><dd class="v">取自这批胶囊在讲什么，不合适就进去改（与图 5-8 是同一个面板，只是标题不同）。</dd></div>
+            <div class="el"><dt class="k">未归属项目</dt><dd class="v">模型不知道该归你哪个项目——这一步留给人。点开这张卡时先补这一项。</dd></div>
+            <div class="el"><dt class="k">未设置</dt><dd class="v">同上。选了格式，画布才知道按哪种形状铺。</dd></div>
+            <div class="el"><dt class="k">17 节点·3 层</dt><dd class="v">生成出来就有——结构是模型给的，不是你拖的。</dd></div>
+            <div class="el"><dt class="k">停在列表里</dt><dd class="v">没有“当前”标：你没有被带到任何一张图上，卡就在列表最前面等着完善。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <figure class="shot tablet" id="f2-10">
+      <div class="shot-stage">
+        <img src="img/pad-23-mindmap-ai-detail.jpg" alt="平板端脑图画布：语义转脑图生成的树，根节点黄底、四个分支各带两三条节点" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 2-10</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">补完归属与格式之后：一棵能直接派的树</div>
+        <div class="fig-cap">同一批口述，按语义重排成四个分支——原来那三段流水账的顺序已经不重要了。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">根节点</dt><dd class="v">一句话概括这批胶囊在讲什么，黄底墨字。</dd></div>
+          <div class="el"><dt class="k">分支</dt><dd class="v">按语义归并，不是按口述先后。同一件事被拆到前后两段的，会被合到一处。</dd></div>
+          <div class="el"><dt class="k">节点</dt><dd class="v">一条长口述常被拆成几段，各挂到该在的位置；原始胶囊尽量作为独立节点保留，图名与根节点由模型概括，生成后需要核对。</dd></div>
+          <div class="el"><dt class="k">面包屑</dt><dd class="v">图名 ＋ 项目标签 ＋ 更新时间。项目这一栏是补完之后才有的。</dd></div>
+          <div class="el"><dt class="k">接下来</dt><dd class="v">它就是一张普通脑图了：拖节点改结构、说一句话改文字、挂到待办上随导出走。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <div class="note">
+      <span class="nt">为什么值得多这一步</span>
+      口述是线性的，方案是树形的。二十条胶囊原样挂上去，得到的是二十个平级节点 —— 结构还得你自己拖。
+      让模型先按语义归并一次，你拿到的是<b>一棵能改的树</b>，省下的是最费神的那一遍分类。
+      它也可能归错类，但<b>改一棵错的树比从零摆一棵树快得多</b>。
+    </div>
+
+    <div class="note">
+      <span class="nt">为什么一定要卡 60 秒</span>
+      长录音会让人面对一个“不知道多长的空白”，第一句就不知道从哪儿起。60 秒到点自动收，
+      反而敢开口：说不完就下一条，说得乱就乱着——反正后面才整理。
+    </div>
+    <div class="note warn">
+      <span class="nt">删除是即时的</span>
+      左滑的“删除”和五颗键里的“删除”都不弹确认框。手滑了还有救：平板 / PC 的抽屉<b>顶部</b>有
+      「已删除胶囊」那张虚框卡，进去选中那条、点「还原」就能回来。<b>手机端没有这一档</b>，
+      所以手机上删掉的，要换到平板或 PC 才捞得回来。
+    </div>
+  </section>
+  <!-- ============ 03 ============ -->
+  <section class="mod" id="m3">
+    <div class="mod-head">
+      <span class="mod-no">03</span>
+      <div>
+        <h2>项目</h2>
+        <div class="sub">归位第一步：先放进一个自建的容器</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      项目不是文件夹，是一个<b>自建的容器</b>：它有自己的阶段、颜色、所属 agent，往里装待办和脑图。
+      一条待办只能属于一个项目（单级归属），所以“放进哪个项目”是唯一一次真正的分类决策。
+      项目数量不设上限，但颜色只有 8 个槽位——第 9 个项目开始就要跟别人共用颜色。
+    </p>
+
+    <h3 class="h3">操作流程：找到并打开一个项目</h3>
+    <ol class="steps">
+      <li><b>进「项目」</b>：平板点底部第二个 tab，PC 点左栏第二个图标。列表从左侧浮出，右侧保留上次打开的项目。</li>
+      <li><b>列表太长就筛</b>：点标题带右侧「筛选」，按<b>状态 / 节点 / 关联 agent</b> 三层收窄。</li>
+      <li><b>点任意一张项目卡</b>：右侧立刻换成该项目详情，抽屉不关——这样可以一张张点着比较。</li>
+      <li><b>点抽屉外的遮罩</b>收起列表，把整个屏幕让给详情页。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f3-1">
+        <div class="shot-stage">
+          <img src="img/pad-04-project-list.jpg" alt="平板端项目抽屉：七张项目卡，每张带四档紧急度统计" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 3-1</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">项目抽屉：一卡一项目，卡上带体检表</div>
+          <div class="fig-cap">不用点进去，就能看出每个项目的阶段和四档待办分布。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">项目-7</dt><dd class="v">标题带左侧的计数＝当前筛选条件下的项目总数。</dd></div>
+            <div class="el"><dt class="k">筛选</dt><dd class="v">放大镜图标＋文字，打开三层筛选面板（图 3-2）。</dd></div>
+            <div class="el"><dt class="k">色点</dt><dd class="v">项目色，8 个槽位之一。颜色只用于识别，不表示优先级。</dd></div>
+            <div class="el"><dt class="k">阶段标签</dt><dd class="v">构思期 / 建设期 / 迭代期 / 暂停期，四选一，新建时定。</dd></div>
+            <div class="el"><dt class="k">脑图 · Agent</dt><dd class="v">「3 张脑图 · workbuddy」：这个项目下有几张脑图、绑的是哪个 Agent。没待办时显示「暂无待办」。</dd></div>
+            <div class="el"><dt class="k">四档条</dt><dd class="v">紧急 / 中等 / 不紧急 / 留置的条数，红橙蓝灰四色。这是项目卡上最该扫的一行。</dd></div>
+            <div class="el"><dt class="k">选中态</dt><dd class="v">黄底＋黄描边＝当前正在右侧显示的项目。</dd></div>
+            <div class="el"><dt class="k">排序</dt><dd class="v">默认按<b>综合紧急度</b>从高到低排；已归档的项目沉到列表末尾，不参与这个排序。</dd></div>
+            <div class="el"><dt class="k">＋ 新建项目</dt><dd class="v">抽屉底部黑色实心长条，固定在列表末尾，不随滚动跑掉。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f3-2">
+        <div class="shot-stage">
+          <img src="img/pad-05-project-filter.jpg" alt="平板端筛选面板：搜索、项目状态、节点、关联 agent 三层筛选" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 3-2</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">筛选：搜索 ＋ 三层条件</div>
+          <div class="fig-cap">面板从右侧浮出，抽屉留在背后；每层都是“点一下即刻生效”，没有“确定”按钮。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">搜索项目名</dt><dd class="v">按名称模糊匹配，输入即过滤。</dd></div>
+            <div class="el"><dt class="k">项目状态</dt><dd class="v">活跃 / 已归档 / 全部。当前选中项是黑底白字——这是全应用“选中”的第二种写法（另一种是黄底）。</dd></div>
+            <div class="el"><dt class="k">节点</dt><dd class="v">全部 / 构思期 / 建设期 / 迭代期 / 暂停期。四个阶段在这里当筛选用。</dd></div>
+            <div class="el"><dt class="k">关联 agent</dt><dd class="v">全部（7）/ workbuddy（4）/ trae。括号里的数字是命中条数，等于告诉你“这个 Agent 手上有几个项目”。</dd></div>
+            <div class="el"><dt class="k">× 关闭</dt><dd class="v">收起面板，已生效的筛选保留；要清空就逐层点回「全部」。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h3 class="h3">操作流程：新建一个项目</h3>
+    <ol class="steps">
+      <li><b>点抽屉底部「＋ 新建项目」</b>，弹出面板（图 3-3）。</li>
+      <li><b>填项目名称</b>——唯一必填项。空着时底部「创建项目」是灰的，点不动。</li>
+      <li><b>选项目节点</b>（四选一，默认构思期）。这是项目自己的生命周期，不是待办的紧急度。</li>
+      <li><b>可选：关联 agent</b>。选了之后，这个项目会出现在该 Agent 卡的“承担项目”里。</li>
+      <li><b>可选：选一个项目色</b>。已被人占用的槽位会写「已被「…」占用」，选不了。</li>
+      <li><b>可选：写备注</b>（“这个项目是干什么的”），将来回头看全靠它。</li>
+      <li><b>点「✓ 创建项目」</b>，新项目出现在列表末尾，并自动被选中。</li>
+    </ol>
+
+    <figure class="shot tablet" id="f3-3">
+      <div class="shot-stage">
+        <img src="img/pad-06-project-create.jpg" alt="平板端新建项目面板：名称、节点、关联 agent、项目色、备注" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 3-3</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">新建项目：名称必填，其余带默认值或选填</div>
+        <div class="fig-cap">面板自上而下就是填写顺序：名称 → 节点 → 关联 agent → 颜色 → 备注。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">项目名称</dt><dd class="v"><b>必填</b>。占位提示「例如：彩票小助手」。建议写成名词短语，不要写成一句话。</dd></div>
+          <div class="el"><dt class="k">项目节点</dt><dd class="v">四选一：构思期 / 建设期 / 迭代期 / 暂停期。默认选中“构思期”（黑底），可按需修改。</dd></div>
+          <div class="el"><dt class="k">关联 agent</dt><dd class="v"><b>可空</b>。下拉三选一：不关联 / workbuddy / trae。选“不关联”就是纯人肉项目。</dd></div>
+          <div class="el"><dt class="k">项目色</dt><dd class="v"><b>可空</b>。8 个色槽：青 / 绿 / 橄榄 / 棕 / 紫 / 品红 / 靛 / 松；灰字标出已被谁占用。</dd></div>
+          <div class="el"><dt class="k">备注</dt><dd class="v"><b>选填</b>。一句话说明这个项目干什么，会显示在详情页简介的位置。</dd></div>
+          <div class="el"><dt class="k">创建项目</dt><dd class="v">底部实心长条。名称为空时置灰不可点；填好后变黑可点。</dd></div>
+          <div class="el"><dt class="k">× 取消</dt><dd class="v">右上角，直接丢弃本次填写，不二次确认。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <div class="palette">
+      <span class="pl"><i style="background:#0E9E8E"></i>青</span>
+      <span class="pl"><i style="background:#3E9B4F"></i>绿</span>
+      <span class="pl"><i style="background:#7E9B2C"></i>橄榄</span>
+      <span class="pl"><i style="background:#9A6B45"></i>棕</span>
+      <span class="pl"><i style="background:#8A63D2"></i>紫</span>
+      <span class="pl"><i style="background:#B85C9E"></i>品红</span>
+      <span class="pl"><i style="background:#6360C4"></i>靛</span>
+      <span class="pl"><i style="background:#1E7F8C"></i>松</span>
+    </div>
+
+    <h3 class="h3">操作流程：在项目详情里干活</h3>
+    <ol class="steps">
+      <li><b>看「基础信息」</b>：确认阶段、Agent、重置倒计时，以及三个概要数（未完成 / 已完成 / 脑图数）。</li>
+      <li><b>切「项目待办」的四档药丸</b>：点“紧急 / 中等 / 不紧急 / 留置”切换分组，默认停在“不紧急”。</li>
+      <li><b>在待办卡上直接勾完成</b>：点卡片右侧的空心圆，卡片变成已完成；底部「已完成待办」可以回看。</li>
+      <li><b>点待办卡</b>进待办详情（见 <a href="#m4">04 待办</a>）。</li>
+      <li><b>滚到「项目脑图」</b>：看这个项目下所有图，点卡片进图；「查看全部」跳到脑图模块。</li>
+      <li><b>要改项目本身</b>：点右上「✎ 编辑」，改名称、阶段、色、备注。</li>
+    </ol>
+
+    <figure class="shot tablet" id="f3-4">
+      <div class="shot-stage">
+        <img src="img/pad-07-project-detail.jpg" alt="平板端项目详情：基础信息、项目待办四档分组、项目脑图" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 3-4</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">项目详情：三段式，从“是什么”到“有什么”</div>
+        <div class="fig-cap">基础信息 → 项目待办 → 项目脑图，正好对应“这个项目是什么、还差什么、想到哪儿了”。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">基础信息卡</dt><dd class="v">色点＋项目名＋阶段标签；下面一行是备注，右侧「编辑」改项目属性。</dd></div>
+          <div class="el"><dt class="k">所属 agent</dt><dd class="v">显示绑定的 Agent 名（图里是 workbuddy）。</dd></div>
+          <div class="el"><dt class="k">距离重置</dt><dd class="v">「30 天」：离这个 Agent 的套餐周期重置还有多久，是个倒计时，不能点。</dd></div>
+          <div class="el"><dt class="k">项目概要</dt><dd class="v">未完成待办 9 条 / 已完成待办 45 条 / 项目脑图 3 张。三个数都是累计量。</dd></div>
+          <div class="el"><dt class="k">四档药丸</dt><dd class="v">紧急 2 / 中等 3 / 不紧急 4 / 留置 0。当前选中的是“不紧急”（黑描边），下方只列这一档。</dd></div>
+          <div class="el"><dt class="k">综合紧急度</dt><dd class="v">右侧「综合紧急度 23 分」：把四档按权重折算出的总分，用来跨项目比较“哪个更该先做”。</dd></div>
+          <div class="el"><dt class="k">待办卡</dt><dd class="v">左色条＝紧急度；正文两行截断；下挂项目标签、脑图标签；右下空心圆可勾完成。</dd></div>
+          <div class="el"><dt class="k">底部计数</dt><dd class="v">「不紧急 4 条（未完成共 9 条）」——当前档条数，同时提示全项目还差多少。</dd></div>
+          <div class="el"><dt class="k">已完成待办</dt><dd class="v">右侧按钮，切到已完成列表，可以回看或取消完成。</dd></div>
+          <div class="el"><dt class="k">项目脑图</dt><dd class="v">每张图一张卡：名称、节点数 · 层数、更新时间；底部「脑图总数 3」＋「查看全部」。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <figure class="shot pc" id="f3-5">
+      <div class="shot-stage">
+        <img src="img/pc-03-project-detail.png?v=20261028" alt="PC 端项目详情：基础信息横排，待办卡四列" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 3-5</span><span class="end pc">PC 端</span></div>
+        <div class="fig-title">PC 端项目详情：待办卡从两列变四列</div>
+        <div class="fig-cap">这是不同时间的布局对照。宽屏下基础信息横排，待办卡从两列变四列，一屏能看到更多内容。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">左栏高亮</dt><dd class="v">「项目」图标变黄底，当前所处模块一眼可辨。</dd></div>
+          <div class="el"><dt class="k">基础信息横排</dt><dd class="v">所属 agent、距离重置、三个概要数并排一行，比平板更紧凑。</dd></div>
+          <div class="el"><dt class="k">四列待办卡</dt><dd class="v">卡宽变窄，正文截断更早；点开卡片才是完整正文。</dd></div>
+          <div class="el"><dt class="k">标签叠加</dt><dd class="v">卡上可同时出现项目标签和脑图标签（如“应用数据刷新逻辑优化 ＋ 1 张图”），提示这条挂了上下文。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <div class="note">
+      <span class="nt">阶段与紧急度不是一回事</span>
+      项目的“节点”（构思期 / 建设期 / 迭代期 / 暂停期）说的是<b>这个项目处在生命周期哪一段</b>；
+      待办的紧急程度说的是<b>这条活多急</b>。一个“暂停期”的项目里完全可以躺着几条“紧急”待办。
+    </div>
+  </section>
+  <!-- ============ 04 ============ -->
+  <section class="mod" id="m4">
+    <div class="mod-head">
+      <span class="mod-no">04</span>
+      <div>
+        <h2>待办</h2>
+        <div class="sub">归位第二步：一条待办 ＝ 一个项目 ＋ 一档紧急度</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      待办是全应用的中转站：上游接胶囊，下游挂脑图，最后一步导出也在这里。一条待办只有两个必选属性——
+      <b>一个项目</b>（单级归属，不能既属于 A 又属于 B）和<b>一档紧急程度</b>（紧急 / 中等 / 不紧急 / 留置）。
+      至于“这条活具体怎么做”，不写进待办，写进它挂的那张脑图。
+    </p>
+
+    <h3 class="h3">四档紧急程度</h3>
+    <div class="legend">
+      <span class="lg"><i style="background:#E5484D"></i>紧急：今天不处理就会挡住别的活</span>
+      <span class="lg"><i style="background:#EF9F27"></i>中等：本周内要动</span>
+      <span class="lg"><i style="background:#378ADD"></i>不紧急：排上了，还没到点</span>
+      <span class="lg"><i style="background:#8E91A0"></i>留置：先搁着，仍在册但不安排</span>
+    </div>
+    <div class="note">
+      <span class="nt">为什么要有“留置”</span>
+      前两档逼你排序，第四档允许你<b>诚实地不排</b>。没有“留置”，那些“等等再说”的活会被迫挤进“不紧急”，
+      于是整张列表都变假。
+    </div>
+
+    <h3 class="h3">操作流程：记一条待办</h3>
+    <ol class="steps">
+      <li><b>进「待办」</b>：平板点底部第三个 tab，PC 点左栏第三个图标。左侧浮出待办抽屉，标题带写着总条数。</li>
+      <li><b>点底部「＋ 创建待办」</b>，打开「记一条待办」面板（图 4-1）。</li>
+      <li><b>写待办内容</b>：一句话说清“要做什么”，不要写“怎么做”。</li>
+      <li><b>点一档紧急程度</b>：四选一，必选，默认停在“中等”。</li>
+      <li><b>选归属项目</b>：一行一个项目，带色点；必选，且只能选一个。没给过颜色的项目收在下面「选择其他项目」里（图 4-1 注）。</li>
+      <li><b>点「✓ 保存待办」</b>，新待办落到列表中对应紧急度的位置。图片、胶囊、脑图都不在这里加，建完进详情页补（见下文）。</li>
+    </ol>
+
+    <figure class="shot tablet" id="f4-2">
+      <div class="shot-stage">
+        <img src="img/pad-09-todo-create.jpg" alt="平板端记一条待办面板：内容、紧急程度、归属项目" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 4-1</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">记一条待办：内容、紧急程度与归属项目均必填</div>
+        <div class="fig-cap">面板顺序即填写顺序：内容 → 紧急度 → 项目。底部按钮在内容为空时置灰。（截图摄于 10-23 收窄表单之前，那张「图片」格已经不在表单里了。）</div>
+        <dl class="els">
+          <div class="el"><dt class="k">待办内容</dt><dd class="v"><b>必填</b>，多行输入。占位提示「用一句话说清要做什么」——写“要什么”，不写“怎么做”。</dd></div>
+          <div class="el"><dt class="k">紧急程度</dt><dd class="v"><b>必填</b>，四个药丸：紧急 / 中等 / 不紧急 / 留置。选中项是橙色实底（不是黄底）。</dd></div>
+          <div class="el"><dt class="k">归属项目</dt><dd class="v"><b>必选</b>。主列表只列<b>已经有颜色</b>的项目（色点是这一列唯一的身份标记）；选中项黄底＋右侧勾。多于 8 个就往下滚。</dd></div>
+          <div class="el"><dt class="k">选择其他项目</dt><dd class="v">主列表尾部第一行。点开在右侧弹一层副窗，里面只列<b>没配颜色</b>的项目；选中后这一行就换成项目名＋同款黄底，点回去即还原成文案。</dd></div>
+          <div class="el"><dt class="k">新建项目</dt><dd class="v">尾部第二行，<b>只在编辑已有待办时出现</b>——新建时手上正开着一张没写完的表单，不在这里再叠一层。项目有自己的一级入口。</dd></div>
+          <div class="el"><dt class="k">保存待办</dt><dd class="v">底部实心长条。内容为空时灰掉；填好后变黑。</dd></div>
+          <div class="el"><dt class="k">× 取消</dt><dd class="v">右上角，丢弃本次填写。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">操作流程：在列表里找活、勾活</h3>
+    <ol class="steps">
+      <li><b>看列表</b>：待办按<b>更新时间倒序</b>排（最近的在最上面），与胶囊的正序相反（图 4-2）。</li>
+      <li><b>看左色条</b>：红橙蓝灰四色，一眼分出哪条急。</li>
+      <li><b>点卡片右侧的空心圆</b>标记完成，不必进详情。</li>
+      <li><b>点卡片其他位置</b>进待办详情。</li>
+      <li><b>点「筛选」</b>收窄列表（按紧急度、项目、完成状态）。</li>
+    </ol>
+
+    <figure class="shot tablet" id="f4-3">
+      <div class="shot-stage">
+        <img src="img/pad-08-todo-list.jpg" alt="平板端待办抽屉：待办卡按更新时间倒序，左色条标紧急度" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 4-2</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">待办抽屉：一条一卡，卡上带着“上下文”</div>
+        <div class="fig-cap">正文之外，卡上最重要的信息是“它属于哪、挂了哪张图”。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">待办-25</dt><dd class="v">标题带计数＝当前列表条数（受筛选影响）。</dd></div>
+          <div class="el"><dt class="k">左色条</dt><dd class="v">卡片最左侧那道 3px 竖条＝紧急度。它比一个文字标签更快被扫到。</dd></div>
+          <div class="el"><dt class="k">正文</dt><dd class="v">最多显示三到四行，超出截断。列表里只判断“哪条”，不读细节。</dd></div>
+          <div class="el"><dt class="k">项目标签</dt><dd class="v">色点＋项目名（超长省略）。说明这条归在哪儿。</dd></div>
+          <div class="el"><dt class="k">脑图标签</dt><dd class="v">图钉＋脑图名，表示这条已经挂了上下文；没有就不出现。</dd></div>
+          <div class="el"><dt class="k">更新时间</dt><dd class="v">「更新于 2026-10-20 10:17」，列表的排序依据。</dd></div>
+          <div class="el"><dt class="k">空心圆</dt><dd class="v">右侧圆形勾选框，点一下即完成，卡片转灰、滑出当前列表。</dd></div>
+          <div class="el"><dt class="k">＋ 创建待办</dt><dd class="v">抽屉底部黑色长条，固定不随滚动。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">待办详情：六个区块，动作排在第二</h3>
+    <p class="lead" style="margin-top:0">
+      详情页自上而下的顺序是刻意的：<b>所属项目</b>（它归哪儿）→ <b>操作</b>（对这条待办做什么）→
+      <b>待办信息</b>（要做什么、多急）→ <b>闪念胶囊</b>（当初是怎么说出来的）→ <b>图片</b>（证据）→
+      <b>关联脑图</b>（怎么做）。
+      动作提到内容之前，是因为“勾掉 / 发出去 / 改一改”比读完全页更常见。
+      三块附件都<b>常显</b>：没有也占一块位置，写清下一步去哪儿补，而不是整块消失。
+    </p>
+
+    <div class="h4">三块附件，加和撤都在详情页</div>
+    <p class="lead" style="margin-top:0">
+      胶囊、图片、脑图各有自己的入口，互不牵扯：胶囊是多选后「保存」，图片是逐张上传、逐张撤，
+      脑图是「关联 / 替换 / 取消关联」。<b>编辑弹窗只管三件事</b>——正文、紧急度、归属项目；
+      附件的增删一律不进表单，也就不会出现“改个错字把图弄丢了”。
+    </p>
+
+    <div class="h4">操作条是三态的</div>
+    <p class="lead" style="margin-top:0">
+      同一条待办，状态不同，这条上的键也不同——不是同一颗键换标签，而是<b>三套</b>：
+      <b>未完成</b>＝完成 / 导出 / 编辑 / 删除；<b>已完成</b>＝还原 / 导出 / 删除；
+      <b>已删除</b>＝只剩还原。所以“还原”永远只有一处意思：回到未完成。
+    </p>
+
+    <div class="note">
+      <span class="nt">加得进，也撤得掉</span>
+      早期要加图得先点「编辑」、在表单里选、再保存，加完还撤不掉。现在图片区块末尾直接有一格「＋ 添加图片」，
+      空态则是整宽的「＋ 从相册选择」——两步变一步；每张图右上角还有一颗<b>✕</b>，点一下这张就撤掉，
+      不用整批重选。脑图那边同理：挂上之后操作行是「替换 / 取消关联」两颗键，取消只是把挂载去掉，
+      图和待办本身都不动。
+    </div>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f4-4">
+        <div class="shot-stage">
+          <img src="img/pad-10-todo-detail-blank.jpg?v=20261028" alt="平板端待办详情：所属项目、操作条、待办信息、闪念胶囊空态、图片空态" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 4-3</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">详情上半屏：胶囊与图片两处空态各留一句“下一步”</div>
+          <div class="fig-cap">这是一条“只有话、没有附件”的待办。三块附件都常显，空态写的不是“没有”，而是“去哪儿补”。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">所属项目</dt><dd class="v">整张项目卡：色点＋名称＋阶段标签，下面是备注与两组概要数（左「所属 agent ＋ 距离重置」、右「未完成 / 已完成 / 项目脑图」）。右侧「查看项目」跳项目详情。</dd></div>
+            <div class="el"><dt class="k">操作条</dt><dd class="v">四段通栏等分：<b>完成</b>（黄底实心，第一段）｜导出｜编辑｜删除（红字）。它排在「待办信息」上面——先给动作，再给内容。</dd></div>
+            <div class="el"><dt class="k">待办信息</dt><dd class="v">左上档名（图中“不紧急”，前面那道竖条是紧急度色），右上灰色「创建于 …」；下面是完整正文，不截断。</dd></div>
+            <div class="el"><dt class="k">闪念胶囊</dt><dd class="v">排在待办信息下面、图片上面。区块标题的图标是<b>闪电</b>；空态是「这条待办还没有关联闪念胶囊」＋整宽「＋ 选择胶囊」。</dd></div>
+            <div class="el"><dt class="k">图片</dt><dd class="v">虚线一句「这条待办还没有添加图片」＋整宽「＋ 从相册选择」。<b>在详情页就能加图</b>，不用回编辑表单。</dd></div>
+            <div class="el"><dt class="k">关联脑图</dt><dd class="v">同款空态：「这条待办还没有关联脑图」＋整宽「＋ 关联脑图」。挂载粒度是<b>整张图</b>，不拆节点。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f4-5">
+        <div class="shot-stage">
+          <img src="img/pad-11-todo-detail-linked.jpg?v=20261028" alt="平板端待办详情：已关联 1 条闪念胶囊、图片空态、关联脑图带只读缩略图与元信息" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 4-4</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">一条胶囊挂上了：图与脑图各半</div>
+          <div class="fig-cap">这一条已经有“客户原话”（胶囊）和“怎么做”（脑图）。三块各说各的、互不牵扯——挂错哪一块都在原地撤。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">闪念胶囊 1</dt><dd class="v">标题后面的数字＝挂了几条。每张卡右上角一颗 ✕，摘掉这一条它就<b>回到胶囊列表</b>（不算新增，也不进概览统计）。</dd></div>
+            <div class="el"><dt class="k">＋ 选择胶囊</dt><dd class="v">虚框格，与胶囊卡同排。点它再挂几条——<b>可多选</b>，弹出列表右下角是「取消 / 保存」。</dd></div>
+            <div class="el"><dt class="k">图片（仍空）</dt><dd class="v">图是“拍给别人看的证据”。这一条还没配图，所以仍是那句「这条待办还没有添加图片」＋「＋ 从相册选择」。</dd></div>
+            <div class="el"><dt class="k">脑图缩略图</dt><dd class="v">整张图缩着摆，<b>只读</b>：不能移、不能编、不能缩。点它才进脑图详情。旁边那枚黄色圆标是常驻的悬浮入口，不是这块的按钮。</dd></div>
+            <div class="el"><dt class="k">名称与元信息</dt><dd class="v">缩略图下方是图名，一行灰字跟着「20 节点 · 3 层 · 2026-10-27」——规模与最近改动时间。</dd></div>
+            <div class="el"><dt class="k">取消关联 / 替换</dt><dd class="v">右端两颗：<b>取消关联</b>只摘挂载，图本身还在脑图列表里；<b>替换</b>换挂另一张（只能挂一张，换就是把旧的摘掉）。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <figure class="shot pc" id="f4-6">
+      <div class="shot-stage">
+        <img src="img/pc-05-todo-detail.png" alt="PC 端待办详情：所属项目、待办信息、关联脑图、操作四键横排" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 4-5</span><span class="end pc">PC 端</span></div>
+        <div class="fig-title">PC 端待办详情：宽屏布局（旧版界面示例）</div>
+        <div class="fig-cap">项目卡横排、正文不折行、四个动作并成一排——派活时不用来回滚。<br>
+          <span>注：这张 PC 图摄于本次改版之前（通栏操作条、常显的附件区块、10-23 新增的「闪念胶囊」都还没上）。PC 与平板共用同一套详情组件，版式与操作条请以图 4-3、图 4-4 为准。</span></div>
+        <dl class="els">
+          <div class="el"><dt class="k">紧急度</dt><dd class="v">正文左上角红色“紧急”小标签，与左侧色条同色系。</dd></div>
+          <div class="el"><dt class="k">所属项目卡</dt><dd class="v">横向铺满，四个概要数并排：所属 agent / 距离重置 / 未完成 / 已完成 / 脑图。</dd></div>
+          <div class="el"><dt class="k">操作行</dt><dd class="v">四颗键并排横放：完成在最左、分量最重；导出 / 编辑走安静样式；删除单独用红字，一眼认出、手也不会顺过去。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">在详情页加胶囊、加图、换脑图</h3>
+    <ol class="steps">
+      <li><b>关联胶囊</b>：空态点「＋ 选择胶囊」，弹出胶囊列表——<b>可多选</b>，右下角「取消 / 保存」。挑中的那几条当场以卡片形式长进详情页，一行排三张，只读，点一下看全文。</li>
+      <li><b>胶囊去哪了</b>：被关联的胶囊会从闪念胶囊列表里消失（与转待办、转脑图同一个口径：内容挂一处，不重复出现在两处）。</li>
+      <li><b>取消关联</b>：卡片右上角 ✕ 摘掉这一条，它就会<b>回到胶囊列表</b>——回到列表不算新增，也不进概览统计；创建时间按“回来的那一刻”重算。</li>
+      <li><b>加图</b>：空态点「＋ 从相册选择」；已经有图就点末尾那一格「＋ 添加图片」。选完即时上传生效，<b>没有“保存”这一步</b>。</li>
+      <li><b>撤图</b>：点图右上角那颗 ✕，只撤这一张。</li>
+      <li><b>看图</b>：点任意一格全屏预览；格内左下角「1 / 1」是第几张。</li>
+      <li><b>挂 / 换脑图</b>：点「＋ 关联脑图」选一张；已经挂过时这颗键换成了「替换 / 取消关联」——只能挂一张，换就是把旧的摘掉。</li>
+      <li><b>改脑图内容</b>：点缩略图进脑图详情去改。详情页里这张是<b>只读</b>的，不能拖、不能编、不能缩。</li>
+    </ol>
+
+    <figure class="shot tablet" id="f4-cap">
+      <div class="shot-stage">
+        <img src="img/pad-26-todo-pick-capsule.jpg" alt="平板端选择胶囊抽屉：两条胶囊可多选，底部取消与保存" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 4-6</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">选择胶囊：勾几条挂几条</div>
+        <div class="fig-cap">标题里的数字是候选胶囊数量；一条没勾时底部「保存」是灰的。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">候选</dt><dd class="v">只列<b>还在胶囊列表里</b>的那些——已经被别的待办关联、或已经转成待办 / 脑图的不会出现在这里。</dd></div>
+          <div class="el"><dt class="k">多选</dt><dd class="v">点一条打一个勾，勾几条挂几条；挂上后一行排三张，只读，点一下看全文。</dd></div>
+          <div class="el"><dt class="k">取消 / 保存</dt><dd class="v">底部两颗并排。取消＝这一次什么都不改。</dd></div>
+          <div class="el"><dt class="k">摘掉</dt><dd class="v">挂上之后每张卡右上角有一颗 ✕，摘掉的那一刻它就<b>回到胶囊列表</b>。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">关键一步：导出给 Agent</h3>
+    <p class="lead" style="margin-top:0">
+      导出的不是“排好版的文档”，而是一段<b>可以直接塞进 Agent 输入框的 Markdown</b>：
+      待办原文 → 图片（一张一行）→ 关联脑图的标题层级 → 关联的闪念胶囊（一段列表）。
+      正文一个字不改，层级完全照抄脑图，胶囊也原样搬过去。
+      预览区里看到什么，复制出去就是什么——两边用的是同一个函数。
+    </p>
+    <ol class="steps">
+      <li><b>在待办详情点「导出」</b>，弹出「待办导出」抽屉（图 4-7）。标题换过一次：原来叫“适配 agent 文本”，读起来像一句说明，不像一颗入口的名字——而它下面现在挂着两颗键。</li>
+      <li><b>核对预览</b>：最上面是待办原文；有图片时后面跟着 <code>![图片说明](完整链接)</code>，一张一行；再往后是关联脑图的 <code>#</code> 层级；最后是胶囊那一段。</li>
+      <li><b>认一下胶囊段长什么样</b>：一条 <code>---</code> 分隔线，下面一行裸文本「闪念胶囊」，再下面是无序列表，一条胶囊一行。</li>
+      <li><b>只发文字就勾「不含图片」</b>：开关在预览框正下方（预览很长时要往下滚才看得到）。勾上后图片行整段消失，预览立刻变短；<b>点「增强」时也会照这个开关走</b>——你送去润色的就是你看到的那一份。</li>
+      <li><b>点底部「复制到剪贴板」</b>：成功时按钮自己变成「已复制」，抽屉不关，方便再核一遍。切一下「不含图片」，「已复制」就跟着收回 —— 因为内容已经不是你刚复制的那一份了。</li>
+      <li><b>粘进 Agent 的输入框</b>，直接发。格式是 Markdown，模型认、人也认。</li>
+      <li><b>觉得这段话“人味太重、模型不好懂”就点右侧「增强」</b>：让大模型把它改写成一份任务书（见下一节）。</li>
+    </ol>
+
+    <div class="note">
+      <span class="nt">为什么胶囊段不用 <code>#</code> 标题</span>
+      脑图的层级是 <code>#</code> 根 → <code>##</code> 一级子 → <code>###</code> 二级往下。胶囊如果也写成
+      <code>## 闪念胶囊</code>，那它在“既挂了脑图、又关联了胶囊”的待办里，会被读成脑图的一个子节点 ——
+      给 Agent 看的文本，<b>标题层级就是结构信号</b>。所以改成「分隔线 ＋ 裸文本标签」：既说清“以下换了个来源”，
+      又不占任何层级。有没有脑图都长一样，同一条待办两次导出的格式始终一致。胶囊只带正文、不带时间，
+      与正文那一段同一口径；空文本的胶囊不产出空条目。
+    </div>
+
+    <div class="note">
+      <span class="nt">图片导出去是一条链接，不是一张附件</span>
+      复制出来的是 <code>![说明](https://…/files/…)</code> 这种 Markdown 图片语法：目标平台是否直接显示图片，取决于它的 Markdown 渲染、图片抓取与链接访问规则；
+      在纯文本工具里则保留为链接文本。<b>链接使用完整域名</b>（不是库里的相对路径），
+      所以分享链接前要先确认接收方能访问，并检查图片内容；一旦粘到外部平台，也要同时考虑该平台的存储与传播规则。
+    </div>
+
+    <figure class="shot tablet" id="f4-7">
+      <div class="shot-stage">
+        <img src="img/pad-12-todo-export.jpg?v=20261028" alt="平板端待办导出抽屉：纯文本预览、不含图片开关，底部复制到剪贴板与增强两颗键" loading="lazy">
+      </div>
+      <figcaption>
+        <div class="fig-top"><span class="fig-no">图 4-7</span><span class="end tab">平板端</span></div>
+        <div class="fig-title">待办导出：一整块可核对的纯文本，两颗键</div>
+        <div class="fig-cap">预览区是可滚的纯文本，用井号分层级，没有任何样式包袱。底部两颗键：黑色「复制到剪贴板」在左，黄色「增强」在右——复制是常规动作，增强是特色动作。</div>
+        <dl class="els">
+          <div class="el"><dt class="k">标题</dt><dd class="v">「待办导出」——说的是“这是个什么操作”，而不是“这段文本给谁用”。</dd></div>
+          <div class="el"><dt class="k">正文段</dt><dd class="v">最上面先是待办原文，不润色、不改写。</dd></div>
+          <div class="el"><dt class="k">图片行</dt><dd class="v">有图才出现，紧跟在正文后面：<span class="kbd">![说明](链接)</span> 一张一行。这条没图，所以图上看不到。</dd></div>
+          <div class="el"><dt class="k">标题层级</dt><dd class="v"><span class="kbd">#</span> 脑图根节点、<span class="kbd">##</span> / <span class="kbd">###</span> 逐层往下——照抄脑图，不重排、不加序号。</dd></div>
+          <div class="el"><dt class="k">胶囊段</dt><dd class="v">整段的最末尾：一条 <span class="kbd">---</span> ＋ 一行裸文本「闪念胶囊」＋ 无序列表。只带正文、不带时间。</dd></div>
+          <div class="el"><dt class="k">不含图片</dt><dd class="v">预览框正下方的勾选项。勾上即剔除全部图片行，只留文字。</dd></div>
+          <div class="el"><dt class="k">复制到剪贴板</dt><dd class="v">底部黑色长条。复制成功后变成「✓ 已复制」，抽屉不关，方便再核对一遍。</dd></div>
+          <div class="el"><dt class="k">增强</dt><dd class="v">黄色那颗，在复制键右侧。点它另开一层「信息增强」抽屉，让模型把这份文本改写成任务书（图 4-8、图 4-9）。</dd></div>
+          <div class="el"><dt class="k">× 取消</dt><dd class="v">右上角关闭，不复制任何东西；只读预览，改不了待办本身。</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+
+    <h3 class="h3">可选一步：「增强」，让模型把话改成任务书</h3>
+    <p class="lead" style="margin-top:0">
+      待办正文经常是“人说的话”：口语、跳序、想到哪儿写到哪儿。模型读得懂，但容易漏条件。
+      「增强」把这段原文交给大模型，换回一份<b>分好段、带标题、把验收口径写在明面上的任务书</b> ——
+      目标是重组原文、减少无关增补；模型输出仍可能偏离原意，复制前必须人工核对。
+    </p>
+    <ol class="steps">
+      <li><b>点「增强」</b>：右侧再弹一层「信息增强」抽屉，左边那份导出文本留着、变成侧转示意（不可点）。</li>
+      <li><b>等它转圈</b>：抽屉里先出现一句「正在增强提示词…」和一行小字「模型正在整理这条待办，通常 5–20 秒」。<b>这是一次真的模型调用，不是本地拼字符串</b>，所以它会有等待。</li>
+      <li><b>结果出来是只读的</b>：增强后的文本直接铺在抽屉里，段落、<code>##</code> 小标题、编号清单都排好了。要改就复制出去改——这一层不是编辑器。</li>
+      <li><b>点底部「复制到剪贴板」</b>带走增强后的那一份（不是原文）。切回左边，原文一个字都没被改过。</li>
+      <li><b>等不及 / 想要原来那份</b>：点「× 取消」或点左边抽屉，这一层就收起；原文照旧，随时可以再点一次「增强」。</li>
+      <li><b>失败了会明说</b>：「增强失败了，请稍后重试」＋一颗重试键，不吞错、也不给英文错误码。重试沿用第一次的「含不含图片」——不会因为重试偷偷把图带上。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f4-8">
+        <div class="shot-stage">
+          <img src="img/pad-24-todo-enhance-loading.jpg" alt="平板端信息增强抽屉：转圈与“正在增强提示词…”提示，左侧导出抽屉侧转" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 4-8</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">生成中：转圈 ＋ 一句预估时长</div>
+          <div class="fig-cap">二层抽屉落在右侧，左边那份导出文本还在，只是被推成侧转示意——你现在改不了它，但看得见它。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">「正在增强提示词…」</dt><dd class="v">主提示，居中。说的是正在发生什么，不是“加载中”。</dd></div>
+            <div class="el"><dt class="k">「通常 5–20 秒」</dt><dd class="v">给一个预期，人才愿意等。超过这个区间仍然没回来，它会自己超时报错。</dd></div>
+            <div class="el"><dt class="k">左侧被侧转</dt><dd class="v">导出抽屉转了个角度、压暗、不可点——层级关系一眼可辨：这一层是从那一层点出来的。</dd></div>
+            <div class="el"><dt class="k">底部键压灰</dt><dd class="v">还没有结果时「复制到剪贴板」是灰的，避免复制到空字符串。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f4-9">
+        <div class="shot-stage">
+          <img src="img/pad-25-todo-enhance-done.jpg" alt="平板端信息增强结果：分段落、带小标题与编号清单的任务书，底部复制到剪贴板" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 4-9</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">结果：原文变成一份可执行的任务书</div>
+          <div class="fig-cap">同一段话被重排成「任务 → 一、调研 → 二、落地」；这是单次示例，复制前仍要逐项核对模型输出。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">任务</dt><dd class="v">最上面一句话说清要干什么——这句话是从原文里抽出来的，不是新编的。</dd></div>
+            <div class="el"><dt class="k">小标题与编号</dt><dd class="v"><span class="kbd">##</span> 分大块、<span class="kbd">###</span> 分小节，条目用 1. 2. 3. 排开。Agent 读这种结构比读一大段白话稳。</dd></div>
+            <div class="el"><dt class="k">只读</dt><dd class="v">不能就地改。它是“带走的另一份写法”，不是待办的第二个正文。</dd></div>
+            <div class="el"><dt class="k">复制到剪贴板</dt><dd class="v">底部通栏，带走的是这一份增强结果。原文仍在待办里，没被替换。</dd></div>
+            <div class="el"><dt class="k">不入库</dt><dd class="v">增强结果<b>永远不写进待办</b>：关掉抽屉就没了，想留就复制走。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="note">
+      <span class="nt">增强不是“润色”</span>
+      它用于重组表达方式：把“我想在本应用中增加一个提示词增强功能，先调研一下怎么实现”这种口语句，
+      换成「目标 / 要查清的点 / 产出 / 落地场景」四段。模型仍可能遗漏或误读条件，所以<b>关键约束要自己写清、输出要逐项核对</b>。
+    </div>
+
+    <div class="note">
+      <span class="nt">第七层会退化</span>
+      Markdown 只有六级标题，脑图却可能更深。现在第七层往后的内容会变成<b>缩进列表</b>——
+      看得出来是下一级，只是不再是标题样式。信息不丢，层级也在。
+    </div>
+  </section>
+  <!-- ============ 05 ============ -->
+  <section class="mod" id="m5">
+    <div class="mod-head">
+      <span class="mod-no">05</span>
+      <div>
+        <h2>脑图</h2>
+        <div class="sub">出方案：把碎片摆成一棵有层级的树</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      脑图是这套产品里唯一“能改结构”的地方。一条待办挂的是一整张图，而这张图里谁是主干、谁是分支，
+      全靠<b>拖</b>：往上拖变子节点，拖出来变主干。这件事写在文本里要写成“把第 3 条改成第 1 条的父级”，
+      没人写得出来；在图上就是按住、拖动、松手。
+    </p>
+
+    <h3 class="h3">操作流程：建一张图</h3>
+    <ol class="steps">
+      <li><b>进「脑图」</b>：平板点底部第四个 tab，PC 点左栏第四个图标。左侧浮出脑图抽屉（图 5-1）。</li>
+      <li><b>点底部「＋ 新建脑图」</b>，打开面板（图 5-2）。</li>
+      <li><b>起名</b>：占位提示「例如：票据录入链路」——名字要能说明“这张图想清楚什么事”。</li>
+      <li><b>选所属项目</b>：必选，一张图只属于一个项目。</li>
+      <li><b>选格式</b>：六种画法，先用默认的“思维导图”，建完也能看别的形态。</li>
+      <li><b>点「✓ 创建脑图」</b>，直接进画布，根节点是空的，可以开始加。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f5-1">
+        <div class="shot-stage">
+          <img src="img/pad-13-mindmap-list.jpg" alt="平板端脑图抽屉：三张脑图卡，标着当前、项目、图形类型、节点数与层数" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-1</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">脑图抽屉：一张图一张卡</div>
+          <div class="fig-cap">卡上四样信息就够了：叫什么、属于谁、长什么样、有多大。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">脑图-3</dt><dd class="v">标题带计数＝当前筛选下的脑图总数。</dd></div>
+            <div class="el"><dt class="k">当前</dt><dd class="v">黄色小标。表示这张就是右侧画布正在编辑的那张——切换卡片时靠它确认“我在改哪张”。</dd></div>
+            <div class="el"><dt class="k">项目标签</dt><dd class="v">色点＋项目名，说明这张图归在哪个项目下。</dd></div>
+            <div class="el"><dt class="k">类型标签</dt><dd class="v">树形图 / 逻辑图 / 思维导图…，是建图时选的格式。</dd></div>
+            <div class="el"><dt class="k">48 节点 · 5 层</dt><dd class="v">规模指标。层数越深，导出成 Markdown 时越容易碰到第七层的退化。</dd></div>
+            <div class="el"><dt class="k">选中态</dt><dd class="v">黄底＋黄描边，与项目、待办抽屉的选中态同一套写法。</dd></div>
+            <div class="el"><dt class="k">＋ 新建脑图</dt><dd class="v">底部黑色长条，固定末尾。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f5-2">
+        <div class="shot-stage">
+          <img src="img/pad-14-mindmap-create.jpg?v=20261028" alt="平板端新建脑图表单：脑图名称、所属项目、格式六选一、创建脑图" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-2</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">新建脑图：名字 → 项目 → 画法</div>
+          <div class="fig-cap">名称与项目必填，格式可以空着——它已经替你勾好「思维导图」，不想要再换。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">脑图名称</dt><dd class="v"><b>必填</b>。占位提示「例如：票据录入链路」；写清“这张图要画什么”，后面才认得出。</dd></div>
+            <div class="el"><dt class="k">所属项目</dt><dd class="v"><b>必填</b>。一行一个项目：色点＋名称，<b>同一行右侧</b>那枚浅灰小标签是该项目的 agent（agent 由项目决定，这里不单独选）。选中项黄底＋右侧勾。</dd></div>
+            <div class="el"><dt class="k">选择其他项目</dt><dd class="v">列表末尾那一行，只列<b>还没配颜色</b>的项目。这一步没有「＋ 新建项目」——建项目在自己的入口里做，不在填空的中途再开一层。</dd></div>
+            <div class="el"><dt class="k">格式</dt><dd class="v"><b>可空</b>。思维导图 / 逻辑图 / 组织结构图 / 树形图 / 时间轴 / 鱼骨图，每项左侧有缩略图预览形状。空着也能建，之后在「编辑脑图信息」里补。</dd></div>
+            <div class="el"><dt class="k">× 取消</dt><dd class="v">右上角。已填的内容不保存，直接退回列表。</dd></div>
+            <div class="el"><dt class="k">创建脑图</dt><dd class="v">底部实心长条，名称为空时置灰——截图正是这个状态。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="tbl-wrap mt14">
+      <table class="tbl">
+        <thead>
+          <tr><th>格式</th><th>形状</th><th>什么时候选它</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="c"><b>思维导图</b></td><td>中心向左右两侧发散</td><td>默认。想一件事的全貌，不强调先后</td></tr>
+          <tr><td class="c"><b>逻辑图</b></td><td>单侧向右展开</td><td>推理、拆解，“因为→所以”的链条</td></tr>
+          <tr><td class="c"><b>组织结构图</b></td><td>自上而下分层</td><td>交代归属与汇报关系，谁是主干一眼看出</td></tr>
+          <tr><td class="c"><b>树形图</b></td><td>根在左、枝向右</td><td>最常见的工作树，也最适合导出成标题层级</td></tr>
+          <tr><td class="c"><b>时间轴</b></td><td>一条主线带节点</td><td>有先后顺序的过程、版本演进</td></tr>
+          <tr><td class="c"><b>鱼骨图</b></td><td>主干带斜刺</td><td>找原因：把多个成因挂到一条主问题上</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="h3">操作流程：在画布上摆结构</h3>
+    <p class="lead" style="margin-top:0">
+      画布上有三块控件，各管一段、互不重叠：<b>右上角</b>管这张图（撤回 / 重做 ‖ 展开 / 收起 ‖ 编辑），
+      <b>左下角</b>管当前选中的那个节点，<b>左上角</b>那枚百分比胶囊只管画布比例。两个角对角呼应，
+      拇指不用横跨整块画布。
+    </p>
+    <ol class="steps">
+      <li><b>拖动空白处平移画布</b>，双指缩放（PC 用滚轮）。三块控件浮在画布上，不随画布移动；四周留白统一 12，贴着画布边。</li>
+      <li><b>点一个节点</b>选中它，左下那条浮条亮起，五颗键都作用于“当前选中”。</li>
+      <li><b>按住节点往下拖、松手</b>＝变成对方的子节点；<b>拖到空白处</b>＝提升为一级节点。这是全应用最关键的一个手势，<b>松手即存</b>——切走再回来、换端打开，结构都在。</li>
+      <li><b>加节点</b>：左下浮条最左那组两颗＝<b>加子节点</b> / <b>加同级节点</b>（选中根节点时“加同级”是灰的，根没有同级）。</li>
+      <li><b>改文字</b>：中间那组＝<b>语音</b> / <b>编辑</b>，一个说一个打（图 5-5、图 5-6），两条路都不离开这张画布。</li>
+      <li><b>删节点</b>：最右那颗垃圾桶。删父节点会连子树一起走，动手前先确认。</li>
+      <li><b>收起某一支</b>：右上那组的展开 / 收起两颗，折的是当前节点这一支（没选中时置灰）。</li>
+      <li><b>撤回 / 重做</b>：右上最左两颗环形箭头，改的是整棵树的历史，可以连点。</li>
+      <li><b>点右上最右那颗「···」</b>：弹出脑图信息抽屉，名称 / 所属项目 / 格式三项一次改完，删除这张图也在抽屉底部。</li>
+    </ol>
+
+    <div class="figures">
+      <figure class="shot tablet" id="f5-3">
+        <div class="shot-stage">
+          <img src="img/pad-15-mindmap-detail.jpg" alt="平板端脑图画布：顶部工具栏、竖直展开的树、底部浮动工具条" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-3</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">画布：黄底是根，浅灰是分支，灰字是备注</div>
+          <div class="fig-cap">这张图是竖着长的树形结构，一屏能看到五层里的四层。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">面包屑</dt><dd class="v">「脑图画布」＋图名＋项目标签＋更新时间。位置最上，用来确认“我在哪张图里”。</dd></div>
+            <div class="el"><dt class="k">右上工具条</dt><dd class="v">五颗键、竖线分三组：<b>撤回｜重做</b> ‖ <b>展开｜收起</b> ‖ <b>编辑</b>（那颗「···」，弹脑图信息抽屉）。整条贴右上角，离画布边 12。</dd></div>
+            <div class="el"><dt class="k">缩放胶囊</dt><dd class="v">左上那枚「100%」。只在缩放时浮现、停下自己淡出，点一下＝回到适应屏幕。它与右上那条同高（40）、顶边同一条线。</dd></div>
+            <div class="el"><dt class="k">根节点</dt><dd class="v">黄底墨字胶囊。全图只有一个，也是最显眼的一块。</dd></div>
+            <div class="el"><dt class="k">分支节点</dt><dd class="v">白/浅灰底、细描边，字号比根节点小一档。层级越深，颜色越淡。一级每行最多 20 字、二级及以下 40 字——语音转出来的长句不再被切成一堆碎行。</dd></div>
+            <div class="el"><dt class="k">备注</dt><dd class="v">挂在节点右侧的浅灰文字块，是这个节点的展开说明；导出时会成为标题下的正文段落。</dd></div>
+            <div class="el"><dt class="k">连线</dt><dd class="v">直角折线，从父节点右侧出、子节点左侧进。走向就是父子关系。</dd></div>
+            <div class="el"><dt class="k">左下节点条</dt><dd class="v">五颗键、三组：<b>加子节点｜加同级节点</b> ‖ <b>语音｜编辑</b> ‖ <b>删除</b>，作用于当前选中节点。10-23 起顺序换成这样（原来语音/编辑在最左）。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot pc" id="f5-4">
+        <div class="shot-stage">
+          <img src="img/pc-07-mindmap-detail.png?v=20261028" alt="PC 端脑图画布：宽屏同时看到根节点与多级分支" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-4</span><span class="end pc">PC 端</span></div>
+          <div class="fig-title">PC 端画布：一屏看完整棵树的骨架</div>
+          <div class="fig-cap">这是另一张脑图的宽屏示例：主干、分支与备注同时铺开，用于对照 PC 画布的信息密度。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">左栏高亮</dt><dd class="v">「脑图」图标黄底，当前位置一眼可辨。</dd></div>
+            <div class="el"><dt class="k">画布范围</dt><dd class="v">浅灰凹底＋圆角白卡，四周留白，滚轮缩放时不会把工具栏挤出视野。</dd></div>
+            <div class="el"><dt class="k">右上工具条</dt><dd class="v">与平板同一套五颗键（撤回 / 重做 ‖ 展开 / 收起 ‖ 编辑），鼠标直接点，不需要先长按。</dd></div>
+            <div class="el"><dt class="k">左下节点条</dt><dd class="v">同样在左下角、同样五颗，只在选中节点时可用；编辑框溢出时，框内滚轮就能滚，画布不跟着缩。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h3 class="h3">操作流程：改一个节点的文字（键盘 / 语音两条路）</h3>
+    <p class="lead" style="margin-top:0">
+      入口都在左下那条浮条的中间一组：<b>编辑</b>走键盘，<b>语音</b>走语音。语音这条是本产品与传统思维导图最大的差别 ——
+      说话时输入法根本不弹，画布也就不会被键盘吃掉半屏，你能一边盯着整棵树一边把这句话说完整。
+    </p>
+    <ol class="steps">
+      <li><b>先点节点选中它</b>。没选中时五颗键是灰的，浮条本来就是为了“改谁”才出现。</li>
+      <li><b>键盘这条路：点编辑</b>。浮条就地长高——中间长出输入区，下面多出「取消 / 保存」（图 5-5）。高度随文字折行自己算，面板底沿不动、顶边往上让。<b>编辑态不再显示那排键</b>，省下的高度全给了正文，能一次多读几行。面板里还有一条挂图区：<b>一个节点最多挂 1 张截图</b>，图就画在这个节点旁边。</li>
+      <li><b>文字还是超出就滚</b>：输入区到上限就停住，框里出现一条细滚动条——触屏单指上下滑，PC 用鼠标滚轮，滚的是框里的字，画布一动不动。</li>
+      <li><b>语音这条路：点语音</b>。节点原地盖上一层半透明遮罩，中间浮出秒数开始倒数 60（图 5-6）；说完再点一次结束，或等它自己数到 0。</li>
+      <li><b>等它回来</b>：遮罩上的字变成「语音识别中」，识别结果回来后<b>整段替换</b>这个节点的文字——不是插在光标处，是把这一格换成你刚说的话。</li>
+      <li><b>键盘要留才保存，语音不用</b>：键盘编辑点「✓ 保存」才写进去，点「× 取消」原样退回；语音没有保存键，识别一回来就直接落到节点上（不满意就在节点上重说一遍）。</li>
+      <li><b>被电话或微信语音打断</b>：系统会当场退出录音态，并给一句中文提示（不是英文错误码）；不会留下半截空节点，挂掉之后还能接着录。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f5-5">
+        <div class="shot-stage">
+          <img src="img/pad-17-mindmap-edit.jpg?v=20261028" alt="平板端脑图：点编辑后浮条长高，出现输入区、加截图、取消与保存" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-5</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">键盘编辑：浮条就地长高，画布不挪</div>
+          <div class="fig-cap">点编辑后，左下那条浮条从一行变成「输入区 / 取消·保存」两行，底沿始终钉在屏幕下方。<br>
+            <span>注：截图摄于改版之前——当时编辑态还留着上面那排键（共三行），现在那排键会收起来，高度让给正文。</span></div>
+          <dl class="els">
+            <div class="el"><dt class="k">输入区</dt><dd class="v">唯一的正文区。<b>高度随折行现算</b>（最少 96、最多 276 像素）；到上限就停住，框里出现滚动条，触屏单指滑、PC 滚轮都能滚。</dd></div>
+            <div class="el"><dt class="k">× 取消 / ✓ 保存</dt><dd class="v">实心墨色那颗是保存。不点保存直接退出＝放弃这次修改。</dd></div>
+            <div class="el"><dt class="k">键排已收起</dt><dd class="v">编辑态不再显示加子 / 加同级 / 语音 / 编辑 / 删除那五颗——这一刻它们本来也用不上，省下的高度全并进正文。</dd></div>
+            <div class="el"><dt class="k">加截图</dt><dd class="v">输入区下面那条：虚线坑「加截图」＋一句「最多挂 1 张图，留住截图里的现场」。<b>一个节点只能挂一张</b>（根节点不挂）——这里是“留证据”，不是图库。</dd></div>
+            <div class="el"><dt class="k">被改的那颗节点</dt><dd class="v">画布上同时套黄描边＋轻微闪烁，隔着键盘也知道在改哪一格。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f5-6">
+        <div class="shot-stage">
+          <img src="img/pad-18-mindmap-voice.jpg" alt="平板端脑图：点麦克风后节点被半透明遮罩盖住，图中显示剩余 55 秒，底部麦克风黄圈呼吸" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-6</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">语音编辑：麦克风点亮，节点上倒数 60 秒</div>
+          <div class="fig-cap">同一颗节点走语音：输入区不出现、输入法不弹，遮罩盖住的就是它自己那行字。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">麦克风（黄圈）</dt><dd class="v">录音中。再点一次结束；数满 60 秒也会自己停——两条路同一个出口。</dd></div>
+            <div class="el"><dt class="k">半透明遮罩</dt><dd class="v">铺在节点文字上，提示“这一格正在被重写”，同时不让半截旧文字干扰你。</dd></div>
+            <div class="el"><dt class="k">倒数数字（图中 55）</dt><dd class="v"><b>是剩余秒数，不是节点内容</b>。60 → 1，数到 0 自动转识别。</dd></div>
+            <div class="el"><dt class="k">「语音识别中」</dt><dd class="v">停手后同一个位置换成这五个字，等后端返回。这一两秒别切图、别删节点。</dd></div>
+            <div class="el"><dt class="k">回填规则</dt><dd class="v"><b>整段替换</b>。说漏了就在节点上重说一遍，不用先删旧的。</dd></div>
+            <div class="el"><dt class="k">画布全程完整</dt><dd class="v">不弹键盘，整棵树始终可见，边看结构边说，说完直接拖去该在的位置。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h3 class="h3">语义转脑图产出的那张图：先完善，再派活</h3>
+    <p class="lead" style="margin-top:0">
+      模型给的是一棵<b>结构</b>，不是一条记录。所以刚生成的图有两处是空的：<b>归属项目</b>和<b>格式</b> ——
+      而这两样恰好决定它能不能挂到待办上、导出时按什么形状排。所以打开那张卡时，应用不让你直接进画布，
+      而是先把这两项补齐。
+    </p>
+    <ol class="steps">
+      <li><b>打开刚生成的那张卡</b>：面板标题不是「编辑脑图信息」，而是<b>「完善脑图信息」</b>——两个词的区别是“补齐”与“修改”。</li>
+      <li><b>补所属项目</b>：必填。选完之后卡上的「未归属项目」换成项目标签；agent 也跟着项目定下来，不再单独选。</li>
+      <li><b>补格式</b>：必填。六种画法任选，选完画布才知道按哪种形状铺。</li>
+      <li><b>点「保存」</b>：进画布。这一刻起它就是一张普通脑图——能拖、能改、能挂待办、能导出。</li>
+      <li><b>之后想改</b>：画布右上那颗「···」打开的是<b>同一个面板</b>，只是标题变回「编辑脑图信息」、「格式」变回<b>可空</b>，底部还多一颗「删除这张脑图」。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f5-7">
+        <div class="shot-stage">
+          <img src="img/pad-22-mindmap-complete.jpg" alt="平板端完善脑图信息面板：名称、所属项目与格式均必填，底部保存" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-7</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">完善脑图信息：名称、项目与格式三项均必填</div>
+          <div class="fig-cap">名字模型已经起好了；要你补的是归属与格式——这两样是“这张图归谁、长什么样”，只有你知道。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">标题</dt><dd class="v">「完善脑图信息」。同一个面板，只在“字段没填全”时换这个名字。</dd></div>
+            <div class="el"><dt class="k">脑图名称</dt><dd class="v"><b>必填</b>，已经预填模型起的名字，可以直接改。</dd></div>
+            <div class="el"><dt class="k">所属项目</dt><dd class="v"><b>必填</b>。选中项下面那行小字是该项目的 agent——<b>agent 由项目决定</b>，所以这一版表单里没有单独的 agent 选项。</dd></div>
+            <div class="el"><dt class="k">格式</dt><dd class="v"><b>必填</b>（这是“完善态”才有的要求，平时编辑是可空的）。六选一，每项左侧有缩略图。</dd></div>
+            <div class="el"><dt class="k">没有「删除」</dt><dd class="v">完善态底部只有「保存」。要删这张图，先进画布、从「···」里删。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="shot tablet" id="f5-8">
+        <div class="shot-stage">
+          <img src="img/pad-27-mindmap-info-edit.jpg" alt="平板端编辑脑图信息抽屉：名称、所属项目、格式可空，左下删除这张脑图" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 5-8</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">同一个面板，平时的样子：格式可空、带删除</div>
+          <div class="fig-cap">画布右上「···」打开的就是它。与图 5-7 逐项对照，差别只有三处：标题、「格式」的必填星号、左下那颗删除。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">标题</dt><dd class="v">「编辑脑图信息」——改的是已经存在的一张图。</dd></div>
+            <div class="el"><dt class="k">格式「可空」</dt><dd class="v">允许清空。空着的时候卡上显示「未设置」，不替你兜一个默认格式。</dd></div>
+            <div class="el"><dt class="k">选择其他项目 / ＋ 新建项目</dt><dd class="v">项目多到一屏放不下时走这条；新建项目就地开第二层抽屉，不丢当前填写。</dd></div>
+            <div class="el"><dt class="k">删除这张脑图</dt><dd class="v">左下红字，与保存分开摆。删掉的是整张图，挂过它的待办会变成“未关联脑图”。</dd></div>
+            <div class="el"><dt class="k">保存</dt><dd class="v">黑色实心长条，右下。名称或项目为空时置灰。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="note">
+      <span class="nt">为什么“不多唤一个输入法”值得单列一条</span>
+            <b>语音识别是本应用内置的（走同一个 ASR 服务），不经系统输入法</b>——所以既不弹候选词、也不用先切到拼音再选字。
+    </div>
+
+    <div class="note">
+      <span class="nt">拖拽时盯住“要变成谁的孩子”</span>
+      松手前，先确认目标节点被高亮——那一瞬间决定的是<b>父子关系</b>，不是视觉位置。
+      拖错一次不用慌，撤回键就在右上角那组的第一颗。
+    </div>
+    <div class="note warn">
+      <span class="nt">整张图会被带走</span>
+      待办挂的是整张脑图，不拆节点。所以图上多留一条无关的分支，导出时也会一起进 Agent 的输入框。
+      派活前扫一眼整张图，比事后解释便宜。
+    </div>
+  </section>
+  <!-- ============ 06 ============ -->
+  <section class="mod" id="m6">
+    <div class="mod-head">
+      <span class="mod-no">06</span>
+      <div>
+        <h2>我的</h2>
+        <div class="sub">账号、Agent 配额、Token 余额</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      「我的」不是设置页，是<b>资源台账</b>：你挂了几个 Agent、每个 Agent 的套餐额度还剩多少天、
+      手上有几个项目、Token 余额够不够。项目里那个“距离重置 30 天”就是从这里来的。
+    </p>
+
+    <h3 class="h3">操作流程</h3>
+    <ol class="steps">
+      <li><b>进「我的」</b>：平板点底部第五个 tab，PC 点左栏最后一个图标。</li>
+      <li><b>改个人资料</b>：点「个人资料」卡右侧「✎ 编辑」，改头像与昵称。昵称会显示在项目、Agent 的关联信息里。</li>
+      <li><b>管 Agent</b>：点区块右上「＋ 新建 Agent」新增一个；每张卡片右上「✎ 编辑」改名称、每月套餐额度。</li>
+      <li><b>看配额</b>：卡片左侧圆环是“距离重置还剩几天”，右侧「每月套餐 4000」是本周期额度。</li>
+      <li><b>管 Token</b>：点「＋ 添加 API」，填服务商与 Key；卡片上能看到余额和密钥尾号。</li>
+      <li><b>留意红色提示</b>：余额不足时右下角出现「余额偏低」，这是唯一的余额告警方式。</li>
+    </ol>
+
+    <div class="figures two">
+      <figure class="shot tablet" id="f6-1">
+        <div class="shot-stage">
+          <img src="img/pad-16-me.jpg" alt="平板端我的页：个人资料、两个 Agent 卡、Token API 卡" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 6-1</span><span class="end tab">平板端</span></div>
+          <div class="fig-title">我的：三段资源，一张屏看完</div>
+          <div class="fig-cap">个人资料 → Agent（两列）→ Token API，顺序就是“人、工具、用量”。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">个人资料</dt><dd class="v">头像＋昵称（图中“长跑男”）＋右侧「编辑」。点编辑改头像与昵称。</dd></div>
+            <div class="el"><dt class="k">＋ 新建 Agent</dt><dd class="v">黑色小按钮，在 Agent 区块右上角。新增后卡片排在最后。</dd></div>
+            <div class="el"><dt class="k">Agent 卡</dt><dd class="v">名称（workbuddy / trae）＋「编辑」；卡内是配额与承担的项目。</dd></div>
+            <div class="el"><dt class="k">配额圆环</dt><dd class="v">环内「30 天」是距重置的天数，环的缺口位置表示进度；环下一行小字「距离重置」。</dd></div>
+            <div class="el"><dt class="k">每月套餐</dt><dd class="v">本周期额度 4000。它不是余额，是每周期重置的总量。</dd></div>
+            <div class="el"><dt class="k">承担项目</dt><dd class="v">「4 项」＋下面两行项目标签（色点＋名称）。这里只读，改绑定要去项目里编辑。</dd></div>
+            <div class="el"><dt class="k">Token API 卡</dt><dd class="v">服务商（DeepSeek）＋「编辑」；金额「¥7.89」；右下红字「余额偏低」；左下打码的密钥尾号；右上更新时间。</dd></div>
+            <div class="el"><dt class="k">＋ 添加 API</dt><dd class="v">区块右上角，添加第二家服务商。可以并存多个。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="figures">
+      <figure class="shot pc" id="f6-2">
+        <div class="shot-stage">
+          <img src="img/pc-08-me.png?v=20261028" alt="PC 端我的页：两个 Agent 卡并排，Token API 卡在下" loading="lazy">
+        </div>
+        <figcaption>
+          <div class="fig-top"><span class="fig-no">图 6-2</span><span class="end pc">PC 端</span></div>
+          <div class="fig-title">PC 端：同样三段，卡片更宽</div>
+          <div class="fig-cap">这是另一时间的 PC 布局对照：两个 Agent 并排展示，Token API 位于下方，卡片更宽。</div>
+          <dl class="els">
+            <div class="el"><dt class="k">左栏高亮</dt><dd class="v">「我的」图标黄底，处于当前模块。</dd></div>
+            <div class="el"><dt class="k">Agent 双列</dt><dd class="v">两张卡等宽并排，方便直接比“哪个 Agent 手上的项目多”。</dd></div>
+            <div class="el"><dt class="k">项目标签行</dt><dd class="v">每个标签是“色点＋项目名”，一行能放下 4 个；更多时会折到下一行。</dd></div>
+            <div class="el"><dt class="k">Token 卡</dt><dd class="v">与平板同构：余额大字、告警红字、密钥尾号、更新时间四件套。</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="note">
+      <span class="nt">区分普通导出与模型功能</span>
+      普通 Markdown 复制不消耗模型额度；信息增强、语义转脑图等模型功能是否可用，取决于余额与服务状态。
+      看到红字先检查对应服务商的额度，不要等到调用失败再处理。
+    </div>
+  </section>
+
+  <!-- ============ 07 ============ -->
+  <section class="mod" id="m7">
+    <div class="mod-head">
+      <span class="mod-no">07</span>
+      <div>
+        <h2>跨端标准流程</h2>
+        <div class="sub">一条活从“路上想起来”到“发给 Agent”</div>
+      </div>
+      <div class="mod-ends">
+        <span class="end mob">手机</span><span class="end tab">平板</span><span class="end pc">PC</span>
+      </div>
+    </div>
+
+    <p class="lead">
+      把前面五个模块串起来，就是下面这九步。注意第 1 步和第 9 步在时间上往往隔了一夜——
+      这套流程的价值，正是让“说不清的十分钟”发生在路上，而不是发生在输入框前。
+    </p>
+
+    <ol class="steps">
+      <li><b>［手机］接住</b>：点底部「说」，说一条 60 秒。不选项目、不标紧急度。<span class="where">图 2-1、图 2-2</span></li>
+      <li><b>［手机］补齐</b>：说不完就再来一条；错字左滑“编辑”改掉。<span class="where">图 2-4</span></li>
+      <li><b>［平板 / PC］唤出胶囊</b>：点右下徽标，选中要处理的那一条（多选只用于删除和转脑图）。<span class="where">图 2-5、图 2-6</span></li>
+      <li><b>［平板 / PC］转待办</b>：正文带入「记一条待办」，补一档紧急度、选一个项目，保存。<span class="where">图 4-1</span></li>
+      <li><b>［平板 / PC］建 / 选脑图</b>：新建一张图（选格式）或打开已有的那张。<span class="where">图 5-2</span></li>
+      <li><b>［平板 / PC］出方案</b>：拖节点定主干与分支，写备注，改层级。<span class="where">图 5-3</span></li>
+      <li><b>［平板 / PC］挂到待办</b>：回待办详情，在「闪念胶囊」空态点「＋ 选择胶囊」，把那几条口述一起挂上去；再在「关联脑图」空态点「＋ 关联脑图」选这张图，顺手在「图片」那格点「＋ 添加图片」补截图。<span class="where">图 4-3、图 4-4</span></li>
+      <li><b>［平板 / PC］导出</b>：点「导出」，核对「待办导出」里的预览——原文、图片、脑图层级、关联胶囊四段都在；只想发文字就勾「不含图片」，再点「复制到剪贴板」；嫌原文太像口语就再点「增强」，让模型改写成任务书。<span class="where">图 4-7、图 4-9</span></li>
+      <li><b>［任意端］派活</b>：粘进 Agent 输入框，发送。回来把它勾完成，概览的今日计数会 +1。</li>
+    </ol>
+
+    <div class="tbl-wrap mt14">
+      <table class="tbl">
+        <thead>
+          <tr><th>你要做的事</th><th>手机</th><th>平板</th><th>PC</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>录一条胶囊</b></td><td class="c">整页，主操作</td><td class="c">抽屉内</td><td class="c">抽屉内</td></tr>
+          <tr><td><b>看活跃度日历</b></td><td class="c">—</td><td class="c">14 周</td><td class="c">26 周</td></tr>
+          <tr><td><b>新建项目 / 待办 / 脑图</b></td><td class="c">—</td><td class="c">抽屉底部黑条</td><td class="c">抽屉底部黑条</td></tr>
+          <tr><td><b>改脑图结构</b></td><td class="c">—</td><td class="c">触屏拖拽</td><td class="c">鼠标拖拽 ＋ 滚轮缩放</td></tr>
+          <tr><td><b>导出适配文本</b></td><td class="c">—</td><td class="c">详情页「导出」</td><td class="c">详情页「导出」</td></tr>
+          <tr><td><b>管 Agent / Token</b></td><td class="c">—</td><td class="c">我的</td><td class="c">我的</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="nt">“—” 表示手机当前没有入口</span>
+      手机端把屏幕留给“记录”：没有 tab、列表和这些表单。它不是数据权限差异，而是当前功能边界；
+      需要整理时请换到平板或 PC。
+    </div>
+  </section>
+  <!-- ============ 08 ============ -->
+  <section class="mod" id="m8">
+    <div class="mod-head">
+      <span class="mod-no">08</span>
+      <div>
+        <h2>名词与手势</h2>
+        <div class="sub">卡住的时候先来这里对词</div>
+      </div>
+    </div>
+
+    <h3 class="h3">名词</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>词</th><th>在这套产品里的确切含义</th><th>容易混的地方</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="c"><b>闪念胶囊</b></td><td>一条 60 秒的口述、或一段手写的短记录（可带 1 张截图），以气泡形式排列</td><td>它不是待办，故意不挂任何归属；说的和写的进同一份名单</td></tr>
+          <tr><td class="c"><b>转待办 / 转脑图</b></td><td>胶囊的两个出口：变成一条待办，或进脑图</td><td>转完原气泡会从名单里消失；转待办在表单里取消则保留。「转脑图」其实还分两条路，见下面的「语义转脑图」</td></tr>
+          <tr><td class="c"><b>已删除胶囊</b></td><td>胶囊抽屉<b>顶部</b>那张虚框卡，点进去是第二个名单，选中可还原</td><td>不是独立页面，是同一个抽屉换名单；手机端没有这一档。被「转走」的胶囊不进这里</td></tr>
+          <tr><td class="c"><b>项目节点</b></td><td>项目所处的生命周期：构思期 / 建设期 / 迭代期 / 暂停期</td><td>与待办的“紧急程度”完全无关</td></tr>
+          <tr><td class="c"><b>紧急程度</b></td><td>待办的四档：紧急 / 中等 / 不紧急 / 留置</td><td>四档都算“在册”，留置不等于完成</td></tr>
+          <tr><td class="c"><b>留置</b></td><td>先搁着、仍在册、但不安排</td><td>不是删除，也不是“以后再说”的备注</td></tr>
+          <tr><td class="c"><b>综合紧急度</b></td><td>把一个项目四档待办按权重折算出的分数</td><td>只出现在项目详情，是只读读数，不参与筛选</td></tr>
+          <tr><td class="c"><b>单级归属</b></td><td>一条待办只属于一个项目，不能同时挂两个</td><td>项目之间不能嵌套，没有子项目</td></tr>
+          <tr><td class="c"><b>归属 agent</b></td><td>这个项目交给哪个 Agent 干（workbuddy / trae）</td><td>可以“不关联”，纯人肉项目也合法</td></tr>
+          <tr><td class="c"><b>距离重置</b></td><td>离该 Agent 的套餐周期重置还有几天</td><td>是周期倒计时，不是额度余额</td></tr>
+          <tr><td class="c"><b>每月套餐</b></td><td>该 Agent 每个周期的额度总量</td><td>与 Token API 的“余额”是两套账</td></tr>
+          <tr><td class="c"><b>当前</b></td><td>脑图抽屉里标着“当前”的那张＝右侧画布正在编辑的图</td><td>不是“最近打开”，是此刻打开</td></tr>
+          <tr><td class="c"><b>待办导出</b></td><td>待办正文 ＋ 图片 ＋ 脑图层级 ＋ 关联胶囊序列化成的纯 Markdown</td><td>旧名「适配 agent 文本」。不润色、不改写，只是把结构摊平；胶囊段用分隔线不用标题</td></tr>
+          <tr><td class="c"><b>关联胶囊</b></td><td>把几条口述挂到某条待办上，作为这条活的“原话”</td><td>挂上就从胶囊列表消失；取消关联会回到列表，但不算新增</td></tr>
+          <tr><td class="c"><b>语义转脑图</b></td><td>把几条胶囊交给大模型，按语义重组成<b>一张新脑图</b></td><td>与“挂到已有脑图”是两条路：这条异步、计费、可能失败；那条同步、免费、一条胶囊一个节点</td></tr>
+          <tr><td class="c"><b>完善脑图信息</b></td><td>补一条「语义转脑图」产物的必填项：归属项目与格式</td><td>同一个面板，平时叫「编辑脑图信息」，那时格式可空、还多一颗删除</td></tr>
+          <tr><td class="c"><b>信息增强</b></td><td>把待办的原文交给大模型，改写成一份分好段的任务书</td><td>用于重组表达，结果需要人工核对；输出<b>只在抽屉里</b>，不写回待办</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="h3">手势</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>手势</th><th>在哪用</th><th>结果</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="c"><b>点一下</b></td><td>全局</td><td>进入、选中、勾完成；PC 脑图节点另支持双击打开编辑</td></tr>
+          <tr><td class="c"><b>左滑</b></td><td>手机端胶囊气泡</td><td>露出 导出 / 编辑 / 删除 三颗竖排键</td></tr>
+          <tr><td class="c"><b>点气泡</b></td><td>平板 / PC 的胶囊抽屉</td><td>选中它，右缘竖起五颗键：删除 / 编辑 / 导出 / 转待办 / 转脑图</td></tr>
+          <tr><td class="c"><b>横向滑动</b></td><td>概览的活跃度日历</td><td>往左看更早的周（14 周 → 30 周）</td></tr>
+          <tr><td class="c"><b>按住拖动</b></td><td>脑图画布上的节点</td><td>改父子关系；拖到空白处提升为一级节点。松手即保存</td></tr>
+          <tr><td class="c"><b>拖动空白</b></td><td>脑图画布</td><td>平移画布，不改变任何结构</td></tr>
+          <tr><td class="c"><b>双指捏合</b></td><td>脑图画布</td><td>缩放。PC 用滚轮代替</td></tr>
+          <tr><td class="c"><b>框内滑动 / 滚轮</b></td><td>脑图节点的编辑框</td><td>文字超出高度时只滚框里的字，画布不跟着缩放</td></tr>
+          <tr><td class="c"><b>点遮罩</b></td><td>抽屉 / 弹层外</td><td>关闭当前浮层，不保存未提交的填写</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 09 ============ -->
+  <section class="mod" id="m9">
+    <div class="mod-head">
+      <span class="mod-no">09</span>
+      <div>
+        <h2>截图索引</h2>
+        <div class="sub">图号 ↔ 文件 ↔ 模块，一一对应</div>
+      </div>
+    </div>
+    <p class="lead">
+      下表按图号顺序列出本手册用到的全部截图。
+      文件名保留了导出时的端与页面标记，方便替换或重截。
+    </p>
+
+    <div class="idx">
+      <div class="idx-item"><span class="i-no">图 1-1</span><span class="i-end">平板端</span><span class="i-name">概览 · 活跃度日历＋项目待办统计</span><span class="i-file">平板端-概览.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 1-2</span><span class="i-end">PC 端</span><span class="i-name">概览 · 26 周日历＋四列项目卡</span><span class="i-file">pc端-概览.png</span></div>
+      <div class="idx-item"><span class="i-no">图 2-1</span><span class="i-end">手机端</span><span class="i-name">闪念胶囊 · 「说」＋「写」两颗入口</span><span class="i-file">移动端-1.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-2</span><span class="i-end">手机端</span><span class="i-name">闪念胶囊 · 录音中 00:59 ＋ 轻点任意处停止</span><span class="i-file">移动端-录音中.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-3</span><span class="i-end">手机端</span><span class="i-name">闪念胶囊 · 「记一条闪念」＋加截图</span><span class="i-file">移动端-文字创建.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-4</span><span class="i-end">手机端</span><span class="i-name">闪念胶囊 · 左滑出导出 / 编辑 / 删除</span><span class="i-file">移动端-滑动操作.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-5</span><span class="i-end">平板端</span><span class="i-name">闪念胶囊抽屉 · 顶部「已删除胶囊」虚框卡</span><span class="i-file">平板端-闪念胶囊.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-6</span><span class="i-end">平板端</span><span class="i-name">闪念胶囊 · 选中后右缘五颗键</span><span class="i-file">平板端-闪念胶囊-选中胶囊.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-7</span><span class="i-end">平板端</span><span class="i-name">闪念胶囊 · 「写」副抽屉</span><span class="i-file">平板端-闪念胶囊-创建胶囊.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-8</span><span class="i-end">平板端</span><span class="i-name">选择脑图 · 语义转脑图 lead 卡</span><span class="i-file">平板端-闪念胶囊-选择脑图.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-9</span><span class="i-end">平板端</span><span class="i-name">脑图列表 · 语义转脑图结果卡（未归属）</span><span class="i-file">平板端-脑图列表-语义转脑图.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 2-10</span><span class="i-end">平板端</span><span class="i-name">脑图画布 · 语义转脑图生成的结构</span><span class="i-file">平板端-脑图详情-语义转脑图结果.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 3-1</span><span class="i-end">平板端</span><span class="i-name">项目抽屉 · 七张项目卡</span><span class="i-file">平板端-项目列表.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 3-2</span><span class="i-end">平板端</span><span class="i-name">筛选 · 状态/节点/关联 agent 三层</span><span class="i-file">平板端-项目列表-筛选.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 3-3</span><span class="i-end">平板端</span><span class="i-name">新建项目 · 名称/节点/关联 agent/色槽</span><span class="i-file">平板端-项目列表-创建项目.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 3-4</span><span class="i-end">平板端</span><span class="i-name">项目详情 · 基础信息/待办/脑图</span><span class="i-file">平板端-项目.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 3-5</span><span class="i-end">PC 端</span><span class="i-name">项目详情 · 待办卡四列</span><span class="i-file">pc端-项目详情.png</span></div>
+      <div class="idx-item"><span class="i-no">图 4-1</span><span class="i-end">平板端</span><span class="i-name">记一条待办 · 内容/紧急度/项目</span><span class="i-file">平板端-待办列表-创建待办.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-2</span><span class="i-end">平板端</span><span class="i-name">待办抽屉 · 倒序列表</span><span class="i-file">平板端-待办列表.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-3</span><span class="i-end">平板端</span><span class="i-name">待办详情 · 胶囊 / 图片 / 脑图三块空态</span><span class="i-file">平板端-待办.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-4</span><span class="i-end">平板端</span><span class="i-name">待办详情 · 已关联胶囊 ＋ 已挂脑图</span><span class="i-file">平板端-待办详情-关联胶囊后.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-5</span><span class="i-end">PC 端</span><span class="i-name">待办详情 · 四个动作并排</span><span class="i-file">pc端-待办详情.png</span></div>
+      <div class="idx-item"><span class="i-no">图 4-6</span><span class="i-end">平板端</span><span class="i-name">选择胶囊 · 多选后保存</span><span class="i-file">平板端-待办详情-选择胶囊.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-7</span><span class="i-end">平板端</span><span class="i-name">待办导出 · 复制到剪贴板 ＋ 增强</span><span class="i-file">平板端-待办详情-导出文本.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-8</span><span class="i-end">平板端</span><span class="i-name">信息增强 · 生成中</span><span class="i-file">平板端-待办详情-信息增强-生成中.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 4-9</span><span class="i-end">平板端</span><span class="i-name">信息增强 · 增强后的任务书</span><span class="i-file">平板端-待办详情-信息增强-结果.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-1</span><span class="i-end">平板端</span><span class="i-name">脑图抽屉 · 三张图卡</span><span class="i-file">平板端-脑图列表.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-2</span><span class="i-end">平板端</span><span class="i-name">新建脑图 · 六种格式</span><span class="i-file">平板端-脑图列表-创建脑图.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-3</span><span class="i-end">平板端</span><span class="i-name">脑图画布 · 工具栏与层级</span><span class="i-file">平板端-脑图详情.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-4</span><span class="i-end">PC 端</span><span class="i-name">脑图画布 · 宽屏全树</span><span class="i-file">pc端-脑图详情.png</span></div>
+      <div class="idx-item"><span class="i-no">图 5-5</span><span class="i-end">平板端</span><span class="i-name">脑图编辑 · 键盘（含节点加截图）</span><span class="i-file">平板端-脑图详情-普通编辑.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-6</span><span class="i-end">平板端</span><span class="i-name">脑图编辑 · 语音（节点倒计时 60s）</span><span class="i-file">平板端-脑图详情-语音编辑.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-7</span><span class="i-end">平板端</span><span class="i-name">完善脑图信息 · 语义转脑图产物必填两项</span><span class="i-file">平板端-脑图-完善信息.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 5-8</span><span class="i-end">平板端</span><span class="i-name">编辑脑图信息 · 格式可空 ＋ 删除</span><span class="i-file">平板端-脑图-编辑信息.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 6-1</span><span class="i-end">平板端</span><span class="i-name">我的 · 资料/Agent/Token</span><span class="i-file">平板端-我的.jpg</span></div>
+      <div class="idx-item"><span class="i-no">图 6-2</span><span class="i-end">PC 端</span><span class="i-name">我的 · 双列 Agent 卡</span><span class="i-file">pc端-我的.png</span></div>
+    </div>
+
+
+    <div class="note">
+      <span class="nt">没用上的几张</span>
+      PC 端的项目 / 待办 / 脑图三个「新建」表单，与平板端是同一套组件、同一屏内容，
+      本手册每种表单只留一张（用平板端那张），避免“同一条流程读两遍”。
+    </div>
+  </section>      </div>
+    </div>
+  </section>
+
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="sf-grid">
+      <div class="sf-brand">
+        <span class="sf-logo"><img src="img/brand-logo-512.png" alt=""></span>
+        <div>
+          <b>Agent-ToDo</b>
+          <p>给 FDE 准备的多项目工作台<br>每家客户独立一套<br>接住 → 归位 → 出方案 → 派活 → 收尾</p>
+        </div>
+      </div>
+      <div class="sf-col">
+        <h4>产品</h4>
+        <a href="index.html#fit">适用场景</a>
+        <a href="index.html#why">为什么是它</a>
+        <a href="index.html#flow">五步工作流</a>
+        <a href="index.html#case">并行的一天</a>
+        <a href="index.html#features">六个模块</a>
+        <a href="index.html#delivery">交付与数据</a>
+      </div>
+      <div class="sf-col">
+        <h4>手册</h4>
+        <a href="#m1">概览</a>
+        <a href="#m2">闪念胶囊</a>
+        <a href="#m4">待办与导出</a>
+        <a href="#m5">脑图</a>
+      </div>
+      <div class="sf-col sf-about">
+        <h4>关于</h4>
+        <p><b>演示实例</b>：公开上架的这套，数据在你自己的账号下，可随时清空。</p>
+        <p><b>正式交付</b>：每家客户独立一套，实例与数据隔离，升级按客户节奏。</p>
+        <p class="sf-meta">v3.0 · 2026-10-30<br>手册基于 36 张界面截图编写，界面以实际版本为准。</p>
+      </div>
+    </div>
+
+    <div class="sf-qrbar">
+      <img src="img/official-account-qr.jpg" alt="Agent-ToDo 公众号二维码" loading="lazy">
+      <div>
+        <b>关注公众号</b>
+        <p>扫码关注，更新都发在这里。<br>有具体问题，关注后直接私信我。</p>
+      </div>
+    </div>
+
+    <div class="sf-bottom">
+      <span>© 2026 Agent-ToDo</span>
+      <span class="sf-dot"></span>
+      <span>微信小程序 · 手机 / 平板 / PC</span>
+      <span class="right">截图为演示数据，仅作界面说明，不含客户信息</span>
+    </div>
+  </div>
+</footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="放大查看截图">
+  <button class="close" id="lbClose" aria-label="关闭">×</button>
+  <img id="lbImg" alt="">
+</div>
+
+<script>
+
+(function(){
+  var lb = document.getElementById('lb');
+  var lbImg = document.getElementById('lbImg');
+  var lastImg = null;
+
+  document.querySelectorAll('.shot-stage img').forEach(function(img){
+    img.tabIndex = 0;
+    img.setAttribute('role','button');
+    img.setAttribute('aria-label','放大查看：' + (img.getAttribute('alt') || '界面截图'));
+    function open(){
+      lastImg = img;
+      lbImg.src = img.getAttribute('src');
+      lbImg.alt = img.getAttribute('alt') || '';
+      lb.classList.add('on');
+      document.body.style.overflow = 'hidden';
+      document.getElementById('lbClose').focus();
+    }
+    img.addEventListener('click', open);
+    img.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } });
+  });
+
+  function closeLb(){
+    lb.classList.remove('on');
+    lbImg.removeAttribute('src');
+    document.body.style.overflow = '';
+    if(lastImg) lastImg.focus();
+  }
+  document.getElementById('lbClose').addEventListener('click', closeLb);
+  lb.addEventListener('click', function(e){ if(e.target === lb) closeLb(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && lb.classList.contains('on')) closeLb();
+  });
+
+  /* ================= 目录：滚动同步高亮 + 顶部横滑可用性 ================= */
+  var toc   = document.getElementById('toc');
+  var barEl = document.querySelector('.nav');
+  var links = Array.prototype.slice.call(toc.querySelectorAll('a'));
+
+  // 只保留真有对应区块的条目，顺序与正文一致
+  var items = links.map(function(a){
+    var el = document.getElementById(a.getAttribute('href').slice(1));
+    return el ? {a:a, el:el} : null;
+  }).filter(Boolean);
+
+  var cur      = null;   // 当前高亮的链接
+  var pinEl    = null;   // 刚点过的区块：等它滚定再交还给滚动判定
+  var tocHold  = 0;      // 用户手动拖过目录后，短时间内别再自动归位
+  var settleT  = 0;
+  var trailT   = 0;
+  var lastRun  = 0;
+
+  function compact(){ return window.matchMedia('(max-width:980px)').matches; }
+
+  // 正文的“阅读线”：顶部条（窄屏再加目录条）以下
+  function headOffset(){
+    var h = barEl ? barEl.offsetHeight : 58;
+    if (compact()) h += toc.offsetHeight + 12;
+    return h + 14;
+  }
+
+  function updateFades(){
+    if (!compact()){
+      toc.style.removeProperty('--fade-l');
+      toc.style.removeProperty('--fade-r');
+      return;
+    }
+    var max = toc.scrollWidth - toc.clientWidth;
+    var l = (max > 1 && toc.scrollLeft > 2) ? 26 : 0;
+    var r = (max > 1 && toc.scrollLeft < max - 2) ? 26 : 0;
+    toc.style.setProperty('--fade-l', l + 'px');
+    toc.style.setProperty('--fade-r', r + 'px');
+  }
+
+  function indexOfEl(el){
+    for (var i = 0; i < items.length; i++) if (items[i].el === el) return i;
+    return -1;
+  }
+
+  function activeIndex(){
+    var line = window.scrollY + headOffset();
+    var idx = -1;
+    for (var i = 0; i < items.length; i++){
+      var rr = items[i].el.getBoundingClientRect();
+      if (rr.height === 0) continue;   // 隐藏的区块不参与判定
+      var top = rr.top + window.scrollY;
+      if (top <= line) idx = i;
+    }
+    // 滚到底时，最后一节往往顶不到阅读线，按“它在屏幕里占了大半”补一刀
+    var last = items.length - 1;
+    if (last >= 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4){
+      var lr = items[last].el.getBoundingClientRect();
+      if (lr.top < window.innerHeight * 0.72) idx = last;
+    }
+    return idx;
+  }
+
+  // 让高亮项自己挪进目录的可视区（宽屏上下、窄屏左右）
+  function reveal(a){
+    if (!a) return;
+    if (compact()){
+      if (Date.now() < tocHold) return;
+      if (toc.scrollWidth <= toc.clientWidth) return;
+      var box = toc.getBoundingClientRect(), r = a.getBoundingClientRect(), pad = 14;
+      if (r.left < box.left + pad)              toc.scrollLeft -= (box.left + pad - r.left);
+      else if (r.right > box.right - pad)       toc.scrollLeft += (r.right - (box.right - pad));
+      updateFades();
+    } else {
+      var top = a.offsetTop, h = a.offsetHeight;
+      if (top < toc.scrollTop + 4)                     toc.scrollTop = Math.max(0, top - 38);
+      else if (top + h > toc.scrollTop + toc.clientHeight - 4) toc.scrollTop = top + h - toc.clientHeight + 12;
+    }
+  }
+
+  function apply(idx){
+    var a = (idx >= 0) ? items[idx].a : null;
+    if (a === cur) return;
+    if (cur){ cur.classList.remove('on'); cur.removeAttribute('aria-current'); }
+    cur = a;
+    if (a){ a.classList.add('on'); a.setAttribute('aria-current','true'); reveal(a); }
+    // 回到封面区（没有任何一节在阅读线上）：目录条退回开头，别停在尾巴上
+    else if (compact() && Date.now() >= tocHold && toc.scrollLeft > 0){
+      toc.scrollLeft = 0; updateFades();
+    }
+  }
+
+  function refresh(){
+    updateFades();
+    if (pinEl){
+      var pr = pinEl.getBoundingClientRect();
+      // 点过去的那一节还占着版面，就先跟着它
+      if (pr.bottom > headOffset() + 8 && pr.top < window.innerHeight * 0.8){
+        apply(indexOfEl(pinEl));
+        return;
+      }
+      pinEl = null;
+    }
+    apply(activeIndex());
+  }
+
+  function onScroll(){
+    var now = Date.now();
+    if (now - lastRun > 60){
+      lastRun = now;
+      refresh();
+    } else {
+      clearTimeout(trailT);
+      trailT = setTimeout(function(){ lastRun = Date.now(); refresh(); }, 80);
+    }
+    if (pinEl){
+      clearTimeout(settleT);
+      settleT = setTimeout(function(){ pinEl = null; refresh(); }, 180);
+    }
+  }
+
+  // 点目录：先认下这一节，等滚动停下来再交给滚动判定
+  var drag = null, suppressClick = false, killT = 0;
+  toc.addEventListener('click', function(e){
+    var t = e.target;
+    while (t && t !== toc && t.tagName !== 'A') t = t.parentNode;
+    if (!t || t.tagName !== 'A') return;
+    if (suppressClick){ e.preventDefault(); return; }
+    var el = document.getElementById(t.getAttribute('href').slice(1));
+    if (!el) return;
+    pinEl = el;
+    apply(indexOfEl(el));
+  });
+
+  // 鼠标拖动横滑（触屏本来就支持，不必接管）
+  toc.addEventListener('pointerdown', function(e){
+    if (!compact() || e.pointerType !== 'mouse' || e.button !== 0) return;
+    if (toc.scrollWidth <= toc.clientWidth) return;
+    drag = {x:e.clientX, left:toc.scrollLeft, moved:false};
+    tocHold = Date.now() + 1600;
+  });
+  window.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    var dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) > 5){ drag.moved = true; toc.classList.add('dragging'); }
+    if (!drag.moved) return;
+    toc.scrollLeft = drag.left - dx;
+    tocHold = Date.now() + 1600;
+    updateFades();
+    if (e.cancelable) e.preventDefault();
+  }, {passive:false});
+  function endDrag(){
+    if (!drag) return;
+    var moved = drag.moved;
+    drag = null;
+    toc.classList.remove('dragging');
+    if (moved){
+      suppressClick = true;
+      clearTimeout(killT);
+      killT = setTimeout(function(){ suppressClick = false; }, 60);
+    }
+  }
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+
+  // 触控板横向手势 / 横向滚轮直接接管；竖向滚轮留给页面，不抢
+  toc.addEventListener('wheel', function(e){
+    if (!compact()) return;
+    var max = toc.scrollWidth - toc.clientWidth;
+    if (max <= 1) return;
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    toc.scrollLeft += e.deltaX;
+    tocHold = Date.now() + 1600;
+    updateFades();
+  }, {passive:false});
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', function(){ updateFades(); onScroll(); });
+  // 截图加载完会撑高版面，落点要重算一次
+  window.addEventListener('load', function(){ updateFades(); refresh(); });
+
+  // ★ 深链落点修正：手册有 37 张懒加载截图，浏览器在截图还是"高 0"时就跳过了一次锚点，
+  //   图片陆续到位会把版面撑高两千多像素（实测 1440 宽下 #m4 偏出 5073px）⇒ 锚点要跟着版面
+  //   反复重校。两条踩过的坑：① 只在 load 里校一次不够（那时还有 20+ 张图没加载）；
+  //   ② 不能靠 `scroll-behavior:auto` 临时改样式来提速 —— 样式一恢复，那次跳转会被重排成
+  //   平滑动画，追不上目标就停在半路。所以这里显式走 behavior:'instant'，并用"落点真的对上了"
+  //   作为退出条件，而不是拿文档高度稳定当替身。
+  if (location.hash && location.hash.length > 1){
+    (function(){
+      var tgt = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (!tgt) return;
+      var root = document.documentElement, locked = true, hit = 0;
+      function pad(){
+        return parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
+      }
+      function jump(y){
+        try { window.scrollTo({top:y, behavior:'instant'}); }
+        catch(e){ window.scrollTo(0, y); }   // 老内核不认 instant 就退化成默认
+      }
+      function anchor(){
+        if (!locked) return;
+        // 落点比阅读线再高 1px：activeIndex() 判的是 `top <= 阅读线`，正好相等（差 0.4px 也算大）
+        // 时不算命中，目录高亮会停在上一节 —— 深链进来看到的就是"标题对、高亮错"。
+        // 收敛判据也必须用这个目标值，否则 2px 容差会把"差一点点"当成已到位、永远不去修那 1px。
+        var want = pad() - 1;
+        var top = tgt.getBoundingClientRect().top;
+        if (Math.abs(top - want) > 0.5){
+          jump(Math.max(0, top + window.pageYOffset - want));
+          top = tgt.getBoundingClientRect().top;
+        }
+        hit = (Math.abs(top - want) <= 0.5) ? hit + 1 : 0;
+      }
+      function release(){ locked = false; }
+      ['wheel','touchstart','keydown','pointerdown'].forEach(function(t){
+        window.addEventListener(t, release, {once:true, passive:true});
+      });
+      var timer = setInterval(function(){
+        if (!locked){ clearInterval(timer); return; }
+        anchor();
+        if (hit >= 6) clearInterval(timer);
+        refresh();
+      }, 220);
+      window.addEventListener('load', anchor);
+      anchor();
+      refresh();
+      setTimeout(function(){ clearInterval(timer); }, 4000);
+    })();
+  }
+
+  updateFades();
+  refresh();
+})();
+
+</script>
+</body>
+</html>

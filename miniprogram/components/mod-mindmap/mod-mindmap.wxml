@@ -1,0 +1,857 @@
+<!-- 模块组件（09-21 起）：只渲染 <main>。
+     骨架 stage-wrap / stage / app、左导轨、底部导航、悬浮 Logo 全部搬到了壳页 pages/shell；
+     这里保留 .main 这一层，是为了让 .app.port .xxx 这类骨架选择器继续命中。
+     本模块的抽屉 / 表单抽屉 / 查看层仍在组件内（绝对定位，参照物是壳页的 .app）。 -->
+<view class="main {{landscape ? '' : 'mod-port'}}">
+
+    <!-- 主工作区 776（内容 756；★ 09-22 走查·十一：横屏无品牌栏、首块之前不留 padding）／ 竖屏 1128 ——
+         品牌栏下方**直接就是画布容器**，二者之间只隔统一的 --gap-top。
+         ★ 本轮（脑图专项 7 条 · 第 2 条）：**子标题以下、导航栏以上全是画布** ——
+           ① 原来卡内底部那排缩放控件（− / 100% / ＋ / 适应屏幕）整条撤掉，
+              比例改成「缩放时才浮现、停下来自己淡出」的一枚胶囊（.mm-zoom，同一位置）；
+           ② 原来卡内右上那块「导出 md 的映射规则」说明浮块整块删除；
+           ③ 原来卡下方那行脑图级操作行（收起全部 / 展开一级 / 撤销 / 重做 ＋ 严格树说明
+              ＋ 项目胶囊 / 切换脑图 / 导出 Markdown / 更多）整行删除 ——
+              让出的 40 行 ＋ 12 gap 全部给画布（横 670 → 722 ／ 竖 1006 → 1058）。
+           ④ 撤掉的东西各自都有新落点，一件没丢：
+              撤销 / 重做 → 画布顶部工具栏；项目 → 子标题右侧信息行；
+              切换脑图 → 点子标题；改名 → 顶部「编辑」；新建 / 删除 → 顶部最右「⋯」。
+              ★ 第 71 轮又动过一次这排落点：顶部从「六颗键」收成**四颗键两组**
+              （撤销｜重做 ‖ 格式｜编辑），「导出」与「⋯」两颗整条取消 ——
+              新建脑图 → 列表抽屉底部「＋ 新建脑图」；删除脑图 → 顶部「编辑」抽屉底部
+              （见本文件 form-drawer 那一段的 `danger-label`）。 -->
+    <view class="workarea mm-area">
+    <!-- ★★ 204 轮：让位段（状态栏 ＋ 品牌行）—— 滚动内容的**第一段**，随内容滚走。
+         ★★ 207 轮：横屏**又渲染了**（206 试过整段撤掉、内容贴顶太紧已回退）。
+         横屏这段是**空盒子**，只贡献 `LAND_HEAD`(6) 的高度、不画 logo
+         （brand-head.wxml 内部还有一层 `wx:if="{{!landscape}}"` 挡着）。 -->
+    <brand-head landscape="{{landscape}}" />
+      <block wx:if="{{mindmapId}}">
+      <!-- ① 区块 · 脑图画布（★ 09-22 走查；★ 第 81 轮改排版）
+           子标题行＝「脑图画布」＋ **紧跟着**这一段脑图自己的信息：名称 ／
+           所属项目（可点，跳项目模块）／ 更新时间。
+           ★ 第 81 轮第 6 条：整段从「靠右」改成「**靠左、挂在子标题右侧**」，
+             并把它与子标题之间那道分隔（`.mh-div`）显式画出来 ——
+             原来靠右时它与子标题隔了整整一行空白，读起来像两个不相干的元素；
+             现在它俩成为「标题 ＋ 注解」的一对（`.sec-flex` 挪到整段之后吸收余量）。
+           ★ 第 81 轮第 5 条：三样的**字号与颜色统一**（都用「所属项目」那一套：
+             13px / `--slate`）—— 原来名称是 14px 主墨、项目是 13px 次墨、
+             时间是 13px 微墨，三档色号并排显得脏。名称的 600 字重留着，
+             否则一整行里没有任何东西指认"哪个是这张图的名字"。 -->
+      <view class="sec mm-sec sec-first">
+      <view class="sec-head">
+        <icon name="canvas-b" size="16" />
+        <text class="sec-t">脑图画布</text>
+        <view class="mh-div"></view>
+        <view class="mh">
+          <text class="mh-name">{{name}}</text>
+          <view class="mh-sep"></view>
+          <!-- ★ 审查-02 S1（2026-10-15）：补 `hover-class` —— 与「我的」页的 `.ag-chip-hv` 同族（改底 `--chip`）。
+               ⚠️ `.off`（无所属项目）时 wxss 里是 `pointer-events: none` ⇒ 根本不吃事件，按下不会亮，无需额外抑制。 -->
+          <view class="mh-pj {{projectId ? '' : 'off'}}" bindtap="onGoProject" hover-class="mh-pj-hv">
+            <view class="mh-dot" style="background:{{projectColor}}"></view>
+            <text class="mh-pj-t">{{projectName}}</text>
+            <text class="mh-arch" wx:if="{{projectArchived}}">已归档</text>
+          </view>
+          <view class="mh-sep"></view>
+          <text class="mh-time">更新于 {{updated}}</text>
+        </view>
+        <view class="sec-flex"></view>
+      </view>
+
+      <!-- 卡 · 脑图画布 —— 子标题行下方的全部区域
+           ★ 09-21 第五轮：卡本身接管手势（拖空白＝平移画布 / 拖节点＝改结构 / 双指＝缩放），
+             内部多了一层 .mm-viewport —— 节点层与连线层都住在里面，所以整体一起平移缩放。
+             ★★ 第 75 轮**改口径**：两条工具条原来是 `catchtouchstart="onUiTouch"` 把触摸拦下来，
+             结果两条工具条上的键在真机/模拟器鼠标下**全都点不动**（见 mod-mindmap.js 里
+             `onBtnDown` 那段长注释：catch 掉 touchstart ⇒ 子节点的 tap 不再生成）。
+             现在改成 `bindtouchstart="onUiTouch"` **冒泡上来**，由 `gsStart()` 的第一道闸
+             （读 `_uiTouch` 标记）把它挡在画布手势之外 —— 拦住的效果不变，
+             但触摸事件本身照常走完整条链路。
+             ★★★ 第 241 轮 —— 上面那句「`catchtouchmove` 保持不变」**作废**，这里也改 `bind`。
+             病根（微信官方社区，官方同学原话）：「textarea **父容器**中有 `catchtouchmove`，
+             同层之后这个会**阻止事件冒泡及滚动行为，其中也包括 textarea 的滚动**」。
+             本卡的子节点里有 `.mm-float.editing` 那块编辑面板，textarea 就在里面
+             ⇒ 卡片这层 `catch` 一挂，**输入框里文字超出高度时既不会滚、也永远等不到
+             原生滚动条出现**（用户报的就是这个：能自适应高度，但超了没滚动条）。
+             ⇒ 改成 `bindtouchmove`（冒泡照常），"在键上／面板上按住拖动时画布别跟着平移"
+             改由 JS 侧的 `_uiHold` 闸门承担（见 `onUiTouch` / `gsMove` 开头那段）——
+             与第 75 轮把 `catchtouchstart` 改 `bindtouchstart` 是同一个修法、同一套理由。
+             ⚠️ 别只看"卡片会不会跟着手指跑"就判它对不对：`bind` 之后本页**依然不滚**
+                （`.workarea` 是 `overflow: hidden`、`.app` 定高），代价可忽略；
+                而 `catch` 的代价是编辑框整块滚不动，那个是不可接受的。 -->
+      <view class="mm-card"
+        bindtouchstart="onCanvasStart"
+        bindtouchmove="onCanvasMove"
+        bindtouchend="onCanvasEnd"
+        bindtouchcancel="onCanvasCancel"
+        bindwheel="onWheel"
+        bindmousedown="onMouseDown"
+        bindmousemove="onMouseMove"
+        bindmouseup="onMouseUp"
+        bindmouseleave="onMouseUp"
+      >
+        <view class="mm-viewport" style="{{stageStyle}}">
+          <view class="links" style="{{linksStyle}}background-image:url({{linksUri}})"></view>
+
+          <!-- 拖拽标记 · 原位（★ 第 66 轮新增；第 68 轮改口径）——
+               画布坐标 ⇒ 钉在原地、跟着画布一起缩放平移。
+               第 68 轮起它只圈**被拖节点自己**原来占的那一格（**灰色虚线**）；
+               "这一整窝要跟着走"改由下面那枚蓝色虚线大框表达，两枚框各说一件事。 -->
+          <view wx:if="{{dragSrc}}" class="mm-src-box" style="{{dragSrc.style}}"></view>
+
+          <!-- 拖拽标记 · 子树范围（★ 第 68 轮新增）——
+               **蓝色虚线圆角大框**包住被拖节点**及其整棵子树**，标出"这一窝的范围"。
+               ⚠️ 它**不是**落点提示，拖动全程都不动；落点提示是 dragParent ＋ dragLinkUri。
+               ⚠️ 也**不是**"这一窝会跟着走"的预告 —— 第 66 轮已核实：画面上子树留在原地不动。 -->
+          <view wx:if="{{dragScope}}" class="mm-scope-box" style="{{dragScope.style}}"></view>
+
+        <!-- 节点层：**每行一个 <text>**（★ 第 67 轮）——
+             折行在 JS 里做一次（metricsOf），行数决定节点高，所以渲染层绝不能再折：
+             wxss 给 .mm-node-t 加了 white-space:nowrap，这里照原样逐行吐出去。
+             文字**全部显示、不省略**，节点宽高随内容长短变化。
+
+             ★ 第 70 轮这一层多了两个**挂在卡片内部**的状态：
+               · `rec`  —— 正在录音 / 识别：整格盖一层半透明遮罩，遮罩上浮倒计时
+                            （识别阶段那里显示「语音识别中」）；卡片自己加呼吸式光圈
+                            （wxss 的 `.mm-node.rec`）。
+              · `edit` —— 正在编辑（★★ 第 112 轮换形态）：编辑区搬到**底部浮条**里去了，
+                            卡片自己只负责**闪** —— wxss 的 `.mm-node.edit` 跑 `mm-flash`
+                            关键帧（"原有边框变色 ＋ 闪烁"，无遮罩、无倒计时），
+                            文字照常渲染、**一行都不动**。
+              ⚠️ 82–89 轮那版"卡片整格换成一行一片 `<input>`"**整条作废**（用户换思路：
+                 「字体在编辑模式下还是不能保证和非编辑模式一致」）——
+                 卡片里现在**一个输入控件都没有**，见本文件下半段 `.mf-edit` 那段长注释。 -->
+        <view
+          wx:for="{{nodes}}"
+          wx:key="id"
+          class="mm-node {{item.cls}} {{voiceId === item.id ? 'rec' : ''}} {{editId === item.id ? 'edit' : ''}} {{hoverId === item.id ? 'hv' : ''}}"
+          style="{{item.style}}"
+        >
+          <!-- 录音 / 识别的遮罩：盖住节点文字，倒计时浮在上面（用户口径） -->
+          <view wx:if="{{voiceId === item.id}}" class="mm-mask">
+            <text class="mm-mask-t">{{voiceClock}}</text>
+          </view>
+
+          <!-- 文字层：静止态与编辑态**共用这一段**（★★ 第 112 轮）——
+               原来这里是 `wx:if="{{editId === item.id}}"` 换输入框 / `wx:else` 走文字
+               的两分叉，现在编辑区搬去了底部浮条 ⇒ **分叉整条取消**，
+               卡片永远只渲染 `.mm-node-t`。
+               ⚠️ 这条正是用户那句「编辑模式下字体保证不了和非编辑模式一致」的**根治**：
+                  不再有"第二套控件去复刻同一段文字"，字号/行高/折行位置**同一个来源**，
+                  想不一致都没有第二条路可走。
+               ⚠️ `wx:key="i"` 用产品 `linesPayload()` 那套 `{i, t}`（行文本会重复，不能拿它当 key）。 -->
+          <text
+            wx:for="{{item.lines}}"
+            wx:for-item="ln"
+            wx:for-index="li"
+            wx:key="i"
+            class="mm-node-t"
+          >{{ln.t}}</text>
+
+          <!-- ★★ 275 轮：节点挂图 —— **文字下方**一块图（275b 改形态，见下）。
+               一个节点最多一张（`imageUri` 是字符串，不是数组），root 永远没有（服务端也丢弃）。
+               ★★ 275b（用户 2026-10-26 第 2 条）：「图片应该完整显示，相当于**宽度固定，
+                  高度按照图片自适应**」⇒
+                  · 宽高**都由 JS 算好、走行内 style**（`item.imgW` / `item.imgH`）——
+                    高 ＝ 内容宽 ÷ 图片宽高比，逐节点不同，写不进 CSS；
+                  · `<image>` 用 `mode="aspectFit"`：**任何情况下都不裁图**。
+                    比例缺失（胶囊转过来的老数据没存比例，走 4:3 兜底）时也只是两边留细边，
+                    绝不会把人的半张脸切掉 —— 275 初版 `aspectFill` 就是这么被否掉的。
+               ⚠️ 竖图会比节点窄、居中显示（`picBoxOf` 把宽度反算窄，免得节点被拉成一屏高）——
+                  这是"完整显示"与"别把节点撑爆"之间的取舍，别改成 width:100% 撑满。
+               ⚠️ 这一段**不挂任何事件** —— 点它要等于点节点：命中靠 `.mm-card` 的手势 ＋
+                  `hitNode()` 的矩形判定，图片在矩形内，天然成立。
+               ⚠️ 也**不画**"看大图"角标：画布自己就能缩放（用户第 2 条原话）。
+               ⚠️ `wx:if` 而不是空盒子：空盒子会吃掉 `margin-top:8` 却不显示任何东西，
+                  没图的节点会看起来"凭空多了一道缝"。 -->
+          <view class="mm-node-pic" wx:if="{{item.img}}" style="width:{{item.imgW}}px;height:{{item.imgH}}px">
+            <image class="mm-node-pic-img" src="{{item.img}}" mode="aspectFit" lazy-load></image>
+          </view>
+        </view>
+
+        <!-- 折叠徽标层（★ 第 70 轮 / 252 轮统一口径）——
+             被「收起」的节点挂一枚圆形数字，数字＝这一支还藏着多少个后代。
+             ★ 位置口径（用户原话）：「展开时它和子节点的连线从哪里出发，收起时就挂在哪里」
+               ⇒ 挂侧由 JS 现算（`foldSideOf` 按**格式定轴 + 当前坐标定方向**，再交给
+                  `foldStyleOf` 出 left/top），这里只负责摆。
+             ⚠️ 别再用 `zoneMapOf` 推朝向（第 70 轮的老做法）：折叠节点在可见树里子被剪空，
+                它只能继承父的方位，而且拿 |dx|/|dy| 比大小选轴 —— 竖族会挂到左右两侧、
+                横族的深层会挂到下方，正是用户说的"位置非常乱"。
+             ⚠️ 单独一层、排在节点层**之后** ⇒ 天然压在节点之上（不用 z-index 打架）；
+                它**不可点**（收起 / 展开另有按键），wxss 里给了 pointer-events:none。
+             ⚠️ 同一个标签上混用 wx:for 与 wx:if 在小程序里顺序不可靠 ⇒ 外面套一层
+                `<block wx:for>`，让循环先发生。 -->
+        <block wx:for="{{nodes}}" wx:key="id">
+          <view wx:if="{{item.fold}}" class="mm-fold" style="{{item.foldStyle}}">{{item.fold}}</view>
+        </block>
+
+          <!-- 拖拽标记 · **候选父节点**（★ 第 68 轮新增；★ 第 212 轮**搬到了 viewport 外面**）——
+               ⚠️ 它现在画在 `.mm-viewport` 的**父层**（与拖动体平级），坐标由 JS 按
+                  `translate(tx,ty) scale(sv)` 换算成容器坐标 —— 因为 `.mm-viewport` 带 transform
+                  是个层叠上下文，里面的 `z-index` 再大也压不过外面的拖动体。
+                  旧位置（viewport 内）导致"被拖节点比目标大时，目标框被半透明拖动体盖住"，
+                  正是用户这轮说的"难看到父节点判断变色"。
+               被套**实线**框的永远是"**松手后会被挂上去的那个节点**"：
+               长按瞬间是当前父节点，拖动中一旦浮动节点与别人"同一行／列且紧挨着"，
+               这个框就**当场换到那个人身上**（与下面那条预览线一起换）。
+               ⚠️ 上一版那两种态（落在节点上 ＝ 收作子节点 ／ 同级之间 ＝ 一条竖线）
+                  已整块作废 —— 用户明确要求去掉竖线那套。
+               ⚠️ `is-root` 只在候选父节点是**根**时挂上：根自带品牌黄实心底，
+                  同色框压上去等于没画 ⇒ 改走「白间隙 ＋ 黄外环」双环（见 wxss）。
+               ⚠️ `is-cancel` ＝ 拖到空白处，灰虚线（"亮着但不生效"）。 -->
+
+          <!-- 拖拽标记 · 预览线（★ 第 66 轮新增，第 68 轮改口径，第 69 轮改品牌黄）——
+               **候选父节点（框的外缘）→ 浮动节点**。终点每帧咬住副本的近侧边，
+               所以它跟的是"位置关系"，不是光标。
+               单独一层、压在**节点层之上** —— 普通连线被节点方块盖住是省事，
+               这条要是被盖住就白画了（它是"将要挂到这儿"的唯一指认）。 -->
+          <view wx:if="{{dragLinkUri}}" class="mm-links-hl" style="{{hlStyle}}background-image:url({{dragLinkUri}})"></view>
+        </view>
+
+        <!-- ⚠️ 第 66 轮返工：原来这里有一层「随行的子树」（.mm-sub）——
+             对着参考图核对后确认**子树留在原地不动**，只拖节点本身，故整块删除。
+             源位置那枚虚线框（.mm-src-box）就是它的替代：圈出"这一窝原来占的范围"。 -->
+
+        <!-- 卡内右上 · 脑图级工具栏（★ 第 81 轮重做 · **五颗键 · 三组** · ★ 第 253 轮搬到右上角）
+
+             ★★ 第 253 轮按《脑图工具栏位置方案》重排：**右上管脑图，左下改节点**。
+                两组轻量操作在画布**对角**呼应，上下两边的新中央不再压着图；
+                缩放比例（`.mm-zoom`）同时从「左下」移到「左上」，右下闪念入口不动。
+             ⚠️ 253 轮只动两件事，功能 / 分组 / 禁用条件一个字没动：
+                ① **落点**：top 16 → **10**、通栏居中 → **贴右 12**（外层不再 left:0;right:0）；
+                ② **外壳减重**：整条胶囊的 --frost 底 / 1px 描边 / --sh-float 大阴影**全部撤掉**，
+                   键的底色收进里面那层 `.fb-tile`（热区尺寸不动）。见 wxss `.mm-top` / `.fb-btn`。
+                ★★★ 第 254 轮：两条工具条**整体 ×1.5**（用户口径「上下两组操作栏应该整体
+                   加大 50%」）—— 热区 44 → 66、视觉块 32 → 48、图标 24 → **36**、
+                   间距 4 → 6、竖线 17 → 26。
+                ★★★ 第 255 轮：**收到 ×1.25**（用户口径「1.5 倍又有点大了，稍微再缩小一点」）
+                   —— 热区 56、视觉块 40、图标 **30**、间距 5、竖线 21；
+                   热区贴边收到 **0**（可见块因此离画布边 8；原来上 10 / 右 12 ⇒ 块离边 19/21）。
+                   左上那枚缩放胶囊改成 40 高（＝视觉块）、字号 16（＝子标题）、贴 8。
+                ★★★ 第 256 轮：**四边可见距离 8 → 12**（用户口径「四边的边距从 8 改为 12，
+                   目前又有点太小了」）—— 热区贴边 0 → **4**（可见块离边 4 ＋ 8 ＝ 12），
+                   左下那条与左上胶囊同步，四边一律 12；尺寸 / 间距 / 分组一个字没动。
+             ⚠️ `catchtouchmove` **必须留在这一层**：`工具/check_ta_scroll_round241.js` 钉着
+                「全文件只允许这一处 catchtouchmove」，而这条工具条里没有原生输入控件 ——
+                它是唯一可以安全 catch 的那一层（下面那条浮条必须 bind，理由见 `.mm-card` 那段）。
+
+             用户口径（原文）：五颗键＝「撤回 / 重做 / 展开 / 收起 / 编辑」，
+               「撤回」与「重做」一组，三组之间用竖线隔开。
+             ★★★ 第 303 轮 **三组换位**（用户：「将『编辑脑图信息』按钮移到按钮组中间位置；
+               将『展开/收起』调整到最右侧」）⇒ 现在从左到右是
+                 [撤回 · 重做]  ‖  [编辑脑图信息]  ‖  [展开 · 收起]
+                ⚠️ 与下面 `.mf-row` 同一条纪律：**只动 DOM 顺序**（这三组都靠书写次序定位置，
+                   没有 order / row-reverse）⇒ 键数 5、竖线 2、条宽 322 一个值都没变，
+                   `SAFE_T` 与判据里的几何一个数都不用动。
+                ⚠️ 置灰口径倒过来了：原来「展开 / 收起」夹在中间、"编辑"独占右端；
+                   现在它们独占右端，`selNode` 为空才灰那条口径**照旧**（见下面两颗键）。
+
+             职责分工：
+               · 撤回 / 重做 —— 改的是**整棵树的历史**，按 canUndo / canRedo 置灰
+                                （与底部浮条同一套 `.off`）；
+               · 展开 / 收起 —— ★ 第 81 轮**从底部浮条搬上来**（用户第 1 条"功能不变"）：
+                                它们改的还是**选中节点那一支**的折叠态，置灰口径也照搬
+                                （`selNode` 为空才灰），只是落点从底部换到了顶部；
+                                ★ 303 轮起落在**最右**；
+               · 编辑       —— 用「更多」那枚图标，弹**脑图信息编辑抽屉**
+                                （名称 / 所属项目 / 格式三项一次改完）；★ 303 轮起居中。
+
+             ⚠️ 第 81 轮**取消**「格式」那颗键与它的格式弹窗（用户第 2 条：
+                「原有的'格式'及其抽屉取消，编辑中本身就有格式调整功能」）——
+                换结构的六种格式仍在，只是入口收进**「编辑」抽屉里那一行格式选择**，
+                不再单独占一颗键 ＋ 一个弹窗。
+             ⚠️ 第 71 轮**撤掉**两颗键（用户口径「原有的导出和更多功能取消」）：
+               · 「导出」—— 单独把这张脑图导成 Markdown 的入口整条取消。
+                             脑图 md 仍有出口：待办详情页的「导出」抽屉会把
+                             **原文 ＋ 脑图 Markdown** 一起复制走（`store.copyTodoText`）。
+               · 「⋯（更多）」—— 它装的三件事各有新家，没有一件丢：
+                             「新建一张脑图」本来就在**列表抽屉底部**那颗「＋ 新建脑图」上；
+                             「删除这张脑图」下移到**编辑抽屉底部**（与项目「归档项目」
+                             同一颗 `.sd-del` 危险位，见 form-drawer）；
+                             「键盘快捷键（PC）」这一页说明随「更多」一起取消
+                             （一期不做 PC Web 端，键位记在《工作备忘录》里）。
+             ⚠️ 造型走 `.fb-btn`（★ 255 轮起热区 56×56 / 图标 30），**底色**在里面那层
+                40×40 的 `.fb-tile` 上（★ 第 253 轮：外壳减重；★ 254 ×1.5；★ 255 收到 ×1.25）——
+                两条工具条复用同一套，不另起一套。 -->
+        <view class="mm-top" bindtouchstart="onUiTouch" catchtouchmove="onUiTouch">
+          <view class="mm-tools">
+            <!-- 组①：撤回 ｜ 重做 -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{canUndo ? '' : 'off'}}" data-act="undo" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="undo" size="30" /></view>
+            </view>
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{canRedo ? '' : 'off'}}" data-act="redo" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="redo" size="30" /></view>
+            </view>
+
+            <view class="mt-sep"></view>
+
+            <!-- 组②：编辑（脑图信息：名称 / 所属项目 / 格式）—— ★ 303 轮起**居中** -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn" data-act="editinfo" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="more" size="30" /></view>
+            </view>
+
+            <view class="mt-sep"></view>
+
+            <!-- 组③：展开 ｜ 收起（★ 第 81 轮从浮条搬上来，功能不变；★ 303 轮起靠**最右**） -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{selNode ? '' : 'off'}}" data-act="expand" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="expand" size="30" /></view>
+            </view>
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{selNode ? '' : 'off'}}" data-act="collapse" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="collapse" size="30" /></view>
+            </view>
+          </view>
+        </view>
+
+        <!-- ================================================================
+             卡内左上 · **一个竖列**（★★★ 第 303 轮把两件东西收进同一个盒子）
+               · 上：PC 端操作提示（`.mm-tip`，可关闭、PC 才有）
+               · 下：瞬时缩放比例（`.mm-zoom`，原样搬进来，尺寸/显隐口径一个字没改）
+             ── 为什么要收进一个盒子 ────────────────────────────────────────
+             这两件本来就抢**同一个角落**（都是 left 12 / top 12）。原来 `.mm-zoom`
+             是绝对定位，提示一加进来就会叠在它身上；而"提示多高"是随字号/折行变的，
+             绝对定位里没有"排在它下面"这种表达。
+             ⇒ 外层 `.mm-tl` 定在原来的 12 / 12，两件都变成 flex 子项、`gap:8` ——
+               **提示在时比例尺自然落到它下面，提示关掉后比例尺自动回到 12 / 12**，
+               一个魔法数字都不用写。⚠️ 窄屏那一档（`max-width:400px`）随之从
+               "挪 `.mm-zoom`"改成"挪 `.mm-tl`"，否则手机档那两颗又会撞在一起。
+             ⚠️ 外层 `pointer-events: none`、内层各自 `auto`（与右上工具条同一套纪律）：
+                这块盒子比看得见的东西大，不该整片吞掉画布手势。
+             ================================================================ -->
+        <view class="mm-tl">
+          <!-- ==============================================================
+               ★★★ 第 303 轮 · **PC 端操作提示**（用户第 4 条）
+               用户口径：「当用户使用 PC 端登录并进入脑图详情页时，在画布内左上角显示一个
+                 操作提示。提示内容需说明『双击』『Tab』『Enter』三个操作的效果。
+                 样式参照手机端顶部的那个新用户提示。该提示支持用户关闭。」
+
+               ── 为什么这句话非写不可 ──────────────────────────────────────
+               两个键位（Tab / Enter）**只在选中节点后**才生效，而"双击进编辑"更是完全
+               藏起来的一个手势（键盘 F2 也是，但那是给老手的）。没有这句提示，
+               PC 用户看到的仍是一条只有图标的浮条 —— 提示就是把"有这些操作"说出来。
+               文案里的三个键必须与 `onKey` / `handleTap` 里**真实分发的键名同字**：
+                 双击 → 编辑（`act('edit')`，见 handleTap 的双击分支）
+                 Tab  → 新增下一级子节点（`act('child')`）
+                 Enter→ 新增同级节点（`act('sibling')`）
+
+               ── 口径（三条，缺一条就会变成永久占位或空话）─────────────────
+                ① **只有 PC 才有**：`pcTipOn` 在 onLoad 时由 `deskEnv()` 判一次
+                   （windows / mac / devtools）—— 手机上没有鼠标，双击与 Tab 都是空话；
+                ② **可关闭且记住**：点 ✕ ⇒ `pcTipOn=false` ＋ 落 storage（`mindmap.tip.pc`），
+                   与胶囊那条一次性引导同一条口径（关掉就永久不再出现）；
+                ③ **不吃画布手势**：`bindtouchstart` / `bindtouchmove` 挂 `onUiTouch`
+                   （与两条工具条同一套闸门）—— 否则点 ✕ 那一下会顺手在画布上
+                   "点一下空白"，把选中节点弹回根节点。
+
+               ⚠️ 样式照 `.cp-hint`（手机端顶部那条新用户提示）：`--yellow-soft` 底 ＋
+                  `--yellow-line` 边 ＋ `--u-mid-t` 字 —— 这是"指个路"的色，不是出错色。
+                  ⚠️ 深色模式下这三支令牌都有深色档（app.wxss 里成对定义），别改成硬色值。
+               ============================================================== -->
+          <view class="mm-tip" wx:if="{{pcTipOn}}" bindtouchstart="onUiTouch" bindtouchmove="onUiTouch">
+            <view class="mm-tip-h">
+              <icon name="info" size="13" opacity="0.9" />
+              <text class="mm-tip-h-t">电脑端快捷操作</text>
+              <view class="mm-tip-x" catchtap="onTipClose" hover-class="mm-tip-x-hv">
+                <icon name="close" size="12" opacity="0.75" />
+              </view>
+            </view>
+            <view class="mm-tip-r">
+              <text class="mm-kbd">双击</text>
+              <text class="mm-tip-t">节点即可编辑文字</text>
+            </view>
+            <view class="mm-tip-r">
+              <text class="mm-kbd">Tab</text>
+              <text class="mm-tip-t">新增下一级子节点</text>
+            </view>
+            <view class="mm-tip-r">
+              <text class="mm-kbd">Enter</text>
+              <text class="mm-tip-t">新增同级节点</text>
+            </view>
+            <text class="mm-tip-f">Tab / Enter 需先点选节点</text>
+          </view>
+
+        <!-- 卡内左上：**瞬时**缩放比例（★ 本轮第 4 条 · ★ 第 253 轮从左下搬到左上）——
+             原来这里是一整排缩放控件（− / 100% / ＋ / 适应屏幕），现在整排撤掉：
+             只在用户**正在缩放**时露脸，停手约 900ms 自己淡出（见 JS flashZoom）。
+             入口没有全丢 —— 键盘 0 ＝ 适应屏幕（PC），平板上双指捏回来即可。
+             ★ 审查-02 P1-7（2026-10-14）：**它同时是触屏的「适应屏幕」入口** ——
+               点一下走 `fitView()`（内部顺手续上 `flashZoom()` ⇒ 胶囊留在屏上＝按下有回话）。
+               原先触屏只有"双指捏"，而捏合只能连续缩放、捏不出「正好装下」那一档。
+               ⚠️ 只在 `.on`（可见）时吃事件 —— 见 wxss，平时它是一块透明，绝不能挡画布。
+             ★★ 253 轮为什么换到左上：左下那格让给**节点操作条**（「右上管脑图、左下改节点」
+                的对角布局），而左上在整个页面里是**唯一**一个永远不会被这两条工具条占用的角。
+                ⚠️ 它是四件浮层里唯一"平时不存在"的一件，所以放哪个角都不挡画布。
+             ⚠️ 303 轮：它不再是绝对定位，而是 `.mm-tl` 里的第二个 flex 子项
+                （尺寸 / 字号 / 显隐 / 点击行为全没变，只把"在哪儿"交给了父盒子）。 -->
+          <view class="mm-zoom {{zoomShow ? 'on' : ''}}" bindtap="fitView" hover-class="mm-zoom-hv">{{zoomPct}}</view>
+        </view>
+
+        <!-- 卡内左下 · **节点操作浮条**（★ 第 81 轮 · 五颗键 · 三组 · ★ 第 253 轮搬到左下角）
+
+             ★★ 第 253 轮按《脑图工具栏位置方案》重排：**右上管脑图，左下改节点**。
+                这条与上面那条在画布**对角**呼应，功能 / 分组 / 置灰口径一个字没动：
+                  ① 落点 bottom 16 → **10**、通栏居中 → **贴左 12**（外层不再 left:0;right:0）；
+                  ② **外壳减重**：胶囊底 / 描边 / 大阴影全撤，底色收进 `.fb-tile`
+                     —— 与右上那条同一套，见 wxss `.mm-float` / `.fb-btn`。
+                ★★★ 第 254 轮：与右上那条一起**整体 ×1.5**（热区 44 → 66、视觉块 → 48、
+                   图标 → 36、间距 → 6、竖线 → 26）。
+                ★★★ 第 255 轮：一起**收到 ×1.25**（热区 56、视觉块 40、图标 30、间距 5、
+                   竖线 21），并且热区贴边收到 **0**（可见块离画布边 8，与右上那条同值）。
+                ★★★ 第 256 轮：热区贴边 **4** ⇒ 可见块离画布边 **12**（与右上、左上同值）。
+                ⚠️ 编辑面板（`.editing`）**必须把外壳穿回来**：textarea 要落在白卡上，
+                   否则一行深色字直接浮在画布上。这条写在 `.mm-float.editing` 里，别删。
+                ⚠️ 256 轮起编辑态**不显示这排键**（`wx:if="{{!editId}}"`，见 `.mf-row` 那段）。
+
+             用户口径（原文）：★ 第 81 轮「展开」与「收起」两颗**搬去上方胶囊**
+             （第 1 条），这里只剩五颗：
+                ★ 第 258 轮起（用户要求「中间两个移左、录音和修改移到中间」）：
+                   增加子节点 ｜ 增加同级节点  ‖  语音 ｜ 编辑  ‖  删除
+                即"加子与加同级靠左一组、语音与编辑居中一组、删除靠右"，组间仍用竖线隔开。
+                （81 轮那版是「语音｜编辑靠左、加子｜加同级随后」；两者只换位置，键数 / 分组数 / 竖线数全同。）
+
+             ⚠️ 亮 / 灰口径（用户："选中节点时才亮起"）：
+                · 五颗一起 —— `selNode` 为空才置灰（浮条本来就是"在改谁"的条，
+                  没有选中对象时它整条都没有意义）；
+                · 「增加同级节点」—— 选中**根**时置灰（根没有同级）；
+                · 「删除」—— 选中**根**时置灰（根不能删，删了整张图就没了）。
+             ⚠️ 第 81 轮第 3 条：**底色统一**。原来「增加子节点」挂着一层 `yellow`
+                （常态 `#FFF4C4`）做强调，用户口径「有个淡黄色很突兀，建议按钮统一一下，
+                删除使用现有的颜色没问题」⇒ 去掉那层黄，五颗一律 `--chip`；
+                只有「删除」保留它原有的紧急红浅底（用户点名保留）。
+                💡 去掉的只是**静态底色**：录音中的呼吸光圈（`.rec`）与编辑中的点亮
+                （`.on`）都是**瞬时状态**提示，继续留着。
+             ⚠️ 第 70 轮**撤掉**两颗「上移 / 下移」（原来这里是 `data-act="up"/"down"`）——
+                用户点名的七颗里没有它们；同级重排改由**拖拽**承担（第 68 轮那套精确插位）。
+             ⚠️ 「删除」是**两段式**：`delArmed` 为真时图标换成 `trash-red`（正红），
+                再点一次才真删。第一段**没有任何文字提示**，只有颜色变化 ——
+                这是"防误操作"的最小表达，不打断快速操作流。
+             ⚠️ 第 71 轮**撤掉**浮条最左侧那枚「选中节点气泡」（黄底胶囊，写 `selNode.text`）——
+                用户口径：「操作按钮栏在横版模式下左侧多了个节点气泡，这个要去掉，横版竖版要一致」。
+                ⇒ 顺带把紧跟它的那条 `fb-sep` 也删了（否则浮条会以一条孤零零的竖线开头）；
+                   "在改谁"改由画布上那颗节点的**选中态**（黑描边 ＋ 黄外发光）指认。
+             ★★ 第 112 轮：这条浮条**又多了一个身份** —— 它同时是「节点文本编辑面板」的
+                **容器**（用户第 2 条：编辑区要嵌入到底部工具栏里）。静止态它仍是那条
+                五颗键的胶囊（逐像素同款）；只要 `editId` 非空，它就地**向上长高**
+                （底沿不动），依次装下"键排 / textarea / 取消·保存"三行。
+                ⇒ 形态与判据全在下面 `.mf-edit` 那段注释里，这里只留一句话指路。 -->
+        <view class="mm-float-wrap" bindtouchstart="onUiTouch" bindtouchmove="onUiTouch">
+          <!-- ★★★ 第 241 轮：`catchtouchmove` → `bindtouchmove`。
+               这层是 textarea 的**直接父容器**，同层渲染下 `catch` 会连输入框自己的滚动
+               一起掐死（微信官方社区的结论，详见 `.mm-card` 那段注释）。
+               "在这层上按住拖动别让画布跟着平移"改由 `_uiHold` 闸门挡（gsMove 开头）。
+               ⚠️ 与下面那条 `bindwheel` 不是一回事：滚轮归 `bindwheel`，触摸滑动归这里，
+                  两条各管一段。 -->
+          <!-- ★★★ 第 243 轮：`catchwheel` → `bindwheel`。
+               第 219 轮这里挂 `catchwheel` 是为了"滚文本时别把画布也缩放了"，方向对，**手段错**：
+               `catch` ＝ `bind` ＋ 停止冒泡 ＋ **吃掉默认行为**，而同层渲染下"默认行为"里
+               就包含**原生 textarea 自己的滚动**（与第 241 轮 `catchtouchmove` 掐死输入框滚动
+               是同一条机制，只是那次掐的是手指、这次掐的是滚轮）。
+               ⇒ 症状：平板手指滑动能滚（走 touchmove，那条已改 `bind`），
+                  **PC 鼠标滚轮滚不动**（走 wheel，被这层 catch 吞了）—— 用户第 243 轮报的正是这个。
+               ⇒ 现在改成 `bindwheel`：默认行为放行（textarea 自己滚），
+                 "别缩放画布"改由 JS 的 `_wheelPanel` 标记挡（见 `onFloatWheel` / `onWheel`）。
+               ⚠️ 改成 `bind` 后 `onFloatWheel` **绝不能再手动转发**给 `onWheel`：
+                  `bind` 不拦冒泡，事件本来就会自己走到 `.mm-card` ⇒ 转发等于缩两次。
+                  （`catch` 时代必须转发，`bind` 时代必须不转发 —— 换绑定时这一对要一起改。） -->
+          <view class="mm-float {{editId ? 'editing' : ''}}" bindwheel="onFloatWheel">
+            <!-- 键排 ＝ 原来那五颗，位置与分组**一个字都没动**（★★ 第 112 轮）——
+                 只是外面多包了一层 `.mf-row`：编辑态时 `.mm-float` 由 `row` 变 `column`，
+                 这一排键就自然落在**展开后的工具栏顶部**（用户第 2 条原话），
+                 静止态它仍是 `.mm-float` 里唯一的 flex 项 ⇒ 形态不变。
+                 ⚠️ 253 轮起有个**必须同步**的量：`.mf-row` 的 `gap` 与静止态那条键排
+                    （`.mm-tools` / `.mm-float`）都是 **5** —— 面板展开就是把这一排原地往上抬，
+                    间距一不同，键就会"展开时忽然散开"。
+                 ★★★ 256 轮：**编辑态整排不渲染**（用户口径「当编辑弹窗打开时，弹窗顶部不显示按键，
+                    一是用户容易理解为还能点击，二是造成了编辑弹窗能显示文字的面积变小，
+                    所以干脆就不显示按键了，用户保存或者取消之后再显示按键」）。
+                    ⇒ `wx:if="{{!editId}}"`，不是 `display:none` —— 两种区别在这里是实质的：
+                       · `wx:if` 是**根本不进 DOM**：既没有"看着像能点"的歧义，也没有半透明的
+                         热区继续吃事件（`display:none` 那版连按下反馈都还在，只是看不见）；
+                       · 键排本身**无状态**（置灰 / 删除武装都从 data 来）⇒ 重挂回来是逐像素同款，
+                         不必为"记住上一次"额外存东西。
+                    ⚠️ 让出的高度（键排 56 ＋ 一段 gap 12 ＝ 68）**全部并进正文区**：
+                       `mod-mindmap.js` 的 `TA_MAX_H` 208 → 276，面板整高仍是 356。
+                       两处必须联动，否则面板会静默变矮一截（219/241 两条判据现读 wxss，会当场报红）。
+                    ⚠️ 别为了"省一次重排"改成 CSS 隐藏：这排键的全部意义是"此刻能点"，
+                       `wx:if` 才是那句话的字面表达。 -->
+            <view class="mf-row" wx:if="{{!editId}}">
+            <!-- ★★★ 第 303 轮：**三组再换位**（用户：「将『删除』按钮移到中间位置；将『编辑』与
+                 『语音编辑』调整到最右侧，其中『语音编辑』位于最右」）⇒ 现在从左到右是
+                   [加子 · 加同级]  ‖  [删除]  ‖  [编辑 · 语音]
+                 （★ 258 轮那版是 [加子 · 加同级] ‖ [语音 · 编辑] ‖ [删除]，本轮只挪键、
+                  键数 / 分组数 / 竖线数 / 置灰口径全没变。⚠️ 语音与编辑之间也调了序：
+                  用户点名「语音编辑位于最右」⇒ 编辑在左、语音在右。）
+                 ⚠️ **只动 DOM 顺序**：`.mm-float` / `.mf-row` 都是 `flex-direction: row`，
+                    没有 `order`、没有 `row-reverse`、没有 `nth-child` 定位 ⇒ 顺序完全由
+                    这里的书写次序决定。别为了"看起来对称"再往 wxss 里加 order（两处都能
+                    决定顺序，下次改必有一处漏改，且画面不报错）。
+                 ⚠️ 整条宽度 322 一个像素都没变（五颗键、两条竖线，只是换了排列）。
+                 ⚠️ 「删除」居中之后**两段式**不变：`delArmed` 为真时图标换 `trash-red`。 -->
+            <!-- 组①：增加子节点 ｜ 增加同级节点（点一下直接落「新增节点」，无弹窗、无吐司） -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{selNode ? '' : 'off'}}" data-act="child" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="add-child" size="30" /></view>
+            </view>
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{(!selNode || selNode.root) ? 'off' : ''}}" data-act="sibling" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="add-sibling" size="30" /></view>
+            </view>
+
+            <view class="fb-sep"></view>
+
+            <!-- 组②：删除（两段式 —— 第一段只把图标染成正红）—— ★ 303 轮起**居中** -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn del {{(!selNode || selNode.root) ? 'off' : ''}} {{delArmed ? 'arm' : ''}}"
+                  data-act="del" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="{{delArmed ? 'trash-red' : 'trash'}}" size="30" /></view>
+            </view>
+
+            <view class="fb-sep"></view>
+
+            <!-- 组③：编辑 ｜ 语音 —— ★ 303 轮起靠**最右**（语音在最右端） -->
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{selNode ? '' : 'off'}} {{(editId && editId === selNode.id) ? 'on' : ''}}"
+                  data-act="edit" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="edit" size="30" /></view>
+            </view>
+            <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" bindtouchstart="onBtnDown" bindtouchend="onBtnUp" bindtouchcancel="onBtnCancel" class="fb-btn {{selNode ? '' : 'off'}} {{voicePhase === 'rec' ? 'rec' : ''}}"
+                  data-act="voice" bindtap="onBtnTap">
+              <view class="fb-tile"><icon name="voice" size="30" /></view>
+            </view>
+            </view><!-- /mf-row -->
+
+            <!-- ================================================================
+                 编辑面板（★★★ 第 112 轮新建 · 用户换思路后的形态）
+
+                 用户口径（逐字，两条）：
+                   「1、当选中节点后点击"编辑"按钮后，选中的节点在原有边框变色的基础上
+                      增加闪烁效果（可以参照语音输入模式，只不过无需遮罩倒计时）；
+                    2、整个节点内容编辑区要嵌入到底部节点操作工具栏中，整个工具栏高度
+                      自适应加高，底部位置不变顶部向上平移，原有的工具栏按键在整个展开的
+                      工具栏顶部展示，中间为 textarea，底部有"取消""保存"按键。」
+
+                 落点（对应 wxss 的 `.mm-float.editing` / `.mf-ta` / `.mf-acts`）：
+                   · **按键排在最上面** —— 就是上面那个 `.mf-row`，一行没挪；
+                     ★★★ 256 轮**改口径**：编辑态这一排**不渲染**（用户口径见 `.mf-row` 那段），
+                        面板从"三行"变成"两行"：textarea ＋ 取消/保存；
+                   · **中间 textarea** —— 一个原生输入框，宽高由自己的 CSS 给死；
+                   · **最下面两颗键** —— 取消 / 保存（`.mf-act ghost` / `.mf-act primary`），
+                     文字前各带一枚小图标：`close`（**16** · opacity .65）／ **反白的**
+                     `w-check`（**16** —— 它是 `#FFFFFF` fill，只在深墨底上看得见）。
+                     ⚠️ 这套口径**不是本轮新立的**，照的是"其他按钮"。两条硬规则
+                        （并行会话 112 轮把全工程 39 个 btn 类按键量过一遍才显式写下来）：
+                          ① **黑底键必须用 `w-` 反白版**（`w-check`／`w-plus`／`w-copy`），
+                             白底键用深色版 —— 写错 ＝ 同色 ⇒ **看不见，且无任何报错**；
+                          ② 图标尺寸**按键高分档**，不按字号：
+                             **28 高 → 13/14**（`.sd-cancel`／`.cp-hbtn`）
+                             **36 高 → 15**（`.dw-foot-btn`／`.sd-submit`／`.sd-del`／`.ep-btn`）
+                             **44 高 → 16**（`.cp-btn` ×3）
+                             ＋ gap 同步分档：36 高族 **6**、28 高族 5。
+                        ★ `.mf-act` 是 **44 高** ⇒ 取 **16**。⚠️ 这里差点写错：一开始按
+                          "图标 ≈ 字号"取了 15（`.mf-act` 字号 15），而项目里的真规则是
+                          **按锁高**——`.cp-btn` 字号 14 却用 16。**横向对齐的是键高，不是字号。**
+
+                 ── 为什么这一换是"根治"而不是"绕开" ──────────────────────
+                 用户报的是"编辑态字体保证不了与非编辑态一致"。根子在**两套控件复刻
+                 同一段文字**：卡片那套是 `<text>`（我们完全控制），编辑那套是原生输入
+                 控件（字号/行高/最小高由原生层说了算，且**不参与祖先 transform**）。
+                 现在编辑区在**卡片外** ⇒ 内外本来就该是两种字号，"必须一致"这条约束
+                 **不复存在**；卡片自己只剩"闪"，文字仍由原来那套 `<text>` 渲染。
+                 ⇒ 82/87/88/89 四轮的坑（竖屏特异性打架、`<input>` 内置最小高 22.4px、
+                   点卡片 padding 带退出编辑、缩放不吃 transform）**整条不复现**。
+
+                 ── 面板的形态契约（判据钉的就是这几条）──────────────────
+                   · `.mm-float` 加 `editing` 类 ⇒ `flex-direction` 由 row 变 column、
+                     高度 `56px → auto`；外层 `.mm-float-wrap` 是 `bottom: 4px` 定底
+                     ⇒ **底不动、顶往上长**（用户原话"底部位置不变顶部向上平移"）。
+                   · 编辑态**只有两行**（★ 256 轮起键排不渲染）：textarea ＋ 取消/保存。
+                   · textarea 是**唯一的正文区**，高度**按文本折行数现算**（★★ 219 轮：
+                     开面板时算一次、每敲一下重算；下限 96 / 上限 **276**
+                     ⇒ 面板最高 356 ＝ 276 ＋ 44 ＋ 12 ＋ 24）。
+                     走 `editTaH` 的**行内 style**，`.mf-ta` 自己的 CSS `height: 96px` 只是
+                     首帧兜底（js 侧 `taHOf` 的注释里有整段理由：为什么这里破例算几何）。
+                     **不用 `auto-height`**：铁律 106 —— 它只认真机键盘实时输入，
+                     模拟器不长、程序回填更不认 ⇒ 高度会变成"看环境"。
+                   · 面板的出现条件 ＝ `editId` 非空，与卡片上那个 `edit` 类**同一个源**。
+
+                 ★★★ 第 241 轮 · **超出上限时的那条滚动条**（用户第 3 条）
+                   用户口径（逐字）：「输入框是可以根据文字长度进行自适应了，自适应有一个
+                     最大值也没问题，但是如果文字还是超出了高度，应该增加一个滚动条。」
+                   ⇒ 两件事，缺一不可：
+                     ① **能滚**：这是根因那条 —— textarea 上层的 `.mm-card` 与
+                        `.mm-float-wrap` 都挂着 `catchtouchmove`，同层渲染下会把输入框
+                        自己的滚动一起掐死 ⇒ 两处全部改 `bindtouchmove`（见各自标签上方注释）；
+                     ② **看得见**：滚动条样式写在 `.mf-ta::-webkit-scrollbar` 那三条里
+                        （WebView/PC 侧生效、且是**常显**的；手机端是原生控件，
+                         样式下不去，靠原生指示器，滚动时浮出）。
+                   ⚠️ 别指望给 textarea 挂 `auto-height` 来"绕开滚动条"：铁律 106，
+                      而且那样高度就没有上限了。
+
+                 ⚠️ 输入法：`focus="{{true}}"` 一渲染就拉起；`cursor-spacing` 与
+                    `show-confirm-bar` 与闪念胶囊的 `.ep-area` **同口径**（那里是
+                    09-30 真机验过的同一套配置）。
+                    **故意不写 `adjust-position`**（＝默认 true）：面板贴着屏幕底沿，
+                    关掉它键盘会直接把面板盖住。
+                 ⚠️ 两颗键用 `bindtap` 就够（不挂 `catchtap`）：面板在 `.mm-float-wrap`
+                    里，那层已经竖了 `_uiTouch` 标记把画布手势挡住，不需要再拦冒泡。
+                 ================================================================ -->
+            <block wx:if="{{editId}}">
+              <!-- ★★★ 275c · **外框是一层普通 view，textarea 只管字** —— 别再合成一个元素。
+                   （用户 2026-10-26 第二次报："textarea 和外框有错位，没有充满外框"。）
+
+                   ── 病根：原生 textarea **不认 `box-sizing: border-box`** ──────────
+                     `.mf-ta` 上写着 `padding: 9px 10px` ＋ `border: 1px` ＋ `box-sizing: border-box`
+                     且 `height` 走行内。在普通 view 上这套自洽；在**原生控件**上，
+                     `height` / `width` 只作用于**内容盒**，padding 与描边是**另外加的**
+                     ⇒ 实际渲染高 ＝ `editTaH ＋ 20`、宽 ＝ `100% ＋ 20`（向右溢出）。
+                     于是两件事同时发生：
+                       ① 视觉上的框比 flex 布局认定的 item 高**多出 20**，而下面的
+                          「挂图区 / 取消保存」是按布局位摆的 ⇒ 中间空出一条**看不见的带子**，
+                          读起来就是"框没充满、和上面那行字错位"（用户那张截图的 40 多 px 空白带）；
+                       ② 文本仍然从 padding 起排 ⇒ 字相对框顶上那 22 永远偏下一点。
+                     ⚠️ 这不是"缩放 s 没乘对"—— 275b 那条（字号 ×s）是**另一个**坑，两者叠加
+                        才让 275b 的修法看起来"没生效"。
+
+                   ── 修法：把**框**和**字**拆成两层 ─────────────────────────────────
+                     · `.mf-ta-box`（**普通 view**）：padding 9/10 ＋ 描边 ＋ 圆角 ＋ 底色，
+                       `box-sizing: border-box` 在这里**是认的** ⇒ 行内 `height` 就是眼睛看到的
+                       那个高，与 flex 布局**逐像素一致**；
+                     · `.mf-ta`（textarea）：`padding: 0` / `border: 0` / 背景透明，
+                       **盒模型两种算法在它身上等价**（没有 padding/border ⇒ content-box ＝
+                       border-box），高度用 `editTaBodyH ＝ editTaH − 20` 直接算成绝对值下发。
+                       ⚠️ 不用 `height: 100%`：百分比高度在原生控件上解析不稳（解析不了就退回
+                          默认 150），宁可在 js 里减一个常量 —— 那 20 就是 `TA_BOX_EXTRA`。
+                   ⚠️ 字号 `taFs` / 行高 `taLh` 还是 **15×s ／ 22×s**（275b）：原生控件不吃
+                      祖先 `.stage` 的 `transform: scale(s)`，而外面这层 view 吃。两层各修正各的，
+                      互不替代：s 管"字与框的大小",这里这层拆分管"框与布局的位置"。
+                   ⚠️ 别把 padding 搬回 textarea —— 那等于把 content-box 这条坑再挖一遍。
+
+                   ── 275d：**宽度也不许再由 textarea 自己算**（用户第三次报这个面板）────
+                     用户口径：「MatePad mini 时 textarea 能基本充满外框，iPad mini 就又出现
+                     textarea 右侧与外框有间隙」。同一份代码、同一个 `height`，只有**宽度**不满。
+                     `width: 100%` 是元素自己解析出来的；换成 `.mf-ta` 的
+                     `position: absolute ＋ left/right/top/bottom` 之后，宽高都由
+                     **外框（普通 view）的矩形减两个偏移**得出 —— 与外框同一个矩形源，
+                     不再有机会"少算一截"。误差以前全堆在右边（左侧留白是外框给的定值），
+                     现在左边右边都是外框给的，跑不掉。细节见 wxss 里 `.mf-ta` 那一段。
+
+                   ── 275e：**`left/right` 也不行，宽度只认行内 px**（用户第四次报，iPad mini）──
+                     275d 之后仍有 34 屏 px 的右边空白（＝ 3 个字），左侧内距却分毫不差 ——
+                     说明"左边对外框"没问题，是 **textarea 自己的框**比外框内容盒窄了 30 设计稿 px。
+                     病根是 275b／275d 两次都把宽度交给了"元素自己解析包含块"：
+                     `textarea` 是**替换元素**，`width: auto` 取的是**固有宽**（跟父容器无关），
+                     而 `left ＋ right` 同时在时它按"过度约束"处理、`right` 直接被丢掉 ⇒
+                     两条路殊途同归地停在同一个固有宽上（这也解释了为什么两次改法症状一模一样）。
+                     ⇒ 宽度**行内写死设计稿值** `editTaW`（396 / 手机 298），与 `editTaBodyH`
+                        同一次 setData 下发。`height` 从 275c 起就是这么干的，一直准；
+                        区别只在"高矮有 JS 算、宽窄以前指望 CSS"。
+
+                   ── 275f：**框宽对了，"右边空一截"还在**（用户第五次报）────────────
+                     逐像素量完两天的截图才看清：左边内距 9.7 设计 px（准），右边空 23
+                     ⇒ 差的不是框，是**行末余量**。字距实测 15.08 设计 px/字，
+                     `392 ÷ 15.08 ＝ 25.995` —— 差 0.08px 装不下第 26 个字，每行末尾
+                     就整整空掉一个字的宽度。⇒ 两手：正文区 392 → 396（外框左右内距 10 → 8）
+                     ＋ `text-align: justify`（满行拉齐，从此余数不影响观感）。
+                     机制与证据见 wxss 里 `.mf-ta` 那段 275f；**别再靠改宽度治这个症状**。 -->
+              <view class="mf-ta-box" style="height: {{editTaH}}px">
+                <!-- ★ 275g：iOS 还有一层**组件默认内边距**，`padding: 0` 不能可靠去掉；
+                     必须用 `disable-default-padding`。MatePad / PC 已正常，不再动宽度链；
+                     同一属性已在 form-drawer 的待办正文框使用。 -->
+                <textarea
+                  class="mf-ta"
+                  style="height: {{editTaBodyH}}px;font-size: {{taFs}}px;line-height: {{taLh}}px;width: {{editTaW}}px"
+                  value="{{editText}}"
+                  maxlength="{{-1}}"
+                  focus="{{true}}"
+                  cursor-spacing="32"
+                  show-confirm-bar="{{false}}"
+                  disable-default-padding="{{true}}"
+                  bindinput="onEditInput"
+                />
+              </view>
+              <!-- ★★ 275 轮：节点挂图 —— **textarea 下方**（用户 2026-10-26 拍板，与闪念胶囊
+                   编辑面板同一个顺序）。整块直接复用 `components/capsule-attach` ——
+                   三态（空 / 上传中 / 已挂）与两句提示文案**只有一份**，不在这里另写。
+
+                   ⚠️ **根节点没有这一块**（用户第 4 条：「选中原点时点击编辑，该弹窗维持
+                      当前状态不变，因为它没有挂载图片功能」）⇒ `wx:if` 的判据是
+                      `editImgOn`（＝ `!selNode.root`，开面板时算好）。
+                      用 `wx:if` 而不是 CSS 隐藏：这块里有一个**可点的大坑**，
+                      留着它就等于"看不见但能点"。
+                   ⚠️ 图片改动**不即时落库** —— 与文本一样，等「保存」才写回
+                      （`commitEdit()` 里比 `editImgUri` 与进面板时的值）。「取消」＝ 这一条
+                      一个字、一张图都没变。 -->
+              <view class="mf-attach" wx:if="{{editImgOn}}">
+                <capsule-attach
+                  url="{{editImgUrl}}"
+                  uploading="{{editImgUp}}"
+                  bind:pick="onEditAttachPick"
+                  bind:remove="onEditAttachRemove"
+                />
+              </view>
+              <view class="mf-acts">
+                <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" class="mf-act ghost" bindtap="onEditCancel">
+                  <icon name="close" size="16" opacity="0.65" />
+                  <text>取消</text>
+                </view>
+                <view hover-class="fb-hit" hover-start-time="0" hover-stay-time="120" class="mf-act primary" bindtap="onEditSave">
+                  <icon name="w-check" size="16" />
+                  <text>保存</text>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <!-- 拖动体 ＝ **节点本体**（★ 第 66 轮，取代原来那枚小胶囊）——
+             同款底色 / 字号 / 圆角 / 省略号，整块跟着手指走。
+             放在卡片 DOM 的**最末**：拖动时它就该压在所有东西之上（工具栏、底部浮条在内）。
+             ⚠️ 它挂在 `.mm-card` 的容器坐标，不是画布坐标 —— 见 JS 的 ghostBoxStyle。 -->
+        <view wx:if="{{dragGhost}}" class="mm-node mm-ghost {{dragGhost.cls}}" style="{{dragGhost.style}}">
+          <text
+            wx:for="{{dragGhost.lines}}"
+            wx:for-item="ln"
+            wx:for-index="li"
+            wx:key="i"
+            class="mm-node-t"
+          >{{ln.t}}</text>
+          <!-- ★★ 275 轮：拖动体也带图 —— 拎起来那一刻节点长什么样，跟着手指的那块就该长什么样
+               （载荷由 core 的 `ghostPayload()` 统一出，`beginDrag` / `updateDrag` 共用一处）。
+               ★ 275b：`imgW/imgH` 与节点层同源（同一份 `M`）—— 少了这两个，拖动体的图会退回
+                  96 高，一拎起来图就"跳一下"。 -->
+          <view class="mm-node-pic" wx:if="{{dragGhost.img}}" style="width:{{dragGhost.imgW}}px;height:{{dragGhost.imgH}}px">
+            <image class="mm-node-pic-img" src="{{dragGhost.img}}" mode="aspectFit"></image>
+          </view>
+        </view>
+
+        <!-- 拖拽标记 · **候选父节点**（★ 第 212 轮从 `.mm-viewport` 里搬出来）——
+             搬出来的唯一理由：viewport 上挂着 transform，自己是一个层叠上下文，
+             里面的 `z-index` 再大也压不过外面的 `.mm-ghost`（21）。
+             而"被拖节点比目标大时看不见目标变色"正是这轮要修的毛病 ⇒ 只能搬出来、与拖动体平级。
+             坐标因此从画布坐标改成**容器坐标**（JS 的 `boxStyleInCard`，按 tx/ty/sv 换算）。
+             ⚠️ 里面的 2px 黄边、圆角 8、`is-root` 双环、`is-cancel` 灰虚线全部原样保留；
+             ⚠️ 尺寸跟着 `sv` 缩（否则缩到 20% 时框会比节点本身大一圈），边框宽度恒定 2px
+                ——「高亮要看得见」优先于「边框也要等比」。 -->
+        <view wx:if="{{dragParent}}" class="mm-parent-box {{dragParent.isRoot ? 'is-root' : ''}} {{dragParent.under ? 'is-under' : ''}} {{dragParent.cancel ? 'is-cancel' : ''}}" style="{{dragParent.style}}"></view>
+
+        <!-- 拖拽标记 · **判定点**（★ 2026-10-09 新增 · ★ 第 211 轮改中心 · ★ 第 212 轮改左边缘）——
+             用户口径：「把移动节点的判定位置做一个高亮，这样用户能知道系统使用哪个位置
+             去寻找的父节点」。它就是 `anchorOf` 算出来的那个点。
+             ★ 第 212 轮起它是**被拖节点的左边缘垂直中点**：
+               · 圆心落在左边缘 ⇒ 半径只伸进节点 5.5px（内边距 11px）⇒ **一个字也不压**；
+               · 一半在节点外 ⇒ 拖到大节点上时它仍然露在外面，看得见它指着谁；
+               · 恒定左侧、不随父节点方向换边 ⇒ 同一棵树左右两半手感一致。
+             ⚠️ 它只负责"找父"，不负责"排第几"（排位看节点中心，见 JS `findDrop`）。
+             拖动全程跟着节点走、位置不变 —— 它一旦落进别的节点（或那一片孩子带），
+             那个节点就亮起 `.mm-parent-box` 黄框。
+             ⚠️ 与 `dragGhost` 一样挂在 `.mm-card` 的**容器坐标**（不是画布坐标），
+                位置由 `dotStyleOf` 下发；但**尺寸恒定**（不吃画布的缩放）——
+                它是指示器（读作光标），缩到 0.5 时若跟着缩就只剩 7px 看不清了。
+             ⚠️ 必须排在 `dragGhost` **之后**（＝画在它上面），否则会被节点本体压住。 -->
+        <view wx:if="{{dragDot}}" class="mm-anchor-dot" style="{{dragDot.style}}"></view>
+
+        <!-- 拖拽标记 · **落位标记**（★ 第 211 轮新增 · P0-3）——
+             一枚带序号的黄底小圆点，落在候选父节点的孩子序列里"松手后会插入的那一格"。
+             回答的是黄框回答不了的第二件事：**排第几**。
+             ⚠️ 它**不是**第 68 轮用户明确删掉的"同级插入竖线"：
+                竖线说"手指现在压在哪两个兄弟之间"（过程提示）；
+                这枚说"松手后**确定**排在第 k 位"（结果提示），与"黄框＝确定的父"同一层级。
+             ⚠️ 同样是**容器坐标 ＋ 恒定尺寸**（14px），缩到 20% 也看得见。
+             ⚠️ `same` 与取消态不下发（`slotPayload` 返回 null）——
+                "你要挪到你现在待的地方"没有信息量。 -->
+        <view wx:if="{{dragSlot}}" class="mm-slot-mark" style="{{dragSlot.style}}">{{dragSlot.n}}</view>
+      </view>
+      </view><!-- /sec.mm-sec（区块 · 脑图画布）-->
+      </block>
+
+      <!-- 空态：本模块还没有「上次打开的脑图」（FR-8.2）—— 抽屉会自动弹出
+           ★ 本轮：原来是独立一套 `.mm-empty`（实线框 / 17/600 / `.btn-dark`），
+           现并入三处共用骨架 `.blank`；`min-height:0` 已在全局 `.blank` 上留着
+           （它在 flex 列里，缺了会把画布顶开）。 -->
+      <view wx:else class="blank">
+        <view class="blank-ico"><icon name="mindmap" size="44" /></view>
+        <text class="blank-t">还没有打开过任何脑图</text>
+        <text class="blank-s">从列表里挑一张，或者新建一张空白的开始写</text>
+        <view class="blank-btn" bindtap="onTitleTap" hover-class="blank-btn-hv">
+          <icon name="w-list" size="15" />
+          <text>打开脑图列表</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 列表抽屉（FR-8.3）：三模块共用一套形态，没有搜索行、没有卡片内操作
+       ★ 本轮：脑图列表取消分组（项目信息融进卡片）＋ 右上「新建」换「筛选」＋ 筛选副弹窗 -->
+  <drawer
+    open="{{drawer.open}}"
+    kind="{{drawer.kind}}"
+    title="{{drawer.title}}"
+    action="{{drawer.action}}"
+    create-label="{{drawer.createLabel}}"
+    active-id="{{drawer.activeId}}"
+    filter-label="{{drawer.filterLabel}}"
+    filter-active="{{drawer.filterActive}}"
+    tf="{{drawer.tf}}"
+    filter-open="{{drawerFilterOpen}}"
+    empty="{{drawer.empty}}"
+    groups="{{drawer.groups}}"
+    page-size="{{drawer.pageSize}}"
+    port="{{!landscape}}"
+    turned="{{drawerTurned}}"
+    bind:close="onDrawerClose"
+    bind:pick="onDrawerPick"
+    bind:create="onDrawerCreate"
+    bind:openfilter="onDrawerOpenFilter"
+    bind:closefilter="onDrawerCloseFilter"
+    bind:filterchange="onDrawerFilterChange"
+    bind:filterreset="onDrawerFilterReset"
+  />
+
+  <!-- 表单抽屉：新建脑图 / 编辑脑图信息（名称 · 所属项目 · 格式）（与待办、项目共用一套壳）
+       ★ 57 轮：补 `id="mindmap-form"` —— 与 `#todo-form` / `#project-form` 对齐。
+          出图核验要用 `selectComponent('#mindmap-form')` 拿到这个组件实例
+          （页面级选择器够不着组件内部的绝对层，只能先拿模块宿主再往下选一层）。
+       ★ 71 轮：补 `edit-id` / `danger-label` / `bind:delete` 三件 ——
+          「删除这张脑图」原来是顶部「⋯（更多）」里的一项，71 轮那颗键取消后搬到这里。
+          复用 form-drawer **已有**的 `.sd-del` 危险位与 `delete` 事件
+          （项目「归档项目」、agent / token「删除」都是同一颗），不新增一套机制。
+          ⚠️ `edit-id` 必须传：组件就是靠它判断"编辑态才有危险键"（新建脑图时不出现）。 -->
+  <form-drawer
+    id="mindmap-form"
+    open="{{form.open}}"
+    mode="{{form.mode}}"
+    offset="{{form.offset}}"
+    edit-id="{{form.id}}"
+    title="{{form.title}}"
+    submit-label="{{form.submitLabel}}"
+    require-all="{{form.requireAll}}"
+    no-danger="{{form.noDanger}}"
+    danger-label="删除这张脑图"
+    hint="{{form.hint}}"
+    values="{{form.values}}"
+    urgencies="{{form.urgencies}}"
+    projects="{{form.projects}}"
+    mindmaps="{{form.mindmaps}}"
+    formats="{{form.formats}}"
+    nodes="{{form.nodes}}"
+    agents="{{form.agents}}"
+    colors="{{form.colors}}"
+    port="{{!landscape}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:delete="onFormDelete"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+  />
+
+  <!-- ⚠️ 第 81 轮**删除** `<format-drawer id="fmt-drawer" …>`：用户口径
+       「原有的'格式'及其抽屉取消，编辑中本身就有格式调整功能」。
+       ⇒ 格式（六种结构样式）仍在，入口收进上面那张**编辑抽屉**里的「格式」一行
+          （`form-drawer` 的 formats 选择器，提交时随名称 / 所属项目一起写回）。
+       ⇒ 连带撤掉的东西（都已处理，没有半截状态）：
+          · 顶部「格式」那颗键（`.mm-tools` 里已换成「展开 / 收起」两颗）；
+          · 组件 `data.fmt`（格式弹窗的 open / current）；
+          · `onFormat` / `onFormatClose` 两个只管弹窗开合的方法；
+          · `mod-mindmap.json` 里的 `format-drawer` 注册；
+          · `components/format-drawer/` 整个组件目录（**移入归档**，不是清空）。
+       ⚠️ 保留 `onFormatPick`（改名 `setFormat`）作为**编程入口** —— 核验脚本
+          （`工具/shoot_mindmap.py` 的 `FN_SET`、`工具/shoot_fishbone.py`）
+          靠它把六种格式逐个切过去，否则六格式的排版 / 连线断言全部没法跑。
+-->
+<!-- /mod-mindmap -->

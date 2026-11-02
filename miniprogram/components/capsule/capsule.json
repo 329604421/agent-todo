@@ -1,0 +1,11 @@
+{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "brand-head": "/components/brand-head/brand-head",
+    "icon": "/components/icon/icon",
+    "drawer": "/components/drawer/drawer",
+    "form-drawer": "/components/form-drawer/form-drawer",
+    "capsule-attach": "/components/capsule-attach/capsule-attach"
+  }
+}

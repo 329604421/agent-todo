@@ -1,0 +1,163 @@
+/* ==========================================================================
+   ★★ 263 轮（清单 F3/H2/H3）· 挂图区 —— 创建面板与编辑面板**共用**
+   几何照原型 `.attach` / `.at-slot` / `.at-tile` / `.at-thumb` / `.at-meta`（400 基准，逐值同源）。
+   ⚠️ 这里**只出现令牌，不出现颜色字面量** —— 浅 / 深两套自动跟着走。
+      （两处 `rgba(20,21,26,…)` 是**遮罩**，不是"面"：它压在图上面，
+      浅色深色下都该是"图上盖一层暗"，跟着主题变反而会亮成一块糊 ——
+      与待办详情 `.img-del` / 胶囊卡 `.cap-del` 同一处理。）
+   ⚠️ 尺寸用 **px**（设计 px，400 基准）：本组件住在 `capsule` 里面，
+     而 `capsule` 整体在 `.stage` 的 `transform: scale(s)` 之内 ⇒ 这里的 px 已经是设计 px，
+     再乘 s 就是缩两次。
+   ========================================================================== */
+
+/* 一行：坑（定宽）＋ 提示（吃剩余宽度） */
+.at {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* ⚠️ `0 0 auto`：坑的宽由自己决定，不许被提示挤小。
+   （只有 1 张图，所以这个"槽"里最多一个子节点；留着是因为换图那一瞬间
+     可能两个节点同时在 —— 上传中那个是替换，不是新增，`gap` 也就不会被看到。） */
+.at-slot {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* ---------- ① 空态：虚线坑 ---------- */
+.at-tile {
+  width: 96px;
+  height: 72px;
+  border-radius: 12px;
+  border: 1px dashed var(--hairline-strong);
+  background: var(--chip);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  /* ★ 11px 仍然是要读的字（"加截图"三个字是这一块的**唯一说明**，图标说明不了它）
+     ⇒ 走可读档 `--text-2`，不用装饰档 `--stone`（2.37:1 那种对比度读不清） */
+  color: var(--text-2);
+  font-size: 11px;
+  transition: background 0.14s ease;
+}
+.at-tile-hv { background: var(--hairline-soft); }
+
+/* ---------- ②③ 有图：缩略图 ---------- */
+.at-thumb {
+  position: relative;
+  width: 96px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  flex: 0 0 auto;
+}
+.at-thumb-hv { opacity: 0.86; }
+.at-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `aspectFill` 由 `<image>` 的 mode 给，这里再写一份是给"mode 未生效"的老基础库兜底
+     （object-fit 与 aspectFill 同义；两者都失效时至少是等比铺满而不是拉变形） */
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* 上传中：霜白层盖满 ＋ 转圈 ＋ 三个字 */
+.at-wait {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--frost-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-2);
+}
+.at-spin {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--yellow-deep);
+  animation: atSpin 0.68s linear infinite;
+}
+@keyframes atSpin { to { transform: rotate(360deg); } }
+
+/* 右下「更换」条 —— 让"可以换"这件事看得见（只靠"点图"没人猜得到） */
+.at-swap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 19px;
+  background: rgba(20, 21, 26, 0.5);
+  color: #fff;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.4px;
+}
+
+/* 右上 ✕ —— 深色实心圆 ＋ 反白叉（与 `.img-del` / `.cap-del` 同一观感） */
+.at-del {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(20, 21, 26, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.at-del-hv { background: rgba(20, 21, 26, 0.82); }
+/* ★★ 2026-10-27（全量检查 F19）· **20×20 的可见块补出 36×36 的命中区**，外观一个像素不动。
+   ── 病根：它是"删掉这张图"的独立热区（`catchtap`），可见直径只有 20；平板/小屏缩放后
+      （×0.73 ≈ 14.6）基本点不中，而点偏一点就落到挂图区的 `bindtap`（重新选图）上。
+   ── 做法：`::after` 铺一层透明 36×36（20 ＋ 上下左右各 8）。它属于这颗粒子自己，
+      所以这圈里命中的是"删除"，不会漏给底下的选图区。
+   ⚠️ 不取 44：这个块贴在缩略图右上角（right/top 各 4），再大就会越出图块边界、
+      压到相邻那张缩略图 —— 那会让"删这张"变成"删掉旁边那张"。
+   ⚠️ 不用 `::before + z-index:-1`（本工程踩过：会被父级背景盖住，见 `.tc-st`）。 */
+.at-del { position: absolute; }
+.at-del::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+}
+
+/* ---------- 右边那句提示 ---------- */
+/* ⚠️⚠️ `flex: 1 1 auto` ＋ `min-width: 0` 且**不设 max-width** ——
+   这是"折行有问题"那条的修法本身，见 wxml 顶部那段。少了 `min-width:0`，
+   flex 项的自动最小尺寸会把内容顶出去（症状是提示被压成三行、坑被挤小）。 */
+.at-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 1.62;
+  color: var(--text-2);
+}
+/* 数字＋量词不许被拆开（`1 张` 中间那个空格是**合法断行点**，见 wxml 的注释） */
+.at-num {
+  color: var(--slate-strong);
+  font-weight: 600;
+  white-space: nowrap;
+}

@@ -1,0 +1,484 @@
+<!-- 列表类**主弹窗**（宽 320 · 可独立弹出 · 三模块共用一套壳）
+     ★ 第四十七轮 · 弹窗体系的两层说法：
+         主弹窗 ＝ 宽 320、可独立弹出（本文件 ＋ 表单抽屉）；
+                  两个主弹窗同屏并排时，**左侧那个偏转**（turned）
+         副弹窗 ＝ 宽 260、开在父主弹窗右侧的联动层（本文件末尾的「筛选」）；
+                  **不独立弹出、也不让父层偏转**
+     ★ 第四十七轮（待办列表专项）：
+         ① 标题带：左「待办-N」（N ＝ 当前列表条数）｜ 右「筛选」按钮（已生效时带条数并转深色）
+         ② 新增筛选副弹窗：搜索 / 待办状态 / 所属项目 / 更新时间 —— 即时联动左侧列表
+         ③ 列表卡状态改**图标**（未完成＝空心圆 ／ 已完成＝圆圈含勾）；选中卡阴影调淡
+         ④ 列表区与标题带之间加一道间隔
+     ★ 第五十六轮（项目列表专项）：
+         ① 项目标题改「项目-N」，右侧「新建」换「筛选」——三张列表现在都是「标题 ＋ 筛选」
+         ② 项目卡顶部那行「活跃 / 已归档」胶囊**撤掉**（用户口径），能力搬进筛选副弹窗
+         ③ 副弹窗改成**数据驱动**（`tf.groups`）—— 两个 kind 共用同一份模板，
+            不再是谁有筛选就手抄一份 wxml（手抄的那份迟早漏一项） -->
+<view class="dw-mask {{port ? 'port' : ''}}" wx:if="{{open}}" bindtap="onClose"></view>
+
+<view class="dw {{port ? 'port' : ''}} {{turned ? 'turned' : ''}} {{offset ? 'o1' : ''}}" wx:if="{{open}}">
+  <view class="dw-head">
+    <text class="dw-title">{{title}}</text>
+    <view class="dw-head-r">
+      <!-- ★ 44 轮：待办抽屉不给创建入口（action 传空串即整颗不渲染）
+           ★ 48 轮：由裸灰字改成与「筛选」同一颗**抽屉按钮**胶囊 ⇒ 用 view 承载
+           ⚠️ 这颗是**白底**的（`.dw-head-act`）—— 图标必须用**黑**的 `plus`，
+              用 `w-plus`（反白版）就等于白底上画白图（本轮第一版正是这么写错的，
+              被 `工具/check_round94.py` 的 D1 反向判据逮住）。 -->
+      <view class="dw-head-act" wx:if="{{action}}" catchtap="onCreate" hover-class="dw-head-act-hv">
+        <icon name="plus" size="14" />
+        <text>{{action}}</text>
+      </view>
+      <!-- ★ 47 轮：筛选入口。开了筛选就带条数并转深色 —— 一眼看出"这张列表被筛过" -->
+      <view
+        class="dw-fbtn {{filterActive ? 'on' : ''}}" hover-class="dw-fbtn-hv"
+        wx:if="{{filterLabel}}"
+        catchtap="onOpenFilter"
+      >
+        <icon name="search" size="14" opacity="0.65" />
+        <text>{{filterLabel}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- enhanced ＋ show-scrollbar=false：去掉右侧那条灰色滚动条（★ 45 轮 · 用户口径）
+       与概览页的横向 stats-row 用法一致。
+       ★ 195 轮修订：`bindscrolltolower` ＋ `bindscroll` 一对 —— 列表**滚到底接着铺**
+       （用户口径 2026-10-15：「点击文字或者**再上滑列表**就可以触发加载」）。
+       ⚠️ 两个都挂、缺一不可：`bindscroll` 是"用户真的滚过"那一枚证据，
+          `scrolltolower` 没它就等于"首屏也自动铺"（见 drawer.js 的 `_armed`）。 -->
+  <scroll-view class="dw-list" scroll-y enhanced show-scrollbar="{{false}}"
+    bindscroll="onListScroll" bindscrolltolower="onScrollLower" lower-threshold="40">
+    <!-- ⚠️ 空态判的是 `groups`（**全量**）不是 `view`（被分页截过的那份）——
+         两者长度其实一样，但 `view` 是组件里派生出来的、晚一帧；用 `groups` 就不会
+         出现"新列表还没派生出 view，屏幕先闪一下空态"。 -->
+    <view class="dw-empty" wx:if="{{!groups.length}}">{{empty}}</view>
+
+    <!-- ★★ 195 轮：循环改认 `view`（分页派生的可见列表）—— `pageSize === 0` 的
+         四张列表里 `view ≡ groups`，与原来完全等价。 -->
+    <view wx:for="{{view}}" wx:key="key" wx:for-item="g">
+      <view class="dw-group" wx:if="{{g.label}}">
+        <view class="dw-group-dot" wx:if="{{g.dot}}" style="background:{{g.dot}}"></view>
+        <text class="dw-group-t">{{g.label}}</text>
+        <text class="dw-group-arch" wx:if="{{g.archived}}">已归档</text>
+      </view>
+
+      <!-- ★ 195 轮：`!g.cut` —— 被**分页**截空的组不说这句（它是"还没铺到"，
+           不是"这个分组没有内容"）。见 drawer.js `rebuildView()`。 -->
+      <view class="dw-empty-i" wx:if="{{!g.items.length && !g.cut}}">这个分组下暂时是空的</view>
+
+      <view wx:for="{{g.items}}" wx:key="id" wx:for-item="it">
+        <!-- A · 项目列表主弹窗 -->
+        <view
+          wx:if="{{kind === 'project'}}"
+          class="dw-card pj {{it.id === activeId ? 'on' : ''}} {{it.archived ? 'arch' : ''}}"
+          data-id="{{it.id}}"
+          bindtap="onPick"
+        >
+          <view class="dw-pj-head">
+            <view class="dw-pdot" style="background:{{it.color}}"></view>
+            <text class="dw-pj-name">{{it.name}}</text>
+            <text class="dw-badge arch" wx:if="{{it.archived}}">已归档</text>
+            <text class="dw-badge node" wx:else>{{it.node}}</text>
+          </view>
+          <!-- 底行（脑图数 · agent · 暂无待办）—— ★ 203 轮：与概览卡同序，排在四档条**之前** -->
+          <view class="dw-pj-foot">
+            <text class="dw-pj-meta">{{it.mindmaps}} 张脑图</text>
+            <text class="dw-pj-sep" wx:if="{{it.agentName}}">·</text>
+            <text class="dw-pj-meta" wx:if="{{it.agentName}}">{{it.agentName}}</text>
+            <text class="dw-pj-sep" wx:if="{{!it.total}}">·</text>
+            <text class="dw-pj-meta" wx:if="{{!it.total}}">暂无待办</text>
+          </view>
+
+          <!-- 四档条数 —— ★★ 203 轮：与概览页「项目待办统计」的 `.ps-stat` **同形**
+               （用户口径「项目列表抽屉也有项目卡片，统一都换成这种卡片样式」）。
+               ① 结构：每档拆成「档名 ＋ 数字」两个节点 —— 档名 9.5px `--stone` 在上、
+                  数字 17px/700 档色在下；四格 `flex: 1 1 0` 等宽 ＋ 格内居中
+                  ⇒ 四个数字落在同一条竖线上，跨卡看的是同一列；
+               ② 顺序：从"卡头 → 四档条 → 底行"改成"卡头 → 底行 → 四档条"，
+                  与概览卡一致（那边第六十一轮起四档条就压在最底下）；
+               ③ 零档（`n === 0`）整格压 `--muted` ＋ 数字降一档字重 ⇒ 全零卡自动沉底。
+               ⚠️ 档名与键名由 `it.statChips` 下发（`store.urgencyList()`，一份真源）——
+                  **不许在模板里手抄四个中文名**（156 轮口径）。
+               ⚠️ 这一条**不在卡底**（抽屉的卡是自然高度、不是等高网格，没有 `margin-top:auto`），
+                  但整个组件用的是与概览**逐值相同**的几何 —— 判据 C7 逐条钉住这一点。 -->
+          <view class="dw-pj-stat">
+            <view
+              class="dw-stat {{c.key}}{{c.n ? '' : ' z'}}"
+              wx:for="{{it.statChips}}"
+              wx:key="key"
+              wx:for-item="c"
+            >
+              <text class="dw-stat-t">{{c.name}}</text>
+              <text class="dw-stat-n num">{{c.n}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- B · 待办列表主弹窗
+             ★ 44 轮：一条流水（按更新时间倒序）· 状态图标在卡上 · 卡有阴影
+             ★ 45 轮：卡片改成三段 —— 正文 ／ 标签行（归属项目 ＋ 关联脑图，各截 7 字）
+                       ／ 底行（创建9-21 · 未完成 · 更新9-22）
+             ★ 46 轮：底行只留 **更新于 2026-09-22 17:30**（左）＋ 完成状态（右）
+             ★ 47 轮：右侧的完成状态从"文字徽章"换成**图标** ——
+                       未完成 ＝ 空心圆；已完成 ＝ 圆圈里含对勾。
+             ★★ 160 轮：「已删除」那一档（`it.deleted`）—— 卡片换一枚徽章 ＋ 正文压灰，
+                       右端那颗完成状态图标**不渲染**。
+             ★★ 199 轮：`fresh` —— **刚从胶囊转过来**的那条，整卡铺一层紫色填充
+                       （`.dw-card.fresh`），直到用户打开它的详情。
+                       ⚠️ 与 `on`（当前选中）**不是一回事**：同屏可以同时出现
+                          "一张选中的黄卡"和"一张新到的紫卡"，两个类各管各的底色。
+                       ⚠️ 正常路径下同一条不会既 `on` 又 `fresh` ——
+                          打开详情的那一刻 `markTodoSeen()` 已经把它清掉了。 -->
+        <view
+          wx:if="{{kind === 'todo'}}"
+          class="dw-card td {{it.id === activeId ? 'on' : ''}} {{it.done ? 'done' : ''}} {{it.deleted ? 'del' : ''}} {{it.fresh ? 'fresh' : ''}}"
+          data-id="{{it.id}}"
+          bindtap="onPick"
+        >
+          <view class="dw-td-row">
+            <view class="dw-td-bar" style="background:{{it.bar}}"></view>
+            <text class="dw-td-text">{{it.text}}</text>
+          </view>
+
+          <view class="dw-td-tags" wx:if="{{it.projectName || it.mindmapName || it.imgCount}}">
+            <view class="dw-td-chip" wx:if="{{it.projectName}}">
+              <view class="dw-td-dot" style="background:{{it.projectColor}}"></view>
+              <text class="dw-td-chip-t">{{it.projectName}}</text>
+              <text class="dw-td-arch" wx:if="{{it.projectArchived}}">已归档</text>
+            </view>
+            <view class="dw-td-chip map" wx:if="{{it.mindmapName}}">
+              <icon name="mindmap" size="12" />
+              <text class="dw-td-chip-t">{{it.mindmapName}}</text>
+            </view>
+            <!-- ★ 54 轮：图片数 —— 项目页的 `<todo-card>` 与详情页都早有这一颗，
+                 只有抽屉这张手写卡漏了；三处口径统一为「N 张图」。 -->
+            <view class="dw-td-chip img" wx:if="{{it.imgCount}}">
+              <icon name="album" size="12" />
+              <text class="dw-td-chip-t">{{it.imgCount}} 张图</text>
+            </view>
+          </view>
+
+          <!-- ★ 46 轮：底行左侧只留**更新时间**（创建时间去掉 —— 一条流水按更新时间倒序，
+               卡上再报创建时间是第二套时间轴，读卡的人只想知道"这条多久没动了"）。
+               ★ 47 轮：右侧改图标（空心圆 ／ 圆圈含勾）。
+               ★★ 160 轮：已删除的那条改挂「已删除」徽章 —— **完成状态图标整颗撤掉**。
+               理由：它这一档的三种情形（未完成 / 已完成后被删 / 已删除）在数据层里
+               仍然是分开的（软删不碰 status），但界面上"删过了"才是用户此刻要知道的事；
+               三颗不同的小图标并排出现，读起来只会是"这张卡到底是哪个状态"。
+               ⚠️ 徽章**必须在这一档出现、而不是只在标题上**：抽屉的标题栏无论哪一档
+                  都报「待办-N」（N ＝ 当前列表条数，与「项目-N」同一口径，它从不报
+                  筛了什么），所以"这一档是已删除"只能由卡片自己说。
+               ⚠️ 三支同属一条 `wx:if/wx:elif/wx:else` 链（不是并列两个 `wx:if`）——
+                  并列的话"已完成 ＋ 已删除"会同时渲染出来。 -->
+          <view class="dw-td-foot">
+            <text class="dw-td-meta">更新于 {{it.updated}}</text>
+            <view class="badge badge-del dw-td-del" wx:if="{{it.deleted}}">已删除</view>
+            <view class="dw-st on" wx:elif="{{it.done}}">
+              <text class="dw-st-ck">✓</text>
+            </view>
+            <view class="dw-st" wx:else></view>
+          </view>
+        </view>
+
+        <!-- ★★ 280 轮 · **语义转脑图**（lead 卡，只有闪念胶囊的「选择脑图」里有）
+             ── 为什么不复用下面那张脑图卡：两者的字段**没有一处重叠** ——
+                脑图卡是"项目 ＋ 格式 ＋ 节点数"，这张是"标题 ＋ 一句说明"，
+                硬塞进同一个模板只会让那个模板变成一堆 `wx:if`。
+             ── 为什么 `data-id` 用的是假 id（`__ai`）：`drawer.onPick` 只认 `data-id`，
+                选中态由 `pickedId` 比较得出。胶囊那边拿 `AI_PICK_ID` 判"选的是不是它"，
+                抽屉组件不需要知道"这张卡不是脑图"。
+             ── ⚠️ 与下面那张卡是**两条独立的 `wx:if`**（不是 if/elif）：
+                279 轮刚在 `form-drawer` 上踩过"`wx:else` 只认紧挨着的前一颗 `wx:if`"
+                —— 中间插任何元素都会静默改判。两条独立条件互斥，谁也影响不到谁。 -->
+        <view
+          wx:if="{{kind === 'mindmap' && it.lead}}"
+          class="dw-card mm lead {{it.id === pickedId ? 'pick' : ''}}"
+          data-id="{{it.id}}"
+          bindtap="onPick"
+        >
+          <view class="dw-mm-lead-head">
+            <view class="dw-mm-lead-ic"><icon name="robot" size="15" /></view>
+            <text class="dw-mm-name">{{it.name}}</text>
+          </view>
+          <text class="dw-mm-lead-desc">{{it.desc}}</text>
+        </view>
+
+        <!-- C · 脑图列表主弹窗（★ 本轮改版）
+             卡片从"两行纯文字"改成**三段式**，与待办卡同构：
+               ① 脑图名 ／ ② 标签行（所属项目 ＋ 格式）／ ③ 底行（节点·层数 ／ 更新时间）
+             项目信息**从组头搬进卡片** —— 列表拍平成一条按更新时间倒序的流水之后，
+             组头没有了，卡片上的项目名就是"它属于谁"的唯一线索。
+             格式那一颗带 48×34 缩略图（与「格式」主弹窗、表单里的格式字段同一份图源）。
+             ★★ 280 轮（用户 2026-10-27）：**生成中 / 生成失败 / 未完善**的卡在这张列表里
+                 **不可选中**（`it.lock`）—— 卡照旧画出来，只是压一档亮度 ＋ 点它弹一句原因。
+                 判据与话术都在装配层（`drawers.buildMindmapPick`，**只有「转脑图」那条路带锁**），
+                 模板只管把 `data-lock` 带出去。 -->
+        <view
+          wx:if="{{kind === 'mindmap' && !it.lead}}"
+          class="dw-card mm {{it.id === activeId ? 'on' : ''}} {{it.id === pickedId ? 'pick' : ''}} {{it.fresh ? 'fresh' : ''}} {{it.lock ? 'lock' : ''}}"
+          data-id="{{it.id}}"
+          data-lock="{{it.lock}}"
+          data-lock-tip="{{it.lockTip}}"
+          bindtap="onPick"
+        >
+          <text class="dw-mm-name">{{it.name}}</text>
+
+          <view class="dw-mm-tags">
+            <!-- ★ 本轮（闪念胶囊「转到脑图」）：两枚标志 ——
+                 「当前」＝ 脑图模块此刻正开着的那张（由 `store.mindmapCardView` 的 `current` 给，
+                 判据同 FR-8.4 的记忆）⇒ `.dw-card.on`（浅黄底 ＋ 黄边）。
+             ★ 审查-02 P1-5（2026-10-14）：被点中的那张**不能再用同一个 `.on`** ——
+                 两者含义不同（"我在哪" vs "这一轮选了谁"），却映射到同一个类 ⇒
+                 选的不是当前图时屏上两张黄卡分不出主次，选当前图时两个标记还叠在一张上。
+                 ⇒ 换成 `.pick`，一眼可辨。
+                 ★★ 200 轮（2026-10-15）：`.pick` 的描边从**主墨**换成**品牌黄**
+                     （用户报"这个黑边样式不对"）—— 深浅两态都跟着修，见 wxss。 -->
+            <view class="dw-td-chip cur" wx:if="{{it.current}}">
+              <text class="dw-td-chip-t">当前</text>
+            </view>
+            <view class="dw-td-chip">
+              <view class="dw-td-dot" style="background:{{it.projectColor}}"></view>
+              <text class="dw-td-chip-t">{{it.projectName}}</text>
+              <text class="dw-td-arch" wx:if="{{it.projectArchived}}">已归档</text>
+            </view>
+            <!-- ★★ 280 轮：格式可能是「未设置」（语义转脑图的占位/未完善态）。
+                 `wx:if` 包住缩略图：`src=""` 在 `<image>` 上会画出一个小空框，
+                 比不画更难看。文字压一档灰（`.dim`），读起来是"还没选"而不是"没有这一项"。 -->
+            <view class="dw-td-chip fmt {{it.hasFormat ? '' : 'dim'}}">
+              <image class="dw-mm-thumb" wx:if="{{it.formatThumb}}" src="{{it.formatThumb}}" mode="aspectFit" />
+              <text class="dw-td-chip-t">{{it.format}}</text>
+            </view>
+            <!-- ★★ 280 轮（用户 2026-10-27）· **不可选中**的那一档在这里说一句
+                 （`lockTag` 只对「未完善」有值 —— 生成中 / 生成失败底行已经报了，
+                 再补一枚就是同一句话说两遍。判据与取值见 `drawers.packMindmapItem`）。
+                 ⚠️ 这一颗**不能替代**点击拦截：锁的是 `onPick`（`data-lock`），
+                    模板里多一个 chip 只是让它"看得出"，不是让它"点不动"。 -->
+            <view class="dw-td-chip lock" wx:if="{{it.lockTag}}">
+              <text class="dw-td-chip-t">{{it.lockTag}}</text>
+            </view>
+          </view>
+
+          <view class="dw-mm-foot">
+            <!-- ★★ 280 轮：占位/失败的卡**不报节点数** —— 那棵树只有一个原点，
+                 写「1 节点 · 1 层」是**真数据但假信息**（用户会以为模型乱生成）。
+                 三条同属 if/elif/else 一条链（不是并列 if），否则会同时渲染两行。 -->
+            <text class="dw-mm-meta" wx:if="{{it.aiPending}}">生成中，稍后查看</text>
+            <text class="dw-mm-meta" wx:elif="{{it.aiFailed}}">生成失败</text>
+            <text class="dw-mm-meta" wx:else>{{it.nodes}} 节点 · {{it.depth}} 层</text>
+            <text class="dw-mm-meta">更新于 {{it.updated}}</text>
+          </view>
+        </view>
+
+        <!-- D · ★★ 248 轮：闪念胶囊的**选择卡**（待办详情页「+选择胶囊」开的那张主弹窗）
+             用户口径：「卡片显示当前胶囊列表卡片，可多选卡片」。
+
+             · 卡面与待办卡同构（正文 ＋ 底行时间），但**没有任何可点的子操作** ——
+               这一层只做"挑几条"。编辑 / 删除仍然只在闪念胶囊里做：用户第 6 条说明
+               默认流程是"先在闪念胶囊里完成编辑（文本校正），再回到待办关联"，
+               在这里再开一个编辑口子会把那条流程拆成两条。
+             · 选中态走 `.pick`（品牌黄描边 ＋ 淡黄底）—— 与脑图 picker 的"本轮选中"
+               是同一套语言。**不用 `.on`**：那是"当前正开着的那一条"，胶囊没有这个概念。
+             · 整卡只有一个动作（选中 / 取消选中）⇒ 一条 `bindtap` 就够，没有 `catchtap`
+               要挡的目标（对比待办卡里那颗「⋯」、图片格上那颗「✕」）。
+             · 没文字的空壳胶囊（识别还没回来）也给一句占位，否则那张卡是纯白的，
+               点上去像"点到了空白"。
+
+             ★★ 277 轮（用户口径 2026-10-27 第 2 条）：「打开的胶囊列表抽屉中要能显示
+             胶囊挂载的图片（胶囊的显示样式也要和胶囊列表保持一致，别忘了文字前的黄竖线标志）」。
+             ⇒ 这一版把卡面**对齐 `components/capsule` 的 `.cp-bub`**，四处逐值同源
+               （都在 `drawer.wxss` 的 `.dw-card.cap` 那段写了算式，改一处要回头看另一处）：
+                 · 左内边距 19（给引线让位，与 `.cp-bub` 的 `padding 11 13 11 19` 同）；
+                 · 正文左端那条 **3×18 品牌黄引线**（`.dw-card.cap::before`，
+                   位置 `left:6 / top:12` 与 `.cp-bub::before` 同值）；
+                 · 正文 14px / 1.5（原来是 13 —— 抽屉与胶囊列表本来就是同一个 320 宽容器，
+                   字号不同会在"同一条胶囊"上看出两副字）；
+                 · 图在**正文之下、时间之上**、圆角 9、148 高、`aspectFill`。
+             ⚠️ 图**没有**「看大图」角标，也**不挂** `catchtap`：这张卡唯一的动作是"选中"，
+                点图等于点卡正是用户想要的（挑的时候看到的就是这张图）。
+                「看大图」只在闪念胶囊列表里（那边的卡有左滑 / 长按等另一套动作，
+                点图必须是"看图"而不是"干别的"）。
+             ⚠️ `lazy-load`：抽屉里可能攒着几十条胶囊，只有滚到眼前才取图。 -->
+        <view
+          wx:if="{{kind === 'capsule'}}"
+          class="dw-card cap {{pickMap[it.id] ? 'pick' : ''}}"
+          data-id="{{it.id}}"
+          bindtap="onPick"
+        >
+          <text class="dw-cap-t">{{it.text || '（这条还是空的）'}}</text>
+          <!-- ★★ 277 轮：胶囊挂的那张图（`capsuleCardView().img`，已是完整 URL） -->
+          <view class="dw-cap-pic" wx:if="{{it.img}}">
+            <image class="dw-cap-pic-img" src="{{it.img}}" mode="aspectFill" lazy-load></image>
+          </view>
+          <view class="dw-cap-foot">
+            <text class="dw-cap-time">{{it.time}}</text>
+            <view class="dw-cap-ck" wx:if="{{pickMap[it.id]}}">✓</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ★★ 195 轮 · 列表**分页**（用户口径 2026-10-14：「已完成的待办在列表抽屉里显示的
+         太多了……默认显示 10 条，最后一条下方有个『点击加载更多』，点击之后再加载 10 条，
+         所有都显示完成后显示『已无更多信息』」）。
+         ★ 195 轮**修订**（用户口径 2026-10-15：「那个加载更多别做成按键，就留文字就成了，
+            点击文字**或者再上滑列表**就可以触发加载」）⇒ 两处跟着改：
+            ① 去掉 `hover-class`、样式上撤底撤边 ⇒ 它是一行**提示文字**，不是一颗键；
+            ② `scroll-view` 上接 `bindscrolltolower` ⇒ 列表滚到底也接着铺。
+         ⚠️ 两行都挂在 **`dw-list` 里面**（＝ 列表的末尾，跟着列表一起滚）——
+            挂到 `dw-foot` 那一层就变成"底部动作区的第二颗键"，与「＋ 创建待办」并排，
+            读起来像多了一个动作。
+         ⚠️ 两行是 `wx:if / wx:elif` 一条链（互斥）：`hasMore` 时才有那行字，
+            铺完且**确实分过页**时才说终点（`allShown`）—— 一共 6 条的列表底下不挂废话。
+         ⚠️ `pageSize === 0` 的四张列表里两个布尔恒为 false ⇒ 这两行整段不渲染。 -->
+    <view class="dw-more" wx:if="{{hasMore}}" bindtap="onLoadMore">点击加载更多</view>
+    <view class="dw-more end" wx:elif="{{allShown}}">已无更多信息</view>
+  </scroll-view>
+
+  <!-- 底部动作：★ 82 轮起**由 `createLabel` 决定**（不再按 kind 硬写）——
+       填了字就渲染：项目「＋ 新建项目」／脑图「＋ 新建脑图」／**待办「＋ 创建待办」**。
+       44 轮曾把待办这条整段不渲染（创建走悬浮 Logo），82 轮品牌 logo 不再触发创建了，
+       所以这里必须跟着回来 —— 判断条件写成"有没有文案"，免得下次再出现
+       "某张列表悄悄没有创建入口"这种要靠读 kind 才发现的缺口。 -->
+  <view class="dw-foot" wx:if="{{createLabel || confirmLabel || cancelLabel}}">
+    <!-- ★★ 248 轮：多选态的「取消」（闪念胶囊的选择抽屉）。
+         与「保存」**等宽并排**，读法是"不做 / 做"；皮肤是白底描边（`.ghost`）——
+         它与「保存」是同一层的两个方向，主次靠底色分，不靠尺寸（与详情页
+         「取消关联 / 替换」那两颗同一条口径）。
+         ⚠️ 语义与标题栏外的"点遮罩关闭"不同：那颗是"看完了"，这颗是"我改了主意"
+            （页面收到 `cancel` 后要顺手把 `pickMap` 清掉）。 -->
+    <view
+      class="dw-foot-btn ghost"
+      wx:if="{{cancelLabel}}"
+      bindtap="onCancel"
+      hover-class="dw-foot-btn-hv"
+    >
+      <!-- ★★ 249 轮：补一颗「✕」—— 94 轮那条口径是「文字型按键必须有图标」
+           （`工具/check_round94.py` 的 C1 就是照它查的），248 轮这颗键只有文字，
+           于是 C1 报红、而界面上看着也不如对面「✓ 保存」成对。
+           数值照 `form-drawer` 的 `.sd-cancel` 抄（同是「取消」，13 / 0.65 两处一致）：
+           那颗键的文字是 `--slate`，而图标 SVG 的墨是写死的 `#1C1C1E` ⇒ 靠 `opacity`
+           把它压到与文字同一档，不然图标会比文字更黑、看着像两个层级。 -->
+      <icon name="close" size="13" opacity="0.65" />
+      <text>{{cancelLabel}}</text>
+    </view>
+    <view class="dw-foot-btn" wx:if="{{createLabel}}" bindtap="onCreate" hover-class="dw-foot-btn-hv">
+      <icon name="w-plus" size="15" />
+      <text>{{createLabel}}</text>
+    </view>
+    <!-- ★ 本轮：确认模式的「确定」—— 点了才把选中项交出去（闪念胶囊「转到脑图」）。
+         没选任何一条时置灰不可点：与底部三键同一套读法（没选就没得转）。
+     ★ 审查-02 P2-2（2026-10-14）：置灰时**连按动反馈一起收掉** ——
+         原先 `hover-class` 写死成 `dw-foot-btn-hv`，于是 `.off` 那颗键按下去照样
+         opacity .86：用户读到的是"按动了"，实际什么都不发生（反馈与行为互相打架）。
+         ⇒ `hover-class` 改**动态值**（`"none"` 是小程序官方的"不给反馈"写法）；
+           `onConfirm` 里那道 `if (!id) return;` 仍在 —— 反馈与行为这回说同一句话。
+         ⚠️ `工具/check_hover_pairing.py` 的 H2 只认**字面量** `hover-class="X"`：
+            写成模板值它扫不到 ⇒ `dw-foot-btn-hv` 那一对的 wxss 定义**必须留着**，别顺手删。 -->
+    <view
+      class="dw-foot-btn {{(multi ? pickCount : pickedId) ? '' : 'off'}}"
+      hover-class="{{(multi ? pickCount : pickedId) ? 'dw-foot-btn-hv' : 'none'}}"
+      wx:if="{{confirmLabel}}"
+      bindtap="onConfirm"
+    >
+      <icon name="w-check" size="15" />
+      <text>{{confirmLabel}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- ==========================================================================
+     副弹窗 · 列表筛选（★ 第四十七轮 · 待办 ／ ★ 第五十六轮起项目也用它）
+     宽 260 · 开在父主弹窗（待办 / 项目列表）**右侧** · 圆角 16 · 投影 6 10 18 rgba(28,28,30,.14)
+     位置：横屏父层在 x84 ⇒ 本层 x416；竖屏父层在 x16 ⇒ 本层 x348（右缘 608，768 的内容区装得下）
+     **父层不偏转** —— 副弹窗是"同一层的展开"，不是"把父层压住"。
+     规则：改哪一项都即时联动左侧列表 ⇒ 没有「确定」，只有「清除全部筛选」。
+
+     ★ 56 轮：**组的形状由数据决定**（`tf.groups[]`）——
+       类型只有两种，都在这份模板里：
+         · `type === 'chips'` —— 胶囊（状态 / 时间 / 节点）；`wrap` 允许换行，`fill` 两两成行
+         · 其余（`rows`）      —— 一行一个（所属项目 / 关联 agent），行尾带条数
+       组的键名 `grp.key` ＝ **存储字段名**，组件原样抛回页面，页面按 kind 派给
+       `setTodoFilter` / `setProjectFilter`；新增一个筛条件只需在装配层加一行组数据。
+     ⚠️ `.tf-scrim`（z93）与 `.dw-mask`(80) 都在这层底下：点外面只收副弹窗、不动整个列表。
+     ========================================================================== -->
+<view class="tf-scrim" wx:if="{{open && filterOpen}}" bindtap="onCloseFilter"></view>
+
+<view class="tf {{port ? 'port' : ''}}" wx:if="{{open && filterOpen}}">
+  <view class="tf-head">
+    <text class="tf-title">筛选</text>
+    <!-- 筛选是即时的，所以不是「取消」而是「关闭」——「取消」会读作"我改的东西不算数"。
+         ★ 48 轮：与主弹窗标题带的「筛选」统一成同一颗**抽屉按钮**（28 高描边胶囊），
+         所以这里必须是 view 而不是 text（inline-flex 的居中在 text 上不保证生效）。 -->
+    <view class="tf-close" catchtap="onCloseFilter" hover-class="tf-close-hv">
+      <icon name="close" size="13" opacity="0.65" />
+      <text>关闭</text>
+    </view>
+  </view>
+
+  <!-- ★ 49 轮：副弹窗的滚动条也收掉（原先是裸 `scroll-y`，右侧挂一条灰条） -->
+  <scroll-view class="tf-body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- ① 搜索（两个 kind 共用，只有占位文案不同：tf.ph） -->
+    <view class="tf-grp">
+      <text class="tf-lab">搜索</text>
+      <view class="tf-sear">
+        <icon name="search" size="14" opacity="0.45" />
+        <input
+          class="tf-input"
+          value="{{kwText}}"
+          placeholder="{{tf.ph}}"
+          placeholder-class="tf-ph"
+          confirm-type="search"
+          bindinput="onKwInput"
+        />
+        <!-- ★ 审查-02 S1（2026-10-15）：纯按钮（清空关键字），补 `hover-class`。
+             ⚠️ 它**本身已是 `--chip` 灰底** ⇒ 不能再"改底"（同色看不出来）⇒ 压 `opacity`。 -->
+        <!-- ★ 审查-02 A-1 订正（2026-10-15）：`hover-class` 只认 view / button / navigator 三种宿主，
+             `<text>` 挂上去**既不会报错、也不会生效**（改了等于没改）⇒ 由 `<text>` 改 `<view>`。
+             `.tf-clr` 自己就写了 `display: flex` ＋ 24×24 ＋ 居中，元素类型换掉**几何零变化**。 -->
+        <view class="tf-clr" wx:if="{{kwText}}" catchtap="onKwClear" hover-class="tf-clr-hv">✕</view>
+      </view>
+    </view>
+
+    <!-- ② 各条件组（待办 3 组 / 项目 3 组，形状由数据给） -->
+    <block wx:for="{{tf.groups}}" wx:key="key" wx:for-item="grp">
+      <view class="tf-grp">
+        <text class="tf-lab">{{grp.label}}</text>
+
+        <!-- 胶囊组 -->
+        <view class="tf-chips {{grp.wrap ? 'wrap' : ''}}" wx:if="{{grp.type === 'chips'}}">
+          <view
+            wx:for="{{grp.rows}}"
+            wx:key="key"
+            class="tf-chip {{grp.fill ? 'w2' : ''}} {{item.selected ? 'on' : ''}}" hover-class="tf-chip-hv"
+            data-k="{{grp.key}}"
+            data-v="{{item.key}}"
+            catchtap="onPickChip"
+          >{{item.label}}</view>
+        </view>
+
+        <!-- 行组：色点（没有色的用等宽透明占位，保住整列文字对齐）＋ 名称 ＋ 条数 -->
+        <view class="tf-rows" wx:else>
+          <view
+            wx:for="{{grp.rows}}"
+            wx:key="id"
+            class="tf-row {{item.selected ? 'on' : ''}}" hover-class="tf-row-hv"
+            data-k="{{grp.key}}"
+            data-v="{{item.id}}"
+            catchtap="onPickRow"
+          >
+            <view class="tf-dot" wx:if="{{item.color}}" style="background:{{item.color}}"></view>
+            <view class="tf-dot empty" wx:else></view>
+            <text class="tf-row-t">{{item.name}}</text>
+            <text class="tf-row-n">{{item.count}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="tf-reset" wx:if="{{tf.activeCount}}" catchtap="onResetFilter" hover-class="tf-reset-hv">
+      <icon name="refresh" size="15" opacity="0.65" />
+      <text>清除全部筛选</text>
+    </view>
+  </scroll-view>
+</view>

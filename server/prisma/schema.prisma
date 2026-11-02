@@ -1,0 +1,400 @@
+// Agent ToDo · 数据模型
+// 依据《技术开发文档-01 V1.2》§5.2 —— 逐字对齐，差异见该节 §5.3 的 D-1 ~ D-11。
+//
+// ★★ 三条最要紧的口径（改了会静默出错，不报错）：
+//   ① 时间字段一律 String('YYYY-MM-DD HH:mm:ss')，**不用 DateTime**（§8.7）。
+//      Prisma + MySQL 的 DateTime 按 UTC 解释 ⇒ 北京 0:00–8:00 的记录会**整体错一天**，
+//      而热力图正是按「日」聚合的。用定长字符串 ⇒ 字典序＝时间序，且与 API 契约、前端切片天然一致。
+//   ② todo.completedAt 必须**可空**，取消完成时必须置 null（§8.1）。
+//      否则热力图会永久多出一条并不存在的完成记录。
+//   ③ capsule 表**只有 createdAt**，不许补 updatedAt / completedAt（§8.1）。
+//      胶囊只贡献「创建」这一个数。
+//
+// ★ 表名统一带 agenttodo_ 前缀，避免与同实例上「彩票小助手」的库/表混在一起（§4.4）。
+// ★ 数据库列名用 snake_case，Prisma 字段名用 camelCase ⇒ API 出入参与前端零转换（§2.3）。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户与准入 ====================
+
+model User {
+  id        String   @id @default(cuid())
+  openid    String   @unique @map("openid") // ★ 跨端身份唯一主键
+  nickname  String   @default("我的工位") @map("nickname")
+  avatar    String?  @db.VarChar(512) @map("avatar") // 相对路径，见 §4.5
+  createdAt String   @map("created_at")
+  updatedAt String   @map("updated_at")
+
+  projects  Project[]
+  todos     Todo[]
+  mindmaps  Mindmap[]
+  capsules  Capsule[]
+  agents    Agent[]
+  tokenKeys TokenKey[]
+  activity  ActivityDay[]
+
+  @@map("agenttodo_user")
+}
+
+/// 邀请白名单 —— 一期是「我和几个朋友」，谁在白名单里谁能用（§7.3）
+model Allowlist {
+  openid    String @id @map("openid")
+  note      String @default("") @map("note")
+  createdAt String @map("created_at")
+
+  @@map("agenttodo_allowlist")
+}
+
+/// 被 1002 拒绝过的人 —— 让你能拿到朋友的 openid 再手动加白名单（§7.3「待批列表」）
+model PendingUser {
+  openid    String   @id @map("openid")
+  hitCount  Int      @default(1) @map("hit_count")
+  firstSeen String   @map("first_seen")
+  lastSeen  String   @map("last_seen")
+  note      String   @default("") @map("note")
+
+  @@map("agenttodo_pending_user")
+}
+
+// ==================== 业务实体 ====================
+
+model Project {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name       String  @map("name") // ★ 允许重名，无唯一约束
+  remark     String  @db.Text @map("remark")
+  node       String  @default("构思期") @map("node") // 构思期 / 建设期 / 迭代期 / 暂停期
+  color      String? @map("color") // 8 色槽位 key；null = 不着色
+  agentId    String? @map("agent_id")
+  agent      Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  archivedAt String? @map("archived_at") // ★ null = 活跃；非空 = 已归档（FR-2.9）
+  createdAt  String  @map("created_at")
+  updatedAt  String  @map("updated_at")
+
+  todos    Todo[]
+  mindmaps Mindmap[]
+
+  /// ★ 项目色唯一由数据库兜底：MySQL 唯一索引中 NULL 不参与判重
+  /// ⇒ 「多个项目都可以不着色」与「一个色只能一个项目」同时成立，无需写任何业务判重代码（§8.4）
+  /// ⚠️ 该索引**不区分归档状态** —— 已归档项目同样算占用，这正是需求要的语义（§8.3）
+  @@unique([userId, color])
+  @@index([userId, archivedAt])
+  @@map("agenttodo_project")
+}
+
+model Todo {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String  @map("project_id") // ★ 必填：单级归属（N-10）
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  /// ★ Restrict 不是"防删除"（项目本来就不给删），而是**数据安全网**（§8.5）：
+  ///   万一有人手工在库里删项目，它会让操作失败，而不是把一批待办变成孤儿。别改成 Cascade。
+  mindmapId String?  @map("mindmap_id") // 协同关联，可空
+  mindmap   Mindmap? @relation(fields: [mindmapId], references: [id], onDelete: SetNull)
+
+  text      String  @db.Text @map("raw_text") // 原文，永不覆盖
+  draftText String? @db.Text @map("draft_text") // 下发改写版 · 一期不暴露 UI 但字段保留
+  urgency   String  @map("urgency") // urgent / mid / low / hold
+  status    String  @default("open") @map("status") // open / done
+
+  createdAt   String  @map("created_at") // ★ 热力图源 ①
+  completedAt String? @map("completed_at") // ★ 热力图源 ②（取消完成必须置 null）
+  updatedAt   String  @map("updated_at") // ★ 列表抽屉排序依据（D-2）
+
+  /// ★★ 160 轮：**逻辑删除（软删）** —— `null` ＝ 正常；有值 ＝ 已删除。
+  ///   `DELETE /todos/:id` 从此**不再真删**：只把这一刻记进来（同时刷 `updatedAt`，
+  ///   让「已删除」列表按"什么时候删的"倒序）。`POST /todos/:id/restore` 把它清回 null。
+  ///   ⚠️ 软删**不碰** `status` / `completedAt`（那是"这条待办是什么状态"，与"还在不在"正交）；
+  ///      但**还原时**按用户口径一律回到「未完成」⇒ 那两个字段由 `restore` 那一处改。
+  ///   ⚠️ **软删也不删磁盘图片** —— `todo_image` 行与文件都留着，还原之后图还在。
+  deletedAt   String? @map("deleted_at")
+
+  /// ★★ 199 轮：**「刚转过来」提示** —— `null` ＝ 无提示；有值 ＝ 从胶囊转过来的那一刻，
+  ///   前端据此在待办列表 / 项目页网格上给这条卡一层"新到"填充色，直到用户**打开它的详情**。
+  ///
+  /// ★ 为什么要落库而不是前端缓存（用户 2026-10-15 口径）：
+  ///   「这个颜色提示的信息最好要存在数据库，而不是一个前端的缓存信息，
+  ///     因为整个应用是跨多端交互的」—— 手机端转过来、平板端打开同一份数据，
+  ///   提示必须在；平板看过之后，手机端也不该再提示。前端缓存做不到这件事。
+  ///
+  /// ★ 口径三条：
+  ///   ① **只有 `promote-to-todo` 会写它**（`capsules.service.promoteToTodo`）。
+  ///      手动新建的待办（`POST /todos`）**不写** —— 用户口径是"刚**转**过去的"，
+  ///      手建的那条人就在眼前，不需要提示（别顺手给 `create` 也加上）。
+  ///   ② **只有 `POST /todos/:id/seen` 会清它**（用户在界面上真的打开了这条的详情）。
+  ///      删除 / 完成 / 编辑 / 还原**都不清** —— 那些动作都没说"我看过了这条"。
+  ///   ③ 与 `createdAt` **正交**：`createdAt` 回答"什么时候建的"（热力图源），
+  ///      它回答"这条还没被过目"。别合并成一个字段。
+  ///
+  /// ⚠️ **不加索引**：`GET /sync` 是**全量拉取**、前端自己筛，服务端从不按它过滤
+  ///   （与 `deletedAt` 不同 —— 那个要进 WHERE 条件，所以有一条复合索引）。
+  ///   加索引等于给一个没人查的列白付写入代价。
+  flashAt     String? @map("flash_at")
+
+  images TodoImage[]
+
+  /// ★★ 248 轮：**关联在这条待办上的闪念胶囊**（用户口径 2026-10-23）。
+  ///   一个胶囊同一时刻只能挂在一条待办上（`Capsule.todoId` 单值）——
+  ///   与 `mindmapId` 同一种"单指针关联"，不是多对多：胶囊被关联后要**从闪念胶囊
+  ///   列表里消失**（与转脑图 / 转待办同一条处理），挂在两条待办上就没法定义了。
+  capsules Capsule[]
+
+  @@index([userId, projectId])
+  @@index([userId, updatedAt])
+  @@index([userId, createdAt])
+  @@index([userId, completedAt])
+  @@index([userId, deletedAt])
+  @@index([mindmapId])
+  @@map("agenttodo_todo")
+}
+
+model TodoImage {
+  id     String @id @default(cuid())
+  todoId String @map("todo_id")
+  todo   Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  uri   String  @db.VarChar(512) @map("uri") // ★ 只存相对路径（§4.5）
+  label String? @map("label")
+  sort  Int     @default(0) @map("sort")
+
+  @@index([todoId])
+  @@map("agenttodo_todo_image")
+}
+
+model Mindmap {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// ★ 280 轮放宽为**可空**：语义转脑图生成占位卡时还没有项目归属（胶囊本身不带项目）。
+  ///   历史行全是非 NULL，语义与改前逐行一致；用户在「完善脑图信息」里填项目。
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// ★ 280 轮新增：「归属 agent」。**由 `Project.agentId` 决定**（用户口径：选了项目就等于选了 agent）。
+  ///   写入侧三条推导，**客户端传值一律不采信**：
+  ///     ① `mindmaps.create` —— 按项目推导
+  ///     ② `mindmaps.update` —— 换项目按新项目推导；**不换项目也重算一次**（修漂移）
+  ///     ③ `projects.update` —— 改绑 agent 时批量刷该项目下所有脑图（同事务）
+  ///   `null` ＝ 项目没绑 agent，或占位卡还没选项目。
+  ///   onDelete SetNull：删 agent 不该连带删脑图（与 Project 删项目时 Cascade 的取舍不同）。
+  agentId String? @map("agent_id")
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  name      String @map("name")
+  /// ★ 280 轮：允许**空串** —— 表示「格式未设置」，是语义转脑图未完善态的一档。
+  ///   不写默认值假装已设置（否则卡上、导出、统计全在说假话）。用户手选的接口仍只收六档。
+  format    String @default("mindmap") @map("format") // mindmap/logic/org/tree/timeline/fishbone
+  /// ★ 严格树 —— 唯一真源。服务端写入前必须做一次校验（单父 · 无环 · 不越级）：
+  ///   前端已经保证了，但后端不能假设写入方永远守规矩 —— 一条带环的树会让前端排版算法**死循环**（§5.3）
+  treeJson  Json   @map("tree_json")
+  nodeCount Int    @default(1) @map("node_count") // 派生冗余（列表卡显示）· 服务端从树重算
+  depth     Int    @default(1) @map("depth") // 派生冗余 · 服务端从树重算
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+
+  /// ★ 280 轮 · 语义转脑图的处理状态（全为空 ＝ 普通脑图，即所有历史行）
+  ///   pending  = 已受理、后台在跑（卡名「语义转脑中」）
+  ///   done     = 模型已返回并落库（终态，不再变）
+  ///   failed   = 失败/超时/进程被杀（卡名「语义转脑图失败」，可重试、可删）
+  ///   canceled = 用户在处理中删掉了它（行其实已被删；保留这一档只为语义完整）
+  ///   **不加索引**：`/sync` 是全量下发、前端自己筛（与 `Todo.flashAt` 同一条理由）
+  aiState     String? @map("ai_state")
+  /// 受理时刻（`'YYYY-MM-DD HH:mm:ss'`，与全库时间口径一致）—— 启动清扫"卡住的任务"靠它
+  aiStartedAt String? @map("ai_started_at")
+  /// 卡面一句话 + 排障用。**不存堆栈、不存错误码**（错误码只进 console）；写前截断到 200
+  aiError     String? @map("ai_error")
+  /// ★ 重试要能重跑 ⇒ 存合并后的输入；**同时是图片的真源**：
+  ///   存 `[{i, text, imageUri}]` 的 JSON 快照（`i` ＝ 提示词里的占位符编号）。
+  ///   后台不能回查胶囊（那时胶囊已被 consumed），只能读快照。成功后必须清空。
+  aiInput     String? @db.Text @map("ai_input")
+  /// ★ 280 轮：刚转过来要亮一次底色（与 `Todo.flashAt` **同名同义**、同样不加索引）。
+  ///   清除时机 ＝ 打开它的详情/完善抽屉；`POST /mindmaps/:id/seen` 负责置空。
+  flashAt     String? @map("flash_at")
+
+  todos Todo[]
+
+  @@index([userId, projectId])
+  @@index([userId, updatedAt])
+  @@map("agenttodo_mindmap")
+}
+
+model Capsule {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  text      String @db.Text @map("text") // 识别未回时为空串（允许为空）
+  source    String @default("voice") @map("source") // voice / text
+  createdAt String @map("created_at") // ★ 热力图源 ③ · 列表按它正序 · ★ 无 updatedAt
+
+  /// ★★ 263 轮（清单 H1）· **挂一张图** —— 上限就是 **1 张**，`null` ＝ 没挂。
+  ///
+  /// ── 为什么是一列，而不是照着 `TodoImage` 再建一张表 ──────────────────────
+  ///   ① 需求上限是 1（用户口径见原型底部的「只挂 1 张，选新的会替换掉当前的」）；
+  ///   ② 一张 1:N 的表会让"换图"变成"删旧插新"两步，中间那一帧可能一条都没有；
+  ///   ③ 胶囊是全库最热的读路径（`GET /sync` 每次全量下发），少一张表就少一次 join。
+  ///   ⇒ 真要放开到多张时再建表，届时这一列迁过去即可（`sort` 从 0 开始编号）。
+  ///
+  /// ⚠️ 存的是 `POST /files` 返回的**相对 uri**（§4.5：库里不落完整 URL ——
+  ///    域名一换，全库的图就都成死链了）。拼 URL 是客户端的显式动作（`api.fileUrl`）。
+  /// ⚠️ 列宽 512 与 `TodoImage.uri` 同源（同一条上传通道产出的路径结构完全一样）。
+  imageUri String? @db.VarChar(512) @map("image_uri")
+
+  /// ★★ 160 轮：**逻辑删除（软删）** —— `null` ＝ 正常；有值 ＝ 用户手动删掉了。
+  ///   只有它能进「已删除胶囊」列表，`POST /capsules/restore` 把它清回 null。
+  ///   ⚠️ 这张表**没有 `updatedAt`**（§8.1 硬要求 2）—— 软删只写这一列，不补对称字段。
+  deletedAt  String? @map("deleted_at")
+
+  /// ★★ 160 轮：**被消费**（`promote-to-todo` / `promote-to-mindmap` 消化掉）——
+  ///   与「手动删除」**必须分开两个字段**：用户口径是"只有手动删除才进「已删除胶囊」"，
+  ///   否则还原一条已转成待办的胶囊，会让同一段内容在待办里出现第二遍。
+  ///   两者都从**正常列表**里消失（查询条件是两个都 null）。
+  consumedAt String? @map("consumed_at")
+
+  /// ★★ 248 轮：**关联到哪条待办**（用户口径 2026-10-23「闪念胶囊和待办的关联功能」）。
+  ///
+  /// ── 这个字段与上面两个"消失原因"的关系（改代码前必须先读）──────────────
+  ///   · `todoId = null`       ⇒ 没有关联（正常 / 手动删除 / 被转走，由另两列区分）；
+  ///   · `todoId = <待办 id>`  ⇒ **关联在这条待办上**，同时 `consumedAt` 非 null ——
+  ///     用户口径第 4 条：「在建立关联时，胶囊信息需要从闪念胶囊中移除
+  ///     （和转脑图、转待办后的胶囊列表数据的操作一致）」。
+  ///     ⇒ 复用 `consumedAt` 而不是新造一个 `linkedAt`：三者的**列表可见性**完全一样
+  ///       （都不进正常列表、都不进「已删除胶囊」、都不能就地编辑），
+  ///       差别只在"还能不能回到列表"—— 那由 `todoId` 回答，不必再开一列。
+  ///   · **解除关联**时（`DELETE /todos/:id/capsules`）：`todoId` 与 `consumedAt` 一起清空，
+  ///     并把 `createdAt` **重置为解除的那一刻**（用户口径第 5 条：「此时胶囊信息的创建
+  ///     时间为解除关联的时间，胶囊信息最开始的创建时间无需保存」）——
+  ///     于是它排到列表末尾（列表按 `createdAt` 正序），且**不记活跃度台账**
+  ///     （"回到列表"不是"新接住一枚"，用户口径第 5 条：不计入概览统计）。
+  ///
+  /// ⚠️ `onDelete: SetNull` 只是数据安全网：本工程的待办是**软删**（`deletedAt`），
+  ///   真删走不到这里。软删**不解绑** —— 还原之后详情页应当还是原来那几张胶囊。
+  todoId String? @map("todo_id")
+  todo   Todo?   @relation(fields: [todoId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, deletedAt])
+  /// ★ 248 轮：`GET /sync` 要按它挑出"关联在待办上的那批"（正常列表里看不到它们，
+  ///   但待办详情要显示），`DELETE /todos/:id/capsules` 也按它过滤。
+  @@index([userId, todoId])
+  @@map("agenttodo_capsule")
+}
+
+/// 活跃度台账 —— 热力图（概览「活跃度日历」）的**唯一真源**。
+///
+/// ★★ 为什么要有这张表（2026-10-09 修正，用户报「统计的是实时值」）：
+///   原来热力图是前端**现算**的 —— 拿一张零基线，遍历手上还活着的 todos / capsules
+///   反推每天有几个 createdAt / completedAt。那统计的是「**现在还剩下什么**」，
+///   于是任何"消失"都会把历史上的数字一起带走：
+///     · 删掉一个待办        ⇒ 那天的「创建」少 1
+///     · 完成 → 取消完成      ⇒ 那天的「完成」少 1（completedAt 被置空，§8.1 硬要求）
+///     · 胶囊转待办后被消费   ⇒ 那天的「胶囊」少 1
+///   而热力图表达的明明是「**那天发生过多少事**」（活跃度）。两者不是一回事。
+///
+/// ★ 口径：**只加不减**。每发生一个动作就 +1，此后无论实体被删 / 被取消 / 被消费，
+///   计数**永不回退**（用户 2026-10-09 明确：「每创建一个待办、完成一个待办、
+///   创建一个闪念胶囊都可以独立记数」）。
+///   ⚠️ 因此 `reopen` / `DELETE /todos/:id` / `DELETE /capsules` **一处都不许减** ——
+///      那正是这次要修掉的病。三个列各自独立，绝不打成一个总数（§7.2 的 D-6）。
+///   ⚠️ 「完成」记的是**动作次数**：勾完成 → 取消 → 再勾 ⇒ `completed` = 2
+///      （用户 2026-10-09 拍板）。不要去重，也不要在 reopen 时回退。
+///
+/// ★ `day` 是 'YYYY-MM-DD' 字符串，与全库时间口径一致（§8.7：定长字符串、字典序＝时间序）。
+///   按「用户 × 日」聚合而不是记流水：热力图只需要日粒度，聚合后每用户最多几百行。
+model ActivityDay {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  day       String @map("day") // 'YYYY-MM-DD'（本地时区，与 todo.createdAt 同切片口径）
+  created   Int    @default(0) @map("created") // 待办**创建**次数
+  completed Int    @default(0) @map("completed") // 待办**完成动作**次数（取消不回退）
+  capsule   Int    @default(0) @map("capsule") // 闪念胶囊**创建**次数
+
+  updatedAt String @map("updated_at")
+
+  @@id([userId, day])
+  @@index([userId])
+  @@map("agenttodo_activity_day")
+}
+
+model Agent {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String  @map("name")
+  quotaLeft    Int?    @map("quota_left") // 积分 · 纯整数
+  monthlyQuota Int?    @map("monthly_quota") // 分母，缺它就判不出「额度偏低」（D-7）
+  quotaResetAt String? @map("quota_reset_at") // ★ 只记「日」('01'–'31')，不是日期类型 —— 各家按自然月重置（133 轮）
+  createdAt    String  @map("created_at")
+  updatedAt    String  @map("updated_at") // 手动修改时间（唯一的自动写入字段）
+
+  projects Project[]
+
+  /// ★ 280 轮：「归属 agent」挂在脑图上（语义转脑图的完善项）。
+  ///   注意它**不继承**项目：同一项目下的两张脑图可以归不同 agent。
+  mindmaps Mindmap[]
+
+  @@index([userId])
+  @@map("agenttodo_agent")
+}
+
+model TokenKey {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vendor    String @map("vendor")
+  /// ★ 单位：分（存整数，避免浮点误差）。前端负责格式化显示。
+  ///   ★★ 2026-10-12 起它由**余额查询**回写（不再是手填串解析出来的），
+  ///      解析入口仍是 src/common/money.ts —— 查询回来的 '110.00' 走同一个函数转分。
+  balance   Int?   @map("balance")
+
+  /// ★★ 2026-10-12：厂家 API key 的 **AES-256-GCM 密文**（见 src/common/secrets.ts）。
+  ///   ⚠️ 绝不原样出参 —— `tokenKeyOut()` 只回 `keyMask`，完整值不出这个进程。
+  ///   ⚠️ 加密密钥来自 env `TOKEN_KEY_ENC_SECRET`；换密钥会让既有密文解不开
+  ///      （表现为「查询失败：密钥不可用」），要换必须连同数据一起重加密。
+  ///   ⚠️⚠️ **列宽必须写死 512**：不写 `@db.*` 时 Prisma 默认 `VARCHAR(191)`，
+  ///      而线上库是 512（2026-10-12 建表时就是这样）。不写注解的后果不是"少个信息"——
+  ///      `prisma migrate diff` 会把这它当成**待收窄**的漂移，吐一条
+  ///      `MODIFY api_key_cipher VARCHAR(191)`；谁要是照着 diff 去"修"，密文立刻存不下
+  ///      （AES-GCM 密文长度随 api key 线性增长，当前实测 93，191 只是还没撞上）。
+  ///      263 轮上线前预检真的吐出了这条 SQL，当场补上的注解。
+  apiKeyCipher String? @db.VarChar(512) @map("api_key_cipher")
+  /// 掩码（'sk-****abcd'）—— 库里的**非敏感**副产物，列表直接展示它，省一次解密
+  ///   ⚠️ 同上：线上是 `VARCHAR(64)`，注解必须与库一致，别让它也成漂移。
+  keyMask      String? @db.VarChar(64) @map("key_mask")
+
+  /// 余额**最后一次查询成功**的时间（更新失败不写它 ⇒ 「更新于 X」说的是"数是什么时候的"）
+  balanceAt    String? @map("balance_at")
+  /// 最近一次查询失败的原因（成功时清空）。给「我的」页显示「查询失败：xxx」用
+  lastError    String? @map("last_error")
+
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+
+  @@index([userId])
+  @@map("agenttodo_token_key")
+}
+
+/// 语音识别的按人日配额 —— 腾讯云的 30 次/秒是**账号级**限频，
+/// 一个人（或一段脚本）刷就能把全账号 5000 次/月的免费额度打光（§6.8.1 铁律③）
+model AsrQuota {
+  userId String @id @map("user_id")
+  day    String @map("day") // 'YYYY-MM-DD'
+  used   Int    @default(0) @map("used")
+
+  @@map("agenttodo_asr_quota")
+}

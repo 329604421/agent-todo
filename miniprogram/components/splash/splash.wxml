@@ -1,0 +1,25 @@
+<!-- ==========================================================================
+     启动动画（品牌开屏）—— 几何与时间轴见 splash.js 的文件头
+     ⚠️ 它挂在**壳页根节点**下（`.stage-wrap` 的兄弟），**不在 `.stage` 里**：
+        `.stage` 带 transform，会让 `position:fixed` 的后代改为"相对画布定位"，
+        开屏就会被画布边界裁掉（见 splash.js 里 z-index 那段）。
+     ⚠️ 整层 `bindtap` ＝ **轻触任意位置跳过**。5.2 秒对冷启动是长的，
+        没有这条出口就只能干等；`catch` 而非 `bind` 不是必须（它就是最上层），
+        但保留"吞掉这次点击"的语义 —— 别让手指这一次落到下面的模块上。
+     ⚠️ 幕次文案的**顶边由 style 给**（`capTop`），不写在 wxss 里 ——
+        它必须跟着动画自己的尺寸走（见 splash.js 文件头「为什么不能锚屏高」）。
+        `capTop` 为 0 ＝ attached 还没跑，这时不画这行字（免得它先闪在屏幕最上边）。
+     ★★ 186 轮（深色模式）：`sp-dark` —— 本组件是 `.stage-wrap` 的**兄弟节点**，
+        拿不到壳页根节点上的 `.theme-dark` ⇒ 深色令牌得由自己挂。
+        它与 `.theme-dark` 共用 `app.wxss` 里**同一份**深色令牌块（合并选择器），
+        不是第二套值。跑动中切主题 ⇒ `splash.js` 按新墨色重画当前帧（不重播）。
+     ========================================================================== -->
+<view
+  wx:if="{{!gone}}"
+  class="splash {{fading ? 'sp-fade' : ''}} {{phone ? 'sp-phone' : ''}} {{dark ? 'sp-dark' : ''}}"
+  catchtap="_onTap"
+>
+  <canvas type="2d" id="sp-canvas" class="sp-canvas"></canvas>
+  <view wx:if="{{capTop > 0}}" class="sp-cap" style="top:{{capTop}}px">{{caption}}</view>
+  <view class="sp-skip">轻触跳过</view>
+</view>

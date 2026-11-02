@@ -1,0 +1,53 @@
+<!-- ==========================================================================
+     ★★ 263 轮（清单 F3/H2/H3）· 挂图区 —— 创建面板与编辑面板**共用这一块**
+     ── 结构（照原型 `.attach` / `.at-slot` / `.at-tile` / `.at-thumb` / `.at-meta`）──
+        左边是坑（96×72），右边是那句提示；进 flex 行、提示吃剩余宽度。
+        ⚠️ 提示**必须在坑的右侧、宽度由剩余空间决定**（原型 400–410 行那段血泪注）：
+           早先把提示做成兄弟块 ＋ `max-width:190px` ⇒ 一句话被压进 190px 折三行；
+           而 `<b>1 张图</b>` 中间那个空格是合法断行点 ⇒「1」留在行尾、
+           「张图」掉到下一行 —— 用户报的"折行有问题"就是它。
+           这里：`flex:1 1 auto; min-width:0`、**不设 max-width**、量词用
+           `white-space:nowrap` 钉住（数字＋量词不许被拆）。
+     ── 三个状态见 capsule-attach.js 的注释（空 / 上传中 / 已挂）。
+     ========================================================================== -->
+<view class="at">
+  <view class="at-slot">
+    <!-- ② 上传中 / ③ 已挂 —— 有 url 就画缩略图（上传中那档 url 是**本地临时路径**） -->
+    <view
+      class="at-thumb"
+      wx:if="{{url}}"
+      bindtap="onPick"
+      hover-class="{{uploading ? 'none' : 'at-thumb-hv'}}"
+    >
+      <image class="at-img" src="{{url}}" mode="aspectFill"></image>
+      <!-- 霜白层：盖满整块 ＋ 转圈 ＋ 三个字。⚠️ 它同时是"这块现在不能点"的告示 -->
+      <view class="at-wait" wx:if="{{uploading}}">
+        <view class="at-spin"></view>
+        <text>上传中…</text>
+      </view>
+      <block wx:if="{{!uploading}}">
+        <!-- 右下那条「更换」：缩略图本身也能点，这条是让"可以换"这件事**看得见**
+             （只靠"点图"没人猜得到） -->
+        <view class="at-swap">更换</view>
+        <!-- 右上 ✕ —— 反白叉落在深色圆上（与待办详情图片格 `.img-del`、
+             胶囊卡那颗 `.cap-del` 同一套观感：深色实心圆 ＋ 白叉） -->
+        <view class="at-del" catchtap="onRemove" hover-class="at-del-hv">
+          <icon name="w-close" size="12" />
+        </view>
+      </block>
+    </view>
+
+    <!-- ① 空 —— 虚线坑。`album-b` 是相册图标（frame ＋ 山 ＋ 点），比 `plus` 更能说明
+         "这里放的是图" -->
+    <view class="at-tile" wx:else bindtap="onPick" hover-class="at-tile-hv">
+      <icon name="album-b" size="18" opacity="0.55" />
+      <text>加截图</text>
+    </view>
+  </view>
+
+  <view class="at-meta">
+    <block wx:if="{{uploading}}">正在上传…</block>
+    <block wx:elif="{{url}}">已挂 <text class="at-num">1 张</text>，点图更换 · ✕ 移除</block>
+    <block wx:else>最多挂 <text class="at-num">1 张图</text>，留住截图里的现场</block>
+  </view>
+</view>

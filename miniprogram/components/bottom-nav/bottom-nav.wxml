@@ -1,0 +1,32 @@
+<!-- bottomNav · 竖屏底部导航（设计稿 727403959376047 组件 3:11）
+     09-21：选中态从「项内自己填黄色」改成**一块会移动的黄色滑块**（.bnav-slab）——
+     切模块时滑块用 transform 平移过去，滑块只有一份，位移动画才连得上。
+     滑块宽度 ＝ 800 / 5 ＝ 160（五项等分铺满整宽），内部再居中放 144×56 的圆角块。 -->
+<view class="bnav">
+  <view class="bnav-hr"></view>
+  <view class="bnav-list">
+    <view class="bnav-slab {{anim ? 'anim' : ''}}" style="transform:translateX({{slabX}}px)">
+      <view class="bnav-slab-in"></view>
+    </view>
+
+    <!-- ★★ 2026-10-24（复审 P2-19）：与左导轨同一套写法（`aria-role` + 带"当前页"的名称）——
+         竖屏底栏是手机之外**唯一的模块切换入口**，读不出当前位置等于没有导航。 -->
+    <view
+      wx:for="{{items}}"
+      wx:key="key"
+      class="bnav-item {{item.key === active ? 'on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onNav"
+      hover-class="bnav-item-hv"
+      aria-role="tab"
+      aria-label="{{item.label}}{{item.key === active ? '，当前页' : ''}}"
+    >
+      <view class="bnav-in">
+        <!-- ★186 `tone`：与左导轨同一条口径 —— 选中项压在黄色滑块上 ⇒ 恒墨。 -->
+        <icon name="{{item.icon}}" size="24" opacity="{{item.key === active ? 1 : 0.62}}"
+              tone="{{item.key === active ? 'ink' : ''}}" />
+        <text class="bnav-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+</view>

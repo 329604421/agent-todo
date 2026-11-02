@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 环境变量 —— 绝不进仓库（AppSecret / JWT 密钥 / 数据库密码都在这）
+.env
+.env.local
+.env.*.local
+
+# 运行期产物
+logs/
+*.log
+uploads/
+prisma/*.db
+prisma/*.db-journal
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

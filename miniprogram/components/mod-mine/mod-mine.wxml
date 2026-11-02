@@ -1,0 +1,340 @@
+<!-- 模块组件（09-21 起）：只渲染 <main>。
+     骨架 stage-wrap / stage / app、左导轨、底部导航、悬浮 Logo 全部搬到了壳页 pages/shell；
+     这里保留 .main 这一层，是为了让 .app.port .xxx 这类骨架选择器继续命中。
+     本模块的抽屉 / 表单抽屉 / 查看层仍在组件内（绝对定位，参照物是壳页的 .app）。 -->
+<view class="main {{landscape ? '' : 'mod-port'}}">
+
+    <!-- 主工作区 776（内容 756；★ 09-22 走查·十一：横屏无品牌栏、首块之前不留 padding）-->
+    <view class="workarea mi-area">
+    <!-- ★★ 204 轮：让位段（状态栏 ＋ 品牌行）—— 滚动内容的**第一段**，随内容滚走。
+         ★★ 207 轮：横屏**又渲染了**（206 试过整段撤掉、内容贴顶太紧已回退）。
+         横屏这段是**空盒子**，只贡献 `LAND_HEAD`(6) 的高度、不画 logo
+         （brand-head.wxml 内部还有一层 `wx:if="{{!landscape}}"` 挡着）。 -->
+    <brand-head landscape="{{landscape}}" />
+      <view class="col">
+        <!-- ① 个人资料 —— ★ 42 轮：标题外提、右侧不再有「改个称呼」；
+             卡内只有 头像 ＋ 用户名，右侧一个「编辑」走标准表单抽屉（profile mode）
+             ★ 42 轮·补：页底的版本号 / 更新日志整行已删；诊断浮层的入口（长按）
+                改挂在**这里的区块标题**上 —— 位置固定、也不会被误当成功能入口 -->
+        <view class="sec sec-me sec-first">
+          <view class="sec-head">
+            <icon name="mine-b" size="16" />
+            <text class="sec-t" bindlongpress="onDiag">个人资料</text>
+          </view>
+
+          <view class="card me-card">
+            <view class="avatar">
+              <image wx:if="{{me.avatar}}" class="avatar-img" src="{{me.avatar}}" mode="aspectFill" />
+              <icon wx:else name="mine" size="28" opacity="0.5" />
+            </view>
+            <text class="me-title">{{me.name}}</text>
+            <view class="sec-flex"></view>
+            <view class="tb-btn" bindtap="onEditProfile" hover-class="tb-btn-hv">
+              <icon name="edit" size="13" opacity="0.65" />
+              <text>编辑</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- ② Agent 区（FR-6.1 · ★ 42 轮·补：恢复「灰块 ＋ 关联项目」的卡片形态）
+             ★ 157 轮：灰块从「概览三数（当前剩余 / 距离重置 / 承担项目）＋ 卡脚（每月套餐 / 更新于）」
+               改成「距离重置圆环 ＋ 每月套餐 / 承担项目」—— 两页的卡面同一份装配，改动见 store.agentCardViews。
+             标题「Agent」外提，右侧只留「新建 Agent」；副标整条去掉
+             ★ 158 轮：卡面**一行两张**（宽度见 mod-mine.wxss 的 `.agent-card`）——
+               卡上内容本来就只有"圆环 ＋ 两行数"，一行一张会把右侧整片留白。 -->
+        <view class="sec sec-agent">
+          <view class="sec-head">
+            <icon name="robot-b" size="16" />
+            <text class="sec-t">Agent</text>
+            <view class="sec-flex"></view>
+            <view class="sec-btn dark" bindtap="onNewAgent" hover-class="sec-btn-hv">
+              <icon name="w-plus" size="14" />
+              <text>新建 Agent</text>
+            </view>
+          </view>
+
+          <view class="ag-list" wx:if="{{agents.length}}">
+            <!-- ★★ 2026-10-24（复审 P2-09）：`item.focus` ＝ 刚从这个入口点进来的那一张
+                 （由 `focusAgent()` 标 2.4 秒）。黄环画在卡内一层**绝对定位的覆盖块**上：
+                 不改布局、不改顺序，也**不动 `class="agent-card"` 这个字面** ——
+                 判据 `check_agent_card_layout_round158.js` 的 D3 靠它定位整张卡，
+                 写成 `class="agent-card {{…}}"` 会让那条结构断言直接取不到卡。 -->
+            <view class="agent-card" wx:for="{{agents}}" wx:key="id">
+              <view class="ag-focus" wx:if="{{item.focus}}"></view>
+              <view class="ag-row1">
+                <text class="ag-name">{{item.name}}</text>
+                <view class="tb-btn" data-id="{{item.id}}" bindtap="onEditAgent" hover-class="tb-btn-hv">
+                  <icon name="edit" size="13" opacity="0.65" />
+                  <text>编辑</text>
+                </view>
+              </view>
+
+              <!-- ★★ 157 轮（用户口径）：灰块重排为「左圆环 ＋ 右两行」——
+                   ❌ 「当前剩余」（余额）：WorkBuddy / Trae 都没有取余额的 API，手填的那颗数
+                      只会过期误导用户 ⇒ **整格删掉**；
+                   ❌ 卡脚「更新于 X」：它本来就是给那颗余额数做保质期标注的，数没了它也没意义
+                      ⇒ **整行删掉**（FR-5.3 的「过期弱化」随之失去落点，见待拍板表）；
+                   ✅ 「每月套餐」是**档位**（静态、不会过期）⇒ 留下，与「承担项目」并成右栏两行；
+                   ✅ 「距离重置」升为本卡主视觉 ⇒ 改用 `store.ringOf()` 的**圆环**：
+                      `--ring-deg` 是"本周期已过"的角（0–360，conic-gradient 现画），
+                      圆心是大字（`20` ＋ 小字`天` ／ `今天` ／ `未填`）。
+                      口径见 `store.js` 的 `ringOf()` —— ⚠️ 它画的是**时间周期**，不是"额度已用"。 -->
+              <view class="ag-body">
+                <view class="ag-ring-wrap">
+                  <view class="ag-ring" style="--ring-deg:{{item.ringDeg}}deg">
+                    <view class="ag-ring-core">
+                      <text class="ag-ring-num num {{item.resetMuted ? 'muted' : ''}}">{{item.resetNum}}</text>
+                      <text class="ag-ring-unit" wx:if="{{item.resetUnit}}">{{item.resetUnit}}</text>
+                    </view>
+                  </view>
+                  <text class="ag-ring-lab">距离重置</text>
+                </view>
+
+                <view class="ag-meta">
+                  <view class="ag-mcell">
+                    <text class="ag-lab">每月套餐</text>
+                    <text class="ag-val num">{{item.monthlyQuota}}</text>
+                  </view>
+                  <view class="ag-mdiv"></view>
+                  <view class="ag-mcell">
+                    <text class="ag-lab">承担项目</text>
+                    <text class="ag-val num">{{item.projectCount}} 项</text>
+                  </view>
+                </view>
+              </view>
+
+              <!-- 关联项目：名称前是项目的当前颜色；归档的用虚线框区分（FR-2.9 / D-15） -->
+              <view class="ag-chips" wx:if="{{item.projects.length}}">
+                <view class="ag-chip {{p.archived ? 'arc' : ''}}" hover-class="ag-chip-hv" data-id="{{p.id}}" bindtap="onGoProject" wx:for="{{item.projects}}" wx:key="id" wx:for-item="p">
+                  <view class="dot-sm" style="background:{{p.color}}"></view>
+                  <text class="ag-chip-t">{{p.name}}</text>
+                  <text wx:if="{{p.archived}}" class="ag-chip-arc">已归档</text>
+                </view>
+              </view>
+              <view class="ag-chips" wx:else>
+                <text class="ag-none">暂无关联项目</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="blank-box" wx:else>
+            <text>还没有 agent 档案。</text>
+            <text class="blank-box-s">新建一个，填上每月套餐与额度重置日即可。</text>
+          </view>
+        </view>
+
+        <!-- ③ Token API 区（★★ 2026-10-12 转真功能）
+             ⚠️ 与 agent 额度是**两件事**：这里是「你在模型厂家自己开通的 key」的余额；
+                agent 额度是订阅配额（平台没有接口，仍是手填）。
+             本轮起：厂商只能从菜单里选（目前只有 DeepSeek）、填 API Key、（进本页自动）查余额。
+             「余额偏低」仍由余额现算（低于 ¥10 才出现），口径没变。 -->
+        <view class="sec sec-token">
+          <view class="sec-head">
+            <icon name="key-b" size="16" />
+            <text class="sec-t">Token API</text>
+            <view class="sec-flex"></view>
+            <view class="sec-btn dark" bindtap="onNewToken" hover-class="sec-btn-hv">
+              <icon name="w-plus" size="14" />
+              <text>添加 API</text>
+            </view>
+          </view>
+
+          <!-- ★★ 2026-10-24（复审 P2-08）：整批查询失败的说明。
+               与每张卡的 `.tk-err` 分工不同：那条说的是"这把 key 怎么了"，
+               这条说的是"这一次一个都没查回来，卡片上的数是旧的"。 -->
+          <view class="tk-err tk-batch-err" wx:if="{{tokenErr}}">{{tokenErr}}</view>
+
+          <view class="tk-list" wx:if="{{tokens.length}}">
+            <view class="token-card" wx:for="{{tokens}}" wx:key="id">
+              <view class="tk-row1">
+                <text class="tk-name">{{item.vendor}}</text>
+                <view class="tb-btn" data-id="{{item.id}}" bindtap="onEditToken" hover-class="tb-btn-hv">
+                  <icon name="edit" size="13" opacity="0.65" />
+                  <text>编辑</text>
+                </view>
+              </view>
+
+              <!-- 余额是这张卡的主角。★ 没有数时那个大字位显示的是**一句话**
+                   （「待配置」＝ 还没填 key，是用户要动手的；「待查询」＝ 配好了、还没查回来），
+                   两种情况用不同颜色分开 —— 见 wxss 里 `.tk-bal-v.pending` 的注释。 -->
+              <view class="tk-bal">
+                <text class="tk-bal-v num" wx:if="{{item.balance}}">{{item.balance}}</text>
+                <text class="tk-bal-v pending {{item.pendingWarn ? 'warn' : ''}}" wx:else>{{item.pendingText}}</text>
+                <text class="tk-status" wx:if="{{item.low}}">余额偏低</text>
+              </view>
+
+              <!-- 卡脚两件：左边是 key 掩码（让人认出这是哪把 key），右边是"这个数是什么时候的"。
+                   ⚠️ 右边读 `balanceAt`（余额最后**查询成功**的时间），不是 updatedAt。 -->
+              <view class="tk-foot">
+                <text class="t-11" wx:if="{{item.keyMask}}">{{item.keyMask}}</text>
+                <view class="sec-flex"></view>
+                <text class="t-11" wx:if="{{item.at}}">更新于 {{item.at}}</text>
+              </view>
+
+              <!-- 查询失败单独一行：余额可能是**上一次**查到的数（后端失败时不覆盖它），
+                   所以"有数 + 有错误"是合法组合，这一行不能跟余额挤在一起。 -->
+              <view class="tk-err" wx:if="{{item.err}}">{{item.err}}</view>
+            </view>
+          </view>
+
+          <view class="blank-box" wx:else>
+            <text>还没有添加任何模型厂家 key。</text>
+            <text class="blank-box-s">选好厂商、贴上 API Key，余额会自动查回来。</text>
+          </view>
+        </view>
+
+        <!-- ④ 应用提示（★ 304 轮）—— 纯静态说明 ＋ 公众号二维码，无数据、无交互。
+             排版：**文字在左、二维码在右，同卡并排**。横屏内容 756 / 竖屏 768，
+             右侧让给二维码 132 后正文还剩 570+ ⇒ 每行都能读成一句话，不必拆两张卡。
+             ⚠️ 二维码底是 `var(--qr-tile)`（跨主题**恒白**），别换成 `--card`：
+                深色下会变成"深底浅码"，一部分手机相机扫不出来。
+             ⚠️ `show-menu-by-longpress` 是这张卡**唯一**的交互（长按直接"识别图中二维码"，
+                比截图再扫少一步）。它是长按菜单、不是 tap ⇒ **不挂 `hover-class`**
+                （判据 check_hover_pairing 只认 bindtap / catchtap 的配对）。
+             ⚠️ 五个标签**必须都是 2 个字**（面向 / 版本 / 初衷 / 安全 / 开源）——
+                正文起始 x 靠"字数相同 ＋ gap"对齐，没有写死宽度。
+             ⚠️ 条目文案**句末一律不用句号**（列表项不是段落）：句内该停的地方用「，」「；」「——」。
+                五行里只要有一行带句号，读起来就像有一行没写完。
+             ⚠️ 产品名一律写 `Agent-ToDo`（驼峰）—— 界面文案**不出现**小写 `agent-todo`。 -->
+        <view class="sec sec-tip">
+          <view class="sec-head">
+            <icon name="info-b" size="16" />
+            <text class="sec-t">应用提示</text>
+          </view>
+
+          <view class="card tip-card">
+            <view class="tip-body">
+              <view class="tip-row">
+                <text class="tip-k">面向</text>
+                <text class="tip-v">FDE（前沿部署工程师），快速跟踪所属项目的需求，顺手整理 Agent 需要的上下文</text>
+              </view>
+
+              <view class="tip-row">
+                <text class="tip-k">版本</text>
+                <text class="tip-v">当前为演示版，欢迎随意体验；功能高频更新，数据不承诺保存</text>
+              </view>
+
+              <view class="tip-row">
+                <text class="tip-k">初衷</text>
+                <text class="tip-v">驻场之后，为这家企业单独搭一套 Agent-ToDo，而不是共用一套</text>
+              </view>
+
+              <view class="tip-row">
+                <text class="tip-k">安全</text>
+                <text class="tip-v">每个软件功能背后的变更需求才是企业更重要的资产，独立部署更完全</text>
+              </view>
+
+              <view class="tip-row">
+                <text class="tip-k">开源</text>
+                <text class="tip-v">前后端代码都已开源，需要代码或有项目想聊，都欢迎扫码私信我</text>
+              </view>
+            </view>
+
+            <view class="tip-qr">
+              <view class="tip-qr-tile">
+                <image class="tip-qr-img" src="/assets/qr-official.jpg" mode="aspectFit" show-menu-by-longpress />
+              </view>
+              <text class="tip-qr-cap">公众号 · 扫码私信</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- ★ 305 轮·底部留白：横版 / PC 下「应用提示」之后不再贴底。
+             ⚠️ 为什么是**占位块**而不是 `padding-bottom`：`.workarea.mi-area`
+                既是内距盒子又是滚动容器，内容一溢出，最后那张卡就会压在自己的
+                padding 区上 ⇒ 那个 20 只在"内容装得下"时看得见。占位块是内容的一部分，
+                滚到哪儿都算高度。
+             ⚠️ `wx:if="{{landscape}}"` 不是偷懒：竖屏的 `.col` 是 `flex: 0 0 auto`
+                （高随内容），padding-bottom 那 20 照常生效；只有横版 `.col` 是 `flex: 1`
+                才会被内容盖住。加在竖屏只是白多一截空白（`.cp-endgap` 同此判据）。 -->
+        <view class="mi-endgap" wx:if="{{landscape}}" />
+      </view>
+    </view>
+  </view>
+
+  <drawer
+    open="{{drawer.open}}"
+    kind="{{drawer.kind}}"
+    title="{{drawer.title}}"
+    action="{{drawer.action}}"
+    create-label="{{drawer.createLabel}}"
+    active-id="{{drawer.activeId}}"
+    filter-label="{{drawer.filterLabel}}"
+    filter-active="{{drawer.filterActive}}"
+    tf="{{drawer.tf}}"
+    filter-open="{{drawerFilterOpen}}"
+    empty="{{drawer.empty}}"
+    groups="{{drawer.groups}}"
+    page-size="{{drawer.pageSize}}"
+    port="{{!landscape}}"
+    turned="{{drawerTurned}}"
+    bind:close="onDrawerClose"
+    bind:pick="onDrawerPick"
+    bind:create="onDrawerCreate"
+    bind:openfilter="onDrawerOpenFilter"
+    bind:closefilter="onDrawerCloseFilter"
+    bind:filterchange="onDrawerFilterChange"
+    bind:filterreset="onDrawerFilterReset"
+  />
+
+  <form-drawer
+    id="mine-form"
+    open="{{form.open}}"
+    mode="{{form.mode}}"
+    offset="{{form.offset}}"
+    edit-id="{{form.id}}"
+    title="{{form.title}}"
+    submit-label="{{form.submitLabel}}"
+    require-all="{{form.requireAll}}"
+    no-danger="{{form.noDanger}}"
+    hint="{{form.hint}}"
+    values="{{form.values}}"
+    urgencies="{{form.urgencies}}"
+    projects="{{form.projects}}"
+    mindmaps="{{form.mindmaps}}"
+    nodes="{{form.nodes}}"
+    agents="{{form.agents}}"
+    colors="{{form.colors}}"
+    formats="{{form.formats}}"
+    vendors="{{form.vendors}}"
+    port="{{!landscape}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:delete="onFormDelete"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+  />
+
+  <!-- 屏幕方向诊断浮层（长按「关于」行打开）—— 真机排查「旋转了但布局没变」 -->
+  <view class="diag" wx:if="{{diag}}">
+    <view class="diag-head">
+      <text class="diag-title">屏幕方向诊断</text>
+      <view class="diag-acts">
+        <!-- ★ 审查-02 S1（2026-10-15）：两颗都补 `hover-class`（诊断浮层恒深色底 ⇒ 压 `opacity`，见 wxss）。 -->
+        <view class="diag-act" catchtap="onDiagRefresh" hover-class="diag-act-hv">刷新</view>
+        <view class="diag-act primary" catchtap="onDiagClose" hover-class="diag-act-hv">关闭</view>
+      </view>
+    </view>
+    <!-- ★ 49 轮：诊断面板也是弹窗，滚动条同样收掉 -->
+    <scroll-view class="diag-body" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="diag-row" wx:for="{{diag.judge}}" wx:key="k">
+        <text class="diag-k">{{item.k}}</text>
+        <text class="diag-v">{{item.v}}</text>
+      </view>
+      <view class="diag-hr"></view>
+      <view class="diag-row" wx:for="{{diag.chans}}" wx:key="k">
+        <text class="diag-k">{{item.k}}</text>
+        <text class="diag-v">{{item.v}}</text>
+      </view>
+      <view class="diag-hr"></view>
+      <text class="diag-cap">最近一次尺寸变化回调的原始内容</text>
+      <text class="diag-pre">{{diag.payload}}</text>
+      <view class="diag-hr"></view>
+      <view class="diag-row" wx:for="{{diag.env}}" wx:key="k">
+        <text class="diag-k">{{item.k}}</text>
+        <text class="diag-v">{{item.v}}</text>
+      </view>
+    </scroll-view>
+    <text class="diag-foot">在真机上旋转设备，看「Page.onResize」次数与「当前视口」是否跟着变</text>
+  </view>
+<!-- /mod-mine -->

@@ -1,0 +1,377 @@
+/* ==========================================================================
+   模块组件（09-21 起）—— 只渲染 <main>，骨架与外框归壳页 pages/shell。
+   样式隔离设为 apply-shared，app.wxss 的设计令牌与骨架类对组件同样生效；
+   选择器里保留 .mod-port 的写法，因为 .app 就在壳页的祖先链上。
+   ========================================================================== */
+
+/* 组件宿主：占满壳页的挂载位 .modwrap */
+:host {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   项目模块（V8 整页重写 → ★ 09-23 第五十三轮：项目页专项 7 条 → ★ 第五十六轮四条）
+   三块**整宽竖向堆叠**：
+     ① 基础信息     —— 色点（与名称同高）· 名称 · 节点 ／ agent 一行 ／ 备注 ／ 灰块四格
+     ② 项目待办     —— 网格小卡（只放未完成）＋ 底行统计 ＋「查看全部」
+     ③ 项目脑图     —— 网格小卡（最多三行）＋ 底行总数 ＋「查看全部」
+   横竖同一份 DOM，只有网格列数换档：
+     横屏 待办 4 列 / 脑图 4 列   竖屏 待办 2 列 / 脑图 2 列
+   ⚠️ 列数与 `mod-project.js` 里的 `MM_COLS_*` 是一对，改一个必须改另一个。
+   ★★ 168 轮：脑图 6/3 列 → **4/2 列** —— 脑图卡里多了一张 56×40 的格式简图（见下）。
+      ⚠️ 同一档的两个方向都动过：横屏那条在基础层、竖屏那条在 `.mod-port` 里，**必须成对改**。
+   ⚠️ 原来的 `.split / .col-main / .col-side` 三件套已删 —— 横屏不再分栏
+      （456 宽的侧栏排不下 5–6 列脑图，且只剩一张卡时下方整片是白的）。
+   ★ 56 轮：两个区块头右侧的「记一条」「新建脑图」已撤 ⇒ 页面里不再有 `.sec-btn`；
+     子标题「项目基础信息」→「基础信息」（"项目"两个字在本页每个标题里重复是噪音）。
+   ========================================================================== */
+
+/* ---------- ① 区块 · 基础信息（★ 56 轮改子标题：「项目基础信息」→「基础信息」） ----------
+   ★ 第八十二轮：这张卡的**皮肤整套搬去了 app.wxss** —— 搬走的是
+   `.basic` ＋ `.bs-row1 / .bs-name / .bs-act / .bs-agent* / .bs-remark* / .bs-pair /
+   .bs-cell / .bs-lab / .bs-val / .bs-sep`，外加 `.pdot-lg` 与 `.badge-arch`。
+   原因：用户口径「所属项目卡片（待办详情）目前太简单了，建议参考项目详情中的基础信息
+   修改」⇒ 待办详情也要长这张卡。⚠️ 组件 wxss 互相**看不见**
+   （`styleIsolation: apply-shared` 只让 app.wxss 与页面样式进来），
+   两页共用一份皮肤的唯一写法就是放全局 —— 手抄一份迟早会漂。
+   搬动时**一行数值都没改**；这里只留「本项目页专属」的东西（下面那条 .sec-basic）。
+   卡内四行：① 色点 · 名称 · 节点徽章 ／ 右端一颗按钮（活跃「编辑」／归档「取消归档」）；
+             ② 关联 agent 名（整行可点 →「我的」）；③ 备注；④ 灰块四格。 */
+.sec-basic { flex: 0 0 auto; }
+
+.p-area { gap: 12px; }
+
+/* ★★ 151 轮：**横屏（含 PC / 宽视口）这块工作区也能滚** ——
+   待办改成内容高之后，三块加起来可能超过工作区高（定高 776，`overflow` 由 app.wxss 的
+   `.workarea` 给成 `hidden`）⇒ 必须让外层接管滚动，否则超出的部分直接看不见。
+   口径与竖屏那条 `.mod-port .p-area { overflow-y: auto }` **完全一致**：
+   这里**不写** `.mod-port` 前缀 ⇒ 横屏生效；竖屏那条权重同为两类、值相同，不冲突。
+   ⚠️ 为什么写两个类（`.workarea.p-area`）：`.workarea { overflow: hidden }` 是 app.wxss 里
+      **同一个节点**上的单类规则，而组件 wxss 与 app.wxss 的层叠顺序在小程序里没有保证
+      ⇒ 用两类把特异性压过去（同下面 `.sec-todo .blk-card` 的处理，理由见那条）。
+   ⚠️ 只覆盖 `overflow-y`：横向仍是 hidden（来自 `.workarea` 的 `overflow` 简写）。
+   ⚠️ 滚动条本身由下面那条 `::-webkit-scrollbar { width: 0 }` 收掉 —— 49 轮就为这一刻备的。 */
+.workarea.p-area { overflow-y: auto; }
+
+/* 两个内容区块：待办与脑图**都按内容自然高**。
+   ★★ 151 轮：横屏原来写的是「待办吃余高（`flex:1; min-height:0`）＋ 网格在卡内滚」——
+     用户口径「不能出现滚动条，和竖屏一样排布，容器自适应升高」⇒ 收起那套，
+     与竖屏合流：内容高，超出视口时由上面那条 `.workarea.p-area` 整页滚。 */
+.sec-todo { flex: 0 0 auto; }
+.sec-mm { flex: 0 0 auto; }
+
+/* ---------- 通用卡（卡头已随标题外提删除） ----------
+   ★★ 151 轮：`flex` / `min-height` 从这张卡上**移走**（改由下面那条两类规则给）——
+   这里原来写死 `flex: 1; min-height: 0`（＝待办卡吃余高、网格在卡内滚）。 */
+.blk-card {
+  background: var(--card);
+  border: 1px solid var(--hairline, #E0E2E8);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* 脑图那张：最多三行，高多少就是多少（与下面覆盖规则同值，保留 = 不依赖区块类名） */
+.mm-box { flex: 0 0 auto; }
+/* ★★ 151 轮：两种卡**都按内容高** —— 待办卡不再吃余高（见 `.sec-todo` 那条注释）。
+   ⚠️ 为什么多写一层区块类：app.wxss 里有一份**同名**的
+      `.blk-card { flex: 1; min-height: 0 }`（历史遗留的"吃余高"档，五个模块共用）。
+      组件 wxss 与 app.wxss 的层叠顺序在小程序里**没有保证** ⇒ 单类同名规则谁赢是不确定的
+      （＝ 139 轮判据 K 那个坑：判据读的那条 ≠ 运行时生效那条）。
+      写成两类、特异性**严格大于**它，就不必赌顺序。 */
+.sec-todo .blk-card,
+.sec-mm .blk-card { flex: 0 0 auto; }
+
+/* ---------- 四档条（卡内首个元素，补回原来的卡头上边距） ----------
+   ★★ 156 轮：这一排**从"只读计数"改成"可点的筛选键"**（用户口径）。
+   形态沿用「筛选副弹窗」的选项胶囊 `.tf-chip`（白底 ＋ `--hairline` 描边 ＋ 胶囊圆角 ＋
+   13/500），但**选中态不套它那套黑底 `.on`** —— 四档各自的颜色就是它们的身份，
+   抹成黑白就把"紧急 / 中等 / 不紧急 / 留置"读没了。
+   选中改用该档自己的**浅底 ＋ 同色描边 ＋ 深字**（`--u-*-bg` / `--u-*-t`，
+   取法与 `.badge-node` 完全一致）⇒ 颜色照旧、状态也读得出。
+
+   ⚠️ 三条选择器口径：
+     ① `.uf.uf-<key>` 里那个 `<key>` 是**紧急度键名**（urgent / mid / low / hold），
+        由 `urgChips` 从 `store.urgencyList()` 下发 —— 这里不再手抄四个中文名，
+        也不再把颜色写死在 `.u/.m/.l/.h` 上（那两个单字母类跟 `--u-*` 只是巧合同形）。
+     ② `.uf-n` 与 `.uf-t` 分开写：档名 500、条数 600（数字是"这一档有几条"，
+        要比档名重一点才读得出），字体族仍靠全局 `.num`（Inter）。
+     ③ 按下态**分两档**：白底那张走 `--chip` 底（与 `.tf-chip-hv` 一致）；
+        已选中那张底色是语义色，再改底会打架 ⇒ 改成整颗 `opacity` 压暗。
+        `.uf-hv`（0,1,0）只够压白底那张；选中那张的 `background` 来自
+        `.uf-<key>.on`（0,2,0，见下），所以不会被 `.uf-hv` 抢掉 ——
+        两条断言的是**不同属性**（前者 background、后者 opacity），顺序无关。 */
+.stat-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--hairline-soft, #EEF0F4);   /* ★ 94 轮：收进令牌 */
+}
+/* 四颗胶囊成一组：组内自己换行（窄屏下别把右端的分数顶出去） */
+.uf-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.uf {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+.uf-t { font-size: 13px; font-weight: 500; }
+.uf-n { font-size: 13px; font-weight: 600; }
+/* 未选中：该档主色的**深字档**（`-t`）。
+   ★★ 2026-10-22（审查 P2-04）：原来用的是 `--u-*`（主色）本身 —— 那是"色点 / 描边"用的
+   3:1 档，拿来当 13px 文字只有 **2.17:1**（中等 #EF9F27 对白卡），远低于 4.5:1。
+   换成 `-t` 之后（浅色 #A3232A / #8A5A00 / #1F5189 / #5A5D6B；深色另有一档亮字）：
+   · 未选中 ≠ 灰色 —— 色相还在，仍然一眼能分出四档；
+   · 选中态（下面四条 `.on`）本来就是 `-t` 字 ＋ `-bg` 底 ＋ 主色描边 ⇒
+     未选中与选中现在**同一支字色**，区别只在底色与描边，层级更干净。
+   ⚠️ 别把 `--u-*-bg` 借来当未选中的底：那会让"选中/未选中"只剩描边一条差别。 */
+.uf-urgent { color: var(--u-urgent-t, #A3232A); }
+.uf-mid    { color: var(--u-mid-t, #8A5A00); }
+.uf-low    { color: var(--u-low-t, #1F5189); }
+.uf-hold   { color: var(--u-hold-t, #5A5D6B); }
+.uf-hv { background: var(--chip, #F1F2F5); }
+/* 选中：该档浅底 ＋ 同色描边 ＋ 深字（写在 `.uf-hv` 之后 ⇒ 压得住它那条 background） */
+.uf-urgent.on { background: var(--u-urgent-bg, #FDEDEE); border-color: var(--u-urgent, #E5484D); color: var(--u-urgent-t, #A3232A); }
+.uf-mid.on    { background: var(--u-mid-bg, #FDF3E2); border-color: var(--u-mid, #EF9F27); color: var(--u-mid-t, #8A5A00); }
+.uf-low.on    { background: var(--u-low-bg, #EAF2FB); border-color: var(--u-low, #378ADD); color: var(--u-low-t, #1F5189); }
+.uf-hold.on   { background: var(--u-hold-bg, #F3F4F6); border-color: var(--u-hold, #8E91A0); color: var(--u-hold-t, #5A5D6B); }
+/* 已选中那张的按下态：底色交给语义色，只压暗整颗 */
+.uf.on.uf-hv { opacity: 0.78; }
+.sb { font-size: 13px; white-space: nowrap; }
+.sb.score { color: var(--slate, #555A6A); font-family: var(--font-num); }
+.stat-flex { flex: 1; }
+
+/* ==========================================================================
+   ② 待办网格
+   ========================================================================== */
+/* ★★ 151 轮：网格容器也**不再吃余高**、不再"卡内滚" —— 高由内容决定，
+   横屏与竖屏从此同一条口径（竖屏的 `.mod-port` 档只多一条显式的 `max-height: none`）。
+   ⚠️ 工作区仍是定高 776，但它的 overflow 已由上面 `.workarea.p-area` 改成可滚
+      ⇒ 超出部分整页滚，不再需要"卡内滚"这一层（那正是用户看到滚动条的地方）。
+   ⚠️ `min-height: 0` 一并去掉：它只对"会被压缩的 flex 子项"有意义，这里子项按内容高，用不上。 */
+.grid-scroll { flex: 0 0 auto; padding: 12px; box-sizing: border-box; }
+
+.tg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  /* 同一行的卡**等高** —— 网格里参差比列表里刺眼得多。
+     机制：本层拉平行高 ⇒ `.tg-cell`（flex）再拉高 todo-card 的宿主 ⇒
+     todo-card 内部 `:host{display:flex}` + `.tc{flex:1}` 让白卡撑满。三处缺一不可。 */
+  align-items: stretch;
+}
+/* 列宽必须**锁死** —— 只写 `width` 是不够的（★ 54 轮用户口径「卡片宽度要统一」）：
+   · `width` 在 flex 行里只是 flex-basis，`flex-shrink` 默认 1 ⇒ 某张卡的
+     min-content 一旦撑破列宽，它会顶宽自己、把同行的邻居压窄，同一屏就参差不齐；
+   · 反过来 `flex-grow` 默认 0 ⇒ 内容不足时格子也不补。
+   所以写 `flex: 0 0 calc(...)`（不伸也不缩）＋ `min-width: 0`（允许卡内自己省略，
+   而不是把格子顶开）。行宽不足时宁可变字，不许跨列。 */
+.tg-cell { flex: 0 0 calc((100% - 30px) / 4); min-width: 0; display: flex; }
+
+/* ⚠️ 还要让 `todo-card` 的**宿主**撑满格子。
+   宿主是 flex item、宽度 auto ⇒ 走 shrink-to-fit：正文短的卡取的是**内容宽**，
+   比格子窄一截；正文长的卡才被压到格宽 ⇒ 同一行里"卡片宽度不一致"就是这么来的。
+   `flex:1 1 auto` ＋ `min-width:0` 之后，无论正文长短，白卡恒等于列宽。
+   ★★ 208 轮：**标签名那条已删**（原为 `.tg-cell todo-card`, 与本条双写）。
+     小程序**禁止组件 wxss 出现标签名／ID／属性选择器**，vConsole 每次启动都报一条
+     `Some selectors are not allowed in component wxss ... mod-project.wxss` 的红字，
+     而那条规则本身**不会被应用** —— 留着只有噪音，没有兜底作用。
+     真正干活的一直是 `.tg-card`（wxml 上挂的类，见 mod-project.wxml 的 `<todo-card class="tg-card">`）。 */
+.tg-cell .tg-card { flex: 1 1 auto; min-width: 0; }
+
+/* ==========================================================================
+   ③ 脑图网格
+   ========================================================================== */
+.mm-body { padding: 12px; box-sizing: border-box; }
+
+.mg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+.mm-tile {
+  /* 与待办格同一套锁宽规则（★ 54 轮）：`flex: 0 0 …` 不伸不缩 ＋ `min-width:0`
+     —— 只写 width 时，长名字的 tile 会把同行的邻居顶窄。
+     ★★ 168 轮：6 列 → **4 列**（`calc((100% - 30px) / 4)`）。
+        ⚠️ 那个 `30px` 必须等于**同行真实 gap 之和**（`.mg` 是 10 ⇒ 3 × 10）——
+           写成别的值要么最后一张换行、要么行尾留一道缝（158 轮同族坑）。
+     ★ 排向 column → **row**：左＝格式简图，右＝三行文字。 */
+  flex: 0 0 calc((100% - 30px) / 4);
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;   /* 简图（40 高）与右侧文字块（约 54 高）**垂直居中**，图不去顶 */
+  gap: 8px;              /* 卡内 8 < 卡间 10 < 栏间 12 —— 那套三档距离层次的最内一档 */
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline, #E0E2E8);
+  background: var(--card);
+  box-sizing: border-box;
+}
+.mm-tile-hv { background: var(--surface, #F7F8FA); }   /* ★ 118 轮：`:active` → `hover-class="mm-tile-hv"` */
+
+/* 格式简图 —— **56×40**：`utils/formats.js` 现算的 data-URI，六种格式各一张结构示意。
+   ★★ 168 轮新增（当时取 48×34）／★★ 169 轮按用户口径**放大**成 56×40。
+   ⚠️ 尺寸的三档分工（动这里之前先读一遍）：
+      · 表单行 `.sd-fthumb` …… 48×34（一行一个字段，右边是**一行**说明）
+      · 列表气泡 `.dw-mm-thumb`… 20×14（只求认出**轮廓**）
+      · 本卡 ……………………… **56×40** ← 169 轮新开的一档：右侧压着**三行**文字，
+        34 高被衬得太瘦（用户口径「简图高度稍微加大一下 …… 目前高度有点小了」）。
+      ★ 做法是**同一张源 SVG 放大显示**，不动 `formats.js` 的结构 —— 源图 48:34
+        与本档 56:40 只差 0.8% ⇒ `aspectFit` 只留下不到 1px 的边，肉眼不可见。
+      ⚠️ 本档**不再**与 `.sd-fthumb` 逐值相同，这是**有意的**：168 轮那条
+         "尺寸取工程现成的一档"的口径，已被 169 轮的用户口径取代 —— 别再把两者写成一对。
+      ⚠️ 高度只到 40、没去填满右侧那 54：因为**三档设备里最窄的手机档**
+         （横 178 / 竖 166）右侧只剩 ~90–100px，图每宽 4px 就是从"更新于 2026年10月9日"
+         那一行里抠走 4px。40 是"明显变大"与"手机档别崩"之间的折中。
+   ⚠️ chip 灰底（不是白底）：卡面本身就是白的，白底图会糊成一块；
+      同 `.dw-mm-thumb` / `.sd-fthumb` 的取法。
+   ⚠️ `mode="aspectFit"` 在 wxml 上 ⇒ 比例不丢、不拉扁。 */
+.mm-thumb {
+  width: 56px;
+  height: 40px;
+  flex: 0 0 56px;
+  border-radius: 6px;
+  background: var(--chip, #F1F2F5);
+}
+/* 右侧文字块：名称 ／ 规模 ／ 时间**三行**，行距 3（比卡间距小一档以上，免得读成三块） */
+.mm-tile-b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mm-name {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary, #1C1C1E);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* 规模（N 节点 · M 层）—— 比时间**深一档灰**：它说的是"这张图多大"，是内容量；
+   时间只说"什么时候动过"，是次要信息 ⇒ 分两级灰，不再像原来那样一串全同色。 */
+.mm-stat {
+  font-size: 11px;
+  color: var(--slate, #555A6A);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* 更新时间 —— 全页最浅的一档（同 `.dw-mm-meta` 的 muted 口径，两处语气一致）。
+   ★★ 169 轮：文案由 `更新于 10-09` 换成 `更新于 2026年10月9日`（用户口径「太不正式」），
+   格式收口在 `store.cnDate()` —— 本文件只关心字号与色。 ⚠️ 这行是本卡**最宽**的一行
+   （12 个字符宽 ≈ 105px），手机档（文字区 ~90–100px）会收成省略号 —— 见遗留 114。 */
+.mm-time {
+  font-size: 11px;
+  color: var(--muted, #A5A8B5);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 卡内空态（待办 / 脑图共用） ---------- */
+/* ★★ 本轮：`.grid-empty` 撤掉 —— 项目详情里两处（待办网格 / 脑图网格）统一挂
+   `app.wxss` 的 `.blank-box`。原来这里是 20×12 虚线、13/`--muted`，
+   与 L2 差在内边距（20×12 vs 22×14）与字色（浅色 2.37:1 vs 6.87:1）。 */
+
+/* ---------- 卡底行：左统计 ／ 右「查看全部」 ---------- */
+.list-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--hairline-soft, #EEF0F4);      /* ★ 94 轮：同上 */
+}
+.foot-stat {
+  font-size: 13px;
+  color: var(--slate, #555A6A);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 空态 ----------
+   ★ 本轮：`.blank` / `.blank-t` / `.blank-s` 三组定义**整段搬去了 app.wxss**
+     —— 项目 / 待办 / 脑图三处共用一份真源（原来项目与待办同源、脑图另一套）。
+     本页只留下面那条"平板竖屏给足高度"的覆盖。 */
+
+/* ==========================================================================
+   竖屏
+   ========================================================================== */
+/* ★★ 204 轮：`padding-top` 归 0（已被让位段收进盒高），并声明让位段的两个形态输入 ——
+   本页的 `gap` 是 **14**（不是基础层的 16）⇒ `--area-gap` 必须跟着 14，
+   否则首块会比重做之前高 2px（让位段的盒高少减了一项）。 */
+.mod-port .p-area {
+  padding: 0 16px 16px;
+  gap: 14px;
+  overflow-y: auto;
+  /* ★ 206 轮：`--head-extra` 不再本地声明 —— 继承 `.app.port .workarea` 的 4px
+     （竖屏缩"logo → 首个子标题"的间隙）。只想改**本页**的间距时再在这里覆盖。 */
+  --area-gap: 14px;
+}
+
+/* ★ 49 轮：本页的纵向滚动容器都不显示滚动条（能滚就够）——
+   `.p-area`（整页滚动，★ 151 轮起**横竖屏都会滚**）、`.grid-scroll`（网格自身）。
+   ⚠️ 竖屏把 `.grid-scroll` 的 max-height 放开、改成外层滚，但它的 overflow 还在
+      ⇒ 滚动条照样能出现，所以两个一起收。 */
+.p-area::-webkit-scrollbar,
+.grid-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; color: transparent; }
+
+/* 竖屏：三块全部按内容高，整页滚（网格不设内滚，免得出现"框里再套一层滚"）。
+   ★★ 151 轮起这套口径**升成横竖屏共用**（横屏原来只有"待办吃余高 ＋ 卡内滚"）⇒
+   这四条现在是**同值冗余**（基础层已经一样）。留着是有意的：以后若有人把基础层改回去，
+   竖屏这一档仍然钉得住（与 `.sec-mm` / `.mm-box` 保留同值同一个道理）。 */
+.mod-port .sec-todo { flex: 0 0 auto; }
+.mod-port .blk-card { flex: 0 0 auto; }
+.mod-port .mm-box { flex: 0 0 auto; }
+.mod-port .grid-scroll { flex: 0 0 auto; max-height: none; }
+
+/* 网格换档：竖屏 待办 2 列 / 脑图 2 列（★ 54 轮：一律写 `flex: 0 0 …`，
+   与横屏同一套锁宽规则 —— 见上面 .tg-cell 的注释）
+   ★★ 168 轮：脑图 3 列 → **2 列**（`calc((100% - 10px) / 2)`，1 个 gap × 10）——
+      与横屏那条**成对**；⚠️ 10px 这一项必须等于 `.mg` 的真实 gap。 */
+.mod-port .tg-cell { flex: 0 0 calc((100% - 10px) / 2); }
+.mod-port .mm-tile { flex: 0 0 calc((100% - 10px) / 2); }
+
+.mod-port .stat-row { flex-wrap: wrap; }
+/* ★ 156 轮：**竖屏档**内容宽 ~368（★ 审查-02 P2-16：原写"手机端"有误 —— 手机端不渲染五模块）
+   ⇒ 四颗胶囊（含"不紧急"那颗三字的）＋ 右端分数
+   会顶到换行。收窄内距 10 → 8 让这一排保持一行（真放不下时仍会自动换行）。 */
+.mod-port .uf { padding: 0 8px; }
+.mod-port .blank { min-height: 400px; }
+
+/* 基础信息卡 · 竖屏档（★ 55 轮立）—— ★★ 177 轮**整段搬去 app.wxss**
+   （现在写作 `.app.port .basic` / `.app.port .bs-pair` / `.app.port .bs-val`，理由见那边注释）。
+   为什么必须搬：这三条原来**只**写在项目页组件里，而这张卡从 82 轮起**同时长在两页**
+   （项目详情「基础信息」／待办详情「所属项目」）—— 待办页的组件 wxss 看不见这三条
+   ⇒ 竖屏下同一张卡两页长得不一样（卡内距 14/16 ↔ 12/14、灰块 12/16 ↔ 10/14、
+   数值 21px ↔ 19px），切换时读作"内部错位"（用户 177 轮报的就是这个）。
+   ★ 皮肤整套（`.basic` ＋ `.bs-*`）从 82 轮起就住在 app.wxss，本轮只是把**竖屏这一档**
+     也一起搬齐 —— 别在这里再补一份（手抄一份迟早漂，82 轮那条注释就是这么写的）。
+   ⚠️ `.sec-basic`（上面第 44 行）才是本项目页**专属**的东西，它留着不动。 */

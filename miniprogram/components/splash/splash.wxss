@@ -1,0 +1,78 @@
+/* ==========================================================================
+   启动动画（品牌开屏）—— 皮肤
+   ⚠️ 背景色是**用户点名的那一条**：「启动动画的背景色要和现有的应用背景色一致」。
+      工程里"应用背景色"不是一个值，而是一族（按形态分档，见 app.wxss）：
+        · 平板（横 / 竖）：`--surface` ＝ #F7F8FA —— `.stage-wrap` / `.stage` / `.app` 的页底；
+        · 手机：             `#FFFFFF`      —— `.app.phone` / `.cp.phone` / `.ph` 三处同一条口径
+                                               （106/107 轮：手机端整屏就是白的）。
+      ⇒ 这里跟着分两档，**不新造令牌、也不改任何既有底色**。
+      ⚠️ 别把它写回设计稿的暖白 `--paper (#f8f7f3)`：那是 HTML 版自己的页面底色，
+         与应用无关 —— 用户开口要的就是"与现有背景一致"。
+   ⚠️ z-index 900：全工程最高的 300 是诊断浮层，抽屉族 80–98、悬浮块 85 ⇒ 开屏盖住全部。
+   ========================================================================== */
+.splash {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  background: var(--surface, #F7F8FA);
+  overflow: hidden;
+  /* 收场：先淡出后再由 wx:if 摘树（两件事必须分两次 setData，见 js 的 _play）
+     ★ 420ms 与 js 里的 FADE 同值：画布内那份淡出（_render 的 alpha 总闸）与这份
+       容器过渡**同时起、同时落**，合起来才是一次完整的收场。
+     ⚠️ 这份过渡管不到 `<canvas type="2d">`（同层渲染时祖先 opacity 不保证生效），
+        所以它只负责"画布外那两行字 + 底板"，画面本身由 js 自己淡 —— 两条都要有。 */
+  opacity: 1;
+  transition: opacity 420ms ease;
+}
+
+/* 手机端：与 `.app.phone` / `.cp.phone` / `.stage.ph` 同一条口径（整屏纯白） */
+.splash.sp-phone { background: var(--bg-phone); }
+
+.splash.sp-fade { opacity: 0; }
+
+/* 画布铺满整层 —— 动画自己按 w/h 居中定位，CSS 这边不给它任何边距 */
+.sp-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 幕次文案（"先说出来"…）：设计稿里在画布下方居中、字距略散。
+   ⚠️ 14px / `--stone` —— 与「幕次说明」这类注脚在本工程里的既有档位一致
+      （不是标题，不与画面抢视觉）。末幕文案为空串 ⇒ 自然消失，不用额外控制。
+   ★★ **这里没有 `bottom`，`top` 也不在这里** —— 位置由 wxml 的 style 给（`capTop`），
+      因为它要跟着动画自己的尺寸走：`文案顶 ＝ h/2 ＋ 98·scale ＋ 56`。
+      ⚠️ 别改回 `bottom: 12%` 之类：那是"离屏底多远"，屏越高离动画越远
+         （平板竖屏实测差到 374px；180 轮就是修这条）。详见 splash.js 文件头。 */
+.sp-cap {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: var(--stone, #8E91A0);
+}
+
+/* 跳过提示：轻触跳过的唯一说明（不写它就没人体面地知道可以跳过）。
+   比文案再淡一档、再小一号 —— 它是"操作说明"，不该读成第五幕。
+   ★ 它**贴屏底不动**（用户 180 轮点名："'轻触跳过'这个位置不变"）——
+     文案上移之后两者分开：上面那行是动画的副题，这行是操作说明，各自成组。 */
+.sp-skip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  /* ★ 2026-10-24（复审 P2-15）：这是**唯一的跳过入口说明**，不是装饰 ——
+     走可读档。原来 `--muted` 在开屏底色上只有 2.3 左右，很多用户根本没看见"可以跳过"。 */
+  color: var(--text-2);
+}

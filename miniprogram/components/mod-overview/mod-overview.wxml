@@ -1,0 +1,354 @@
+<!-- 模块组件（09-21 起）：只渲染 <main>。
+     骨架 stage-wrap / stage / app、左导轨、底部导航、悬浮 Logo 全部搬到了壳页 pages/shell；
+     这里保留 .main 这一层，是为了让 .app.port .xxx 这类骨架选择器继续命中。
+     本模块的抽屉 / 表单抽屉仍在组件内（绝对定位，参照物是壳页的 .app）。
+
+     ★ 09-23 第五十九轮（概览页专项 · 用户 7 条口径）：
+       ① 三个区块子标题右侧的解释 / 计数灰字**全删**（`.sec-s` / `.sec-note` 本页清零）；
+       ② 子标题「待办创建与完成」→「**活跃度日历**」；
+       ③ 日历图例右侧的「分档 0 条 / 1–2 条 / …」删掉；
+       ④ 明细条去掉「已选中」前缀，直接给信息；**默认选中今天**（store.heatSelected），
+          所以页面上不再有"未选中"的空态；
+       ⑤ 「项目待办统计」右端的「看全部待办」撤销 —— 这一块改成**项目卡的网格**；
+       ⑥ 项目卡复用项目卡本体（FR-5.2）：色点 · 节点 · agent · 四档条数 · 脑图数；
+          网格锁宽 —— 横屏一行 4 张、竖屏一行 2 张（与项目详情的待办网格同一套规则）；
+       ⑦ 「agent 额度」→「**Agent 概况**」，卡面照搬「我的」页 agent 卡，横屏一行 2 张。
+
+     ⚠️ 结构变化：横屏原来的「下半区 ＝ 左统计 ＋ 右额度」两栏壳（`.ov-bottom`）**撤掉** ——
+        两张卡现在都要铺成整宽网格，且 8 张项目卡 ＋ 2 张 agent 卡本来就装不进 776，
+        所以三个区块整宽竖向堆叠、**本页整页可滚**（与「我的」「项目」同一处理）。
+
+     ★ 09-23 第六十一轮（用户 2 条口径）：
+       ① 项目卡的**四档条数压到卡底**（`.ps-stat { margin-top: auto }`），原来它夹在
+          「卡头」与「脑图 · agent」底行之间 —— 让位之后，四档在卡底连成一条，同排可横向比分布；
+       ② agent 卡的**边框统一**：原 `.ag-card.stale` 走虚线边框 ＋ 浅底（FR-5.3 过期弱化），
+          与同排另一张实线卡并排时"像两种卡"⇒ 边框与底色**全部统一**，
+          过期弱化只落在卡脚「更新于 X · 待更新」这句文字上。
+
+     ★ 09-28 第九十七轮（用户 1 条口径）：热力图**采样口径扩为三源** ——
+       日历的强度不再只是「待办创建 ＋ 待办完成」，**把闪念胶囊的创建条数也算进去**
+       （`FR-9`：胶囊是新增的记录入口，用户张口就来一条，那也是"这天有活动"）。
+       数据侧在 `utils/mock.js` 的 `buildHeatmap()`（新增 `baseCapsules()` 基线 ＋
+       按 `CAPSULES.createdAt` 叠加真实值）；本文件只多渲染明细条上「胶囊 N 条」这一格。
+
+     ★★ 157 轮（用户口径）：agent 卡去「余额 / 更新于」、立「距离重置圆环」——
+       与「我的」页同一份装配（`store.agentCardViews()`）⇒ 两页的卡面同步改。
+       卡面上的三处变化见下面 agent 区块里的注释；数据层不受影响，
+       本文件只少渲染两个节点（卡脚整行 ＋ `stale` 类绑定）、多渲染一组圆环节点。
+
+     ★★ 158 轮（用户口径）：① 圆环与圆心大字从纯主墨改成蓝色系（嫌"单调"）；
+       ② 竖屏的 agent 卡也从"一行一张"改成**一行两张**（横屏本来就是两列）——
+       两页卡面同源，改动同样落在 `store.agentCardViews()` 与两个 wxss 上。 -->
+<view class="main {{landscape ? '' : 'mod-port'}}">
+
+    <!-- 主工作区 776（内容 756；★ 09-22 走查·十一：横屏无品牌栏、首块之前不留 padding） -->
+    <view class="workarea ov-area">
+    <!-- ★★ 204 轮：让位段（状态栏 ＋ 品牌行）—— 滚动内容的**第一段**，随内容滚走。
+         ★★ 207 轮：横屏**又渲染了**（206 试过整段撤掉、内容贴顶太紧已回退）。
+         横屏这段是**空盒子**，只贡献 `LAND_HEAD`(6) 的高度、不画 logo
+         （brand-head.wxml 内部还有一层 `wx:if="{{!landscape}}"` 挡着）。 -->
+    <brand-head landscape="{{landscape}}" />
+
+      <!-- ① 卡 · 活跃度日历（FR-5.1：待办创建 ＋ 待办完成 ＋ **胶囊创建**）—— 总占高守恒：外层 .sec-heat 承接原卡高 -->
+      <view class="sec sec-heat sec-first">
+        <view class="sec-head">
+          <icon name="calendar-b" size="16" />
+          <text class="sec-t">活跃度日历</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="card heat">
+          <view class="heat-body">
+            <view class="heat-axis">
+              <view class="heat-axis-cell" wx:for="{{weekdays}}" wx:key="*this">
+                <text class="heat-axis-t">{{item}}</text>
+              </view>
+            </view>
+
+            <view class="heat-right">
+              <scroll-view
+                class="heat-scroll"
+                scroll-x
+                enable-flex
+                enhanced
+                show-scrollbar="{{false}}"
+                scroll-left="{{scrollLeft}}"
+                scroll-with-animation="{{false}}"
+                bindscroll="onHeatScroll"
+              >
+                <view class="heat-inner">
+                  <view class="heat-ruler">
+                    <view class="heat-ruler-cell" wx:for="{{weeks}}" wx:key="key">
+                      <text class="heat-ruler-t">{{item.weekNo}}</text>
+                    </view>
+                  </view>
+
+                  <view class="heat-grid">
+                    <view class="heat-col" wx:for="{{weeks}}" wx:key="key" wx:for-item="col">
+                      <!-- ★ 审查-02 S1（2026-10-15）：补 `hover-class` —— 同页 `.ps-cell` / `.ag-card`
+                           都有按下反馈，只有热力格漏了。⚠️ **不能改底色**：本格底色是
+                           `style="background:{{heatColors[cell.level]}}"`（内联，且是语义色阶），
+                           改底会与"深浅＝活跃度"这条语义打架 ⇒ 只压 `opacity`（见 wxss `.heat-cell-hv`）。 -->
+                      <view
+                        class="heat-cell {{cell.level >= 3 ? 'hi-lvl' : ''}}"
+                        wx:for="{{col.days}}"
+                        wx:key="dayIndex"
+                        wx:for-item="cell"
+                        style="background:{{heatColors[cell.level]}}"
+                        data-w="{{cell.weekNo}}"
+                        data-d="{{cell.dayIndex}}"
+                        bindtap="onHeatTap"
+                        hover-class="heat-cell-hv"
+                      >
+                        <view class="sel-box" wx:if="{{cell.sel}}">
+                          <view class="cnr tr"></view>
+                          <view class="cnr bl"></view>
+                        </view>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+              </scroll-view>
+            </view>
+          </view>
+
+          <view class="heat-legend">
+            <view class="legend-l">
+              <text class="t-11">少</text>
+              <view class="legend-scale">
+                <view class="legend-cell" wx:for="{{legend}}" wx:key="*this" style="background:{{item}}"></view>
+              </view>
+              <text class="t-11">多</text>
+            </view>
+            <view class="legend-flex"></view>
+            <!-- 这半句是**可操作提示**（滚动条已被收掉，不留这句就没人知道能滑），
+                 不是解释说明 ⇒ 保留。「分档 X 条 / …」已按第 ③ 条删除。
+                 ★★ 2026-10-24（复审 P2-10）：**方向文案改正** —— 改前写「向左滑动看更早」。
+                    日历初始 `scrollLeft` 停在**最右端**（`syncHeat()` 里 `content - view`），
+                    早期周在左边；触屏要看到左边的内容，手指得**向右**拖（相当于把纸往右拉）。
+                    按改前那句操作，用户只会滑到"已经没有更晚的周"那头，以为历史丢了。
+                    ⚠️ 若哪天初始位改成最左端，这句要跟着反过来 —— 文案与 `syncHeat()` 同源。 -->
+            <text class="t-11">共 {{totalWeeks}} 周 · 当前显示最近 {{visibleWeeks}} 周 · 向右滑动看更早</text>
+          </view>
+
+          <!-- 选中态：三个来源的数分开给（D-6），最右的「合值」＝ 三者之和。
+               ★ 第 59 轮：默认就落在今天那一格（`store.heatSelected`），
+                 所以这里不再有"未选中"分支 —— 也不再有「已选中」这个前缀。
+               ★ 第 97 轮：中间多一格「胶囊 N 条」（口径扩展，见文件头）。 -->
+          <view class="heat-detail" wx:if="{{sel}}">
+            <text class="hd-strong">{{sel.label}} · 第 {{sel.week}} 周</text>
+            <text class="t-12">·</text>
+            <text class="hd-created">创建 {{sel.created}} 条</text>
+            <text class="t-12">/</text>
+            <text class="hd-done">完成 {{sel.completed}} 条</text>
+            <text class="t-12">/</text>
+            <text class="hd-cap">胶囊 {{sel.capsule}} 条</text>
+            <text class="t-12">·</text>
+            <text class="t-12">合值 {{sel.sum}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ② 项目待办统计（FR-5.2 · 排除已归档）—— 项目卡网格，逐个项目一张 -->
+      <view class="sec sec-stats">
+        <view class="sec-head">
+          <icon name="chart-b" size="16" />
+          <text class="sec-t">项目待办统计</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="card stats">
+          <view class="ps-grid" wx:if="{{stats.length}}">
+            <!-- 锁宽格子（`flex: 0 0 calc(...)` ＋ min-width:0）：只写 width 会被长项目名顶宽，
+                 同一行就参差不齐 —— 规则与项目详情的待办网格一致（见 mod-project.wxss 的 .tg-cell）。 -->
+            <view class="ps-cell" wx:for="{{stats}}" wx:key="id" data-id="{{item.id}}" bindtap="onStatTap" hover-class="ps-cell-hv">
+              <view class="ps-card">
+                <view class="ps-head">
+                  <view class="ps-dot" style="background:{{item.color}}"></view>
+                  <text class="ps-name">{{item.name}}</text>
+                  <!-- ★ 审查-02 B-5（2026-10-15）：从"自己一套 `.ps-badge`"改成
+                       **挂全局 `.badge badge-node`**（颜色的唯一真源），再由 `.ps-badge`
+                       覆盖概览卡这一档的**尺寸**（3px 8px / 11px）。
+                       原先 `.ps-badge` 把 `--u-mid-bg` / `--u-mid-t` 又抄了一遍
+                       ⇒ "节点徽章什么色"有**两份**写法，改一处忘一处就分家。 -->
+                  <text class="badge badge-node ps-badge">{{item.node}}</text>
+                </view>
+
+                <!-- 底行（脑图数 · agent · 暂无待办）—— ★ 第六十一轮：从卡底上移到四档条数之前 -->
+                <view class="ps-foot">
+                  <text class="ps-meta">{{item.mindmaps}} 张脑图</text>
+                  <text class="ps-sep" wx:if="{{item.agentName}}">·</text>
+                  <text class="ps-meta" wx:if="{{item.agentName}}">{{item.agentName}}</text>
+                  <text class="ps-sep" wx:if="{{!item.total}}">·</text>
+                  <text class="ps-meta" wx:if="{{!item.total}}">暂无待办</text>
+                </view>
+
+                <!-- 四档条数必须全给：光看分数读不懂（12 分可能是 2 条紧急，也可能是 12 条不紧急）。
+                     ★ 第六十一轮（用户意见 1）：这一条**压到卡底**（`.ps-stat { margin-top: auto }`）。
+                       它是卡上唯一"有量纲"的信息；贴底 ＋ 同排对齐之后，同一行几张卡的**分布**
+                       能直接横着比 —— 原来它夹在中间，四档被"+2 张脑图 · agent 名"那一行隔开，
+                       读起来只是一个普通信息块，不像"这块项目的待办都堆在哪一档"。
+
+                     ★★ 203 轮（用户口径）：「各紧急程度和统计数字组合起来，数字不是很醒目」
+                        ＋「项目列表抽屉也有项目卡片，统一都换成这种卡片样式」。
+                     ── 现状的病根（都实测过）─────────────────────────────────────────
+                       · 档名与数字**同字号 / 同字重 / 同颜色**（都 11px/400/继承该档色）
+                         ⇒「紧急 1」被读成一个词，先读到的是"紧急"这两个字；
+                       · `justify-content: space-between` 对齐的是四段的**词首**，而档名
+                         2 字/3 字不等宽（「不紧急」比其他三个宽 11px）⇒ 四个数字的右缘
+                         落在 4 个不同位置、间距 62/73/62 ⇒ **跨卡比大小只能逐个读**。
+                     ── 改成「方案 2 · 数字居下」─────────────────────────────────────
+                       · 每档拆成两个节点：档名 9.5px `--stone` 在上、数字 **17px/700 档色**在下；
+                       · 四格 `flex: 1 1 0` 等宽 + 格内居中 ⇒ 四个数字落在**同一条竖线上**，
+                         跨卡看的就是同一列；
+                       · 数字 `tabular-nums`（`.num`）⇒ 1 位与 2 位不跳宽；
+                       · 零档（`n === 0`）整格压 `--muted` 且数字降一档字重 ⇒ 全零卡自动沉底，
+                         **不必再加"整条不渲染"的分支**（`.ps-foot` 已经有「暂无待办」了）。
+                     ⚠️ 档名与键名都由 `item.statChips` 下发（`store.urgencyList()`，一份真源）——
+                        **不许在模板里手抄四个中文名**（156 轮口径）。
+                     ⚠️ 四档条那圈描边在浅/深两档都只有 ≈1.3:1（本来就很淡），方案 2 不依赖它
+                        （数字自己就是对齐轴），所以两档都不动 —— 别去给深色单独换底。 -->
+                <view class="ps-stat">
+                  <view
+                    class="ps-s {{c.key}}{{c.n ? '' : ' z'}}"
+                    wx:for="{{item.statChips}}"
+                    wx:key="key"
+                    wx:for-item="c"
+                  >
+                    <text class="ps-s-t">{{c.name}}</text>
+                    <text class="ps-s-n num">{{c.n}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view class="blank-box stats-empty" wx:else>还没有带颜色的活跃项目 —— 项目着色后会出现在这里</view>
+        </view>
+      </view>
+
+      <!-- ③ Agent 概况（FR-5.3 的展示升级：从"当前一个 agent"改成**列出全部 agent** ·
+           卡面与「我的」页 agent 卡同一份装配 `store.agentCardViews`） -->
+      <view class="sec sec-agents">
+        <view class="sec-head">
+          <icon name="robot-b" size="16" />
+          <text class="sec-t">Agent 概况</text>
+          <view class="sec-flex"></view>
+        </view>
+
+        <view class="ag-grid" wx:if="{{agents.length}}">
+          <view
+            class="ag-card" hover-class="ag-card-hv"
+            wx:for="{{agents}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="onAgentTap"
+          >
+            <view class="ag-row1">
+              <text class="ag-name">{{item.name}}</text>
+            </view>
+
+            <!-- ★★ 157 轮（用户口径）：卡面与「我的」页**同一份装配**，改动也同步——
+                 ❌ 「当前剩余」（余额）：没有取余额的 API ⇒ 整格删掉；
+                 ❌ 卡脚「更新于 X」：给那颗余额数做保质期标注的那半句，数没了它也没意义 ⇒ 整行删掉
+                    （连带 `stale` 那个 class 绑定：FR-5.3 的「过期弱化」本来只落在那一句文字上）；
+                 ✅ 「每月套餐」（静态档位）＋「承担项目」并成右栏两行；
+                 ✅ 「距离重置」升为主视觉 —— 圆环 ＋ 圆心大字，口径见 `store.ringOf()`。
+                 ⚠️ 数据层没动：`agentCardViews()` 仍带 `updatedAt` / `stale`（只是不再渲染）。 -->
+            <view class="ag-body">
+              <view class="ag-ring-wrap">
+                <view class="ag-ring" style="--ring-deg:{{item.ringDeg}}deg">
+                  <view class="ag-ring-core">
+                    <text class="ag-ring-num num {{item.resetMuted ? 'muted' : ''}}">{{item.resetNum}}</text>
+                    <text class="ag-ring-unit" wx:if="{{item.resetUnit}}">{{item.resetUnit}}</text>
+                  </view>
+                </view>
+                <text class="ag-ring-lab">距离重置</text>
+              </view>
+
+              <view class="ag-meta">
+                <view class="ag-mcell">
+                  <text class="ag-lab">每月套餐</text>
+                  <text class="ag-val num">{{item.monthlyQuota}}</text>
+                </view>
+                <view class="ag-mdiv"></view>
+                <view class="ag-mcell">
+                  <text class="ag-lab">承担项目</text>
+                  <text class="ag-val num">{{item.projectCount}} 项</text>
+                </view>
+              </view>
+            </view>
+
+            <!-- ⚠️ ★ 第六十二轮（用户意见）：概览这里**有意不渲染**「关联项目」气泡行 ——
+                 那串带色点的胶囊在本页是纯重复（色点／项目名的完整信息在「项目待办统计」
+                 的卡上已经有了），只白白把 agent 卡撑高、把页面搅乱。项目关联的完整名单
+                 只在「我的」页 agent 卡上表达（mod-mine.wxml 的同名 `.ag-chips`）。
+                 ⚠️ **不要"补回来"** —— 这不是漏抄，是口径：两张卡同源，
+                    但概览只要三数（`item.projectCount` 已经给了数量），不要清单。
+                 数据层不受影响：`store.agentCardViews()` 仍带 `projects`。 -->
+
+            <!-- ★ 157 轮删除：卡脚那一行（左「每月套餐 X」右「更新于 X · 待更新」）。
+                 「每月套餐」并进上面的 `.ag-meta`；「更新于」按用户口径整条撤下。
+                 ⚠️ 连带把 FR-5.3 的「过期弱化」一起撤了 —— 它（第六十一轮起）唯一落点就是
+                    这句文字；而卡面上已经没有"会过期的手填值"了，弱化没有对象。
+                    要不要换个落点 → 见 `待拍板与遗留.md`（157 轮）。 -->
+          </view>
+        </view>
+
+        <view class="blank-box" wx:else>
+          <text>还没有 agent 档案。</text>
+          <text class="blank-box-s">去「我的」新建一个，填上每月套餐与额度重置日即可。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <drawer
+    open="{{drawer.open}}"
+    kind="{{drawer.kind}}"
+    title="{{drawer.title}}"
+    action="{{drawer.action}}"
+    create-label="{{drawer.createLabel}}"
+    active-id="{{drawer.activeId}}"
+    filter-label="{{drawer.filterLabel}}"
+    filter-active="{{drawer.filterActive}}"
+    tf="{{drawer.tf}}"
+    filter-open="{{drawerFilterOpen}}"
+    empty="{{drawer.empty}}"
+    groups="{{drawer.groups}}"
+    page-size="{{drawer.pageSize}}"
+    port="{{!landscape}}"
+    turned="{{drawerTurned}}"
+    bind:close="onDrawerClose"
+    bind:pick="onDrawerPick"
+    bind:create="onDrawerCreate"
+    bind:openfilter="onDrawerOpenFilter"
+    bind:closefilter="onDrawerCloseFilter"
+    bind:filterchange="onDrawerFilterChange"
+    bind:filterreset="onDrawerFilterReset"
+  />
+
+  <form-drawer
+    open="{{form.open}}"
+    mode="{{form.mode}}"
+    offset="{{form.offset}}"
+    title="{{form.title}}"
+    submit-label="{{form.submitLabel}}"
+    require-all="{{form.requireAll}}"
+    no-danger="{{form.noDanger}}"
+    hint="{{form.hint}}"
+    values="{{form.values}}"
+    urgencies="{{form.urgencies}}"
+    projects="{{form.projects}}"
+    mindmaps="{{form.mindmaps}}"
+    nodes="{{form.nodes}}"
+    agents="{{form.agents}}"
+    colors="{{form.colors}}"
+    formats="{{form.formats}}"
+    port="{{!landscape}}"
+    bind:cancel="onFormCancel"
+    bind:submit="onFormSubmit"
+    bind:newproject="onFormNewProject"
+    bind:newmindmap="onFormNewMindmap"
+  />
+<!-- /mod-overview -->
