@@ -1,7 +1,8 @@
 # Agent-ToDo
 
-> 为 FDE（Forward Deployed Engineer，前沿部署工程师）设计的多项目工作台。
-> 先记下来，再归到项目、整理成方案，最后连同客户原话与脑图层级一起导出给 Agent。
+> 几个项目同时开着，别让哪一条断在半路。
+
+为 FDE（Forward Deployed Engineer，前沿部署工程师）设计的多项目工作台：先记下来，再归到项目、整理成方案，最后连同客户原话与脑图层级一起导出给 Agent。
 
 <p>
 <img alt="微信小程序" src="https://img.shields.io/badge/微信小程序-原生框架-07C160">
@@ -212,6 +213,8 @@ const BASE = 'https://api.example.com/api/v1';   // ← 换成你的后端地址
 
 完整界面说明见官网手册：[`site/manual.html`](site/manual.html)（十章节、36 张真实截图）。
 
+线上演示：[todo.memorymap.cn](https://todo.memorymap.cn) · [操作手册](https://todo.memorymap.cn/manual.html)。演示实例数据不承诺保存，正式使用请自行部署。
+
 ---
 
 ## 部署
@@ -280,4 +283,10 @@ cp nginx/agenttodo.conf /etc/nginx/conf.d/ && nginx -t && nginx -s reload
 [MIT](LICENSE) © 2026 杜春生
 
 第三方服务（微信小程序平台、腾讯云语音识别、火山方舟）按各自条款使用；本仓库不包含任何第三方服务的密钥。
+
+---
+
+其他产品：[好运夹 goodluck+](https://github.com/329604421/goodluck-plus) · [摇头晃脑](https://github.com/329604421/shake-head)
+
+个人主页：[memorymap.cn](https://memorymap.cn) · [GitHub @329604421](https://github.com/329604421)
 
